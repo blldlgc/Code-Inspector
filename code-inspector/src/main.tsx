@@ -7,6 +7,8 @@ import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import { DialogComponent } from './components/DialogManager';
 import ProtectedRoute from './components/ProtectedRoute.tsx';
 import { auth } from '@/config/firebase';
+import MySidebar from './components/SidebarLayout.tsx';
+import MyPage from './pages/MyPage.tsx'
 
 
 const AppRouter = () => {
@@ -29,10 +31,23 @@ const AppRouter = () => {
   const router = createBrowserRouter([
     {
       path: "/",
-      element: 
+      element: (
         <ProtectedRoute>
-          <MainPage />
+          <MySidebar>
+            <MainPage />
+          </MySidebar>
         </ProtectedRoute>
+      ),
+    },
+    {
+      path: "/mypage",
+      element: (
+        <ProtectedRoute>
+          <MySidebar>
+            <MyPage />
+          </MySidebar>
+        </ProtectedRoute>
+      ),
     },
     {
       path: "/login",

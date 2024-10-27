@@ -1,4 +1,6 @@
 import { auth } from "@/config/firebase.ts";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { signOut } from 'firebase/auth';
 import { useState } from 'react';
 
@@ -29,18 +31,18 @@ const MainPage = () => {
     };
 
     return (
-        <div>
+        <div className= "flex flex-col items-center justify-center ">
             <h1>Main Page</h1>
             <button onClick={handleLogout}>Logout</button>
 
-            <div style={{ marginTop: '20px' }}>
-                <input
+            <div className= "flex flex-col items-center justify-center ">
+                <Input
                     type="number"
                     value={number}
                     onChange={(e) => setNumber(e.target.value)}
                     placeholder="Enter a number"
                 />
-                <button onClick={calculateSquare}>Calculate Square</button>
+                <Button className="w-full" type="submit"onClick={calculateSquare}>Calculate Square</Button>
             </div>
 
             {result !== null && <h2>Result: {result}</h2>}
