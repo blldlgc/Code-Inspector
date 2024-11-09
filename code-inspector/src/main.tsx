@@ -9,6 +9,8 @@ import ProtectedRoute from './components/ProtectedRoute.tsx';
 import { auth } from '@/config/firebase';
 import MySidebar from './components/SidebarLayout.tsx';
 import MyPage from './pages/MyPage.tsx'
+import CodeComparison from './pages/CodeComparison.tsx'
+import { Code } from 'lucide-react'
 
 
 const AppRouter = () => {
@@ -40,11 +42,11 @@ const AppRouter = () => {
       ),
     },
     {
-      path: "/mypage",
+      path: "/codecomparison",
       element: (
         <ProtectedRoute>
           <MySidebar>
-            <MyPage />
+            <CodeComparison />
           </MySidebar>
         </ProtectedRoute>
       ),

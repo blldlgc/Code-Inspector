@@ -100,8 +100,8 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
     },
     navMain: [
       {
-        title: "Playground",
-        url: "#",
+        title: "Code Comparison",
+        url: "/codecomparison",
         icon: SquareTerminal,
         isActive: true,
         items: [
@@ -121,7 +121,7 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
       },
       {
         title: "Models",
-        url: "/mypage",
+        url: "#",
         icon: Bot,
         items: [
           {
@@ -391,7 +391,7 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
                           alt={data.user.name}
                         />
                         <AvatarFallback className="rounded-lg">
-                          CN
+                          CI
                         </AvatarFallback>
                       </Avatar>
                       <div className="grid flex-1 text-left text-sm leading-tight">
@@ -455,7 +455,7 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
               </Breadcrumb>
             </div>
           </header>
-          <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+          <div className="flex flex-1 flex-col gap-4 p-4 pt-0 ">
             {children} {/* Dinamik içerik burada görüntülenir */}
           </div>
         </SidebarInset>
