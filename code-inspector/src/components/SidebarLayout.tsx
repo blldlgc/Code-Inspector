@@ -217,7 +217,7 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
   }
   
   return (
-    <div className="w-screen h-screen">
+    <div className="w-screen h-screen overflow-x-hidden">
       <SidebarProvider>
       <Sidebar variant="inset">
         <SidebarHeader>
@@ -455,9 +455,11 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
               </Breadcrumb>
             </div>
           </header>
-          <div className="flex flex-1 flex-col gap-4 p-4 pt-0 ">
-            {children} {/* Dinamik içerik burada görüntülenir */}
-          </div>
+          <div className="flex-1 overflow-x-auto">
+  <div className="min-w-full p-4 pt-0">
+    {children}
+  </div>
+</div>
         </SidebarInset>
       </SidebarProvider>
     </div>

@@ -31,7 +31,7 @@ public class CodeComparisonService {
 
         try {
             CPDConfiguration config = new CPDConfiguration();
-            config.setMinimumTileSize(5);
+            config.setMinimumTileSize(2);
             config.setLanguage(LanguageFactory.createLanguage("java"));
 
             CPD cpd = new CPD(config);
@@ -46,19 +46,29 @@ public class CodeComparisonService {
             StringBuilder matchedLines = new StringBuilder();
             double totalDuplication = 0.0;
 
+            List<String> duplicatedLines = new ArrayList<>();
+
+            // Iterator kullanarak eşleşmeleri almak
             Iterator<Match> matches = cpd.getMatches();
             while (matches.hasNext()) {
                 Match match = matches.next();
-                totalDuplication += match.getLineCount();
-                matchedLines.append("Duplicated lines found: ")
-                        .append(match.getLineCount())
-                        .append(" lines\n").append(match);
+                for (Mark mark : match) {
+                    String line = mark.getSourceCodeSlice().strip();
+
+                    // Boş satırları ve sadece "}" karakterini içeren satırları geçiyoruz
+                    if (!line.isEmpty() && !line.equals("}") && !line.equals("{")) {
+                        duplicatedLines.add(line);
+                    }
+                }
             }
 
-            int totalLines = countLines(code1) + countLines(code2);
-            double similarityPercentage = (totalDuplication * 2 / totalLines) * 100;
+            int duplicateLineCount = duplicatedLines.size();
+            int totalLines = Math.max(countLines(code1), countLines(code2));
 
-            return new CodeComparisonResponse(similarityPercentage, matchedLines.toString());
+            double similarityPercentage = (duplicateLineCount / (double) totalLines) * 100;
+
+            return new CodeComparisonResponse(similarityPercentage, duplicatedLines.toString());
+
 
         } catch (Exception e) {
             throw new RuntimeException("Code comparison failed: " + e.getMessage());
