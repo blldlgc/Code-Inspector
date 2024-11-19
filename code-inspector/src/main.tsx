@@ -11,6 +11,9 @@ import MySidebar from './components/SidebarLayout.tsx';
 import MyPage from './pages/MyPage.tsx'
 import CodeComparison from './pages/CodeComparison.tsx'
 import { Code } from 'lucide-react'
+import CodeAnalyzer from './components/CodeAnalyzer.tsx'
+import CodeGraph from './pages/CodeGraph.tsx'
+
 
 
 const AppRouter = () => {
@@ -47,6 +50,16 @@ const AppRouter = () => {
         <ProtectedRoute>
           <MySidebar>
             <CodeComparison />
+          </MySidebar>
+        </ProtectedRoute>
+      ),
+    },
+    {
+      path: "/codegraph",
+      element: (
+        <ProtectedRoute>
+          <MySidebar>
+            <CodeGraph />
           </MySidebar>
         </ProtectedRoute>
       ),

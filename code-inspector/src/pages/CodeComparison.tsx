@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
 const CodeComparison = () => {
     const [code1, setCode1] = useState('');
@@ -19,7 +19,7 @@ const CodeComparison = () => {
                 },
                 body: JSON.stringify({ code1, code2 }),
             });
-            
+
             const data = await response.json();
             setResult(data);
         } catch (error) {
@@ -30,7 +30,7 @@ const CodeComparison = () => {
     };
 
     return (
-        <div className=" max-w-full p-4">
+        <div className="max-w-full p-4">
             <Card className="mb-6">
                 <CardHeader>
                     <CardTitle>Code Comparison Tool</CardTitle>
@@ -66,29 +66,57 @@ const CodeComparison = () => {
                 </CardContent>
             </Card>
 
-            {result && result.similarityPercentage !== undefined && (
-    <Card>
-        <CardHeader>
-            <CardTitle>Comparison Results</CardTitle>
-        </CardHeader>
-        <CardContent>
-            <div className="space-y-4">
-                <div>
-                    <h3 className="font-medium">Similarity Percentage:</h3>
-                    <p className="text-2xl font-bold text-blue-600">
-                        {result.similarityPercentage.toFixed(2)}%
-                    </p>
-                </div>
-                <div>
-                    <h3 className="font-medium">Matched Lines:</h3>
-                    <pre className="p-4 bg-gray-100 rounded-md whitespace-pre-wrap">
-                        {result.matchedLines}
-                    </pre>
-                </div>
-            </div>
-        </CardContent>
-    </Card>
-)}
+            {result && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Comparison Results</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <Accordion type="multiple" defaultValue="similarity" >
+                            <AccordionItem value="similarity" >
+                                <AccordionTrigger>Similarity Percentage</AccordionTrigger>
+                                <AccordionContent>
+                                    <p className="text-2xl font-bold text-blue-600">
+                                        {result.similarityPercentage.toFixed(2)}%
+                                    </p>
+                                </AccordionContent>
+                            </AccordionItem>
+
+                            <AccordionItem value="matchedLines">
+                                <AccordionTrigger>Matched Lines</AccordionTrigger>
+                                <AccordionContent>
+                                    <pre className="bg-gray-100 p-4 rounded-md">{result.matchedLines}</pre>
+                                </AccordionContent>
+                            </AccordionItem>
+
+                            <AccordionItem value="metrics">
+                                <AccordionTrigger>Comparison Metrics</AccordionTrigger>
+                                <AccordionContent>
+                                    <table className="w-full border-collapse border border-gray-200">
+                                        <thead>
+                                            <tr>
+                                                <th className="border border-gray-300 px-4 py-2">Metric</th>
+                                                <th className="border border-gray-300 px-4 py-2">Code 1</th>
+                                                <th className="border border-gray-300 px-4 py-2">Code 2</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {result.code1Metrics &&
+                                                Object.keys(result.code1Metrics).map((key) => (
+                                                    <tr key={key}>
+                                                        <td className="border border-gray-300 px-4 py-2">{key}</td>
+                                                        <td className="border border-gray-300 px-4 py-2">{result.code1Metrics[key]}</td>
+                                                        <td className="border border-gray-300 px-4 py-2">{result.code2Metrics[key]}</td>
+                                                    </tr>
+                                                ))}
+                                        </tbody>
+                                    </table>
+                                </AccordionContent>
+                            </AccordionItem>
+                        </Accordion>
+                    </CardContent>
+                </Card>
+            )}
         </div>
     );
 };

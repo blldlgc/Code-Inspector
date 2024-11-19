@@ -34,6 +34,7 @@ const LoginPage = () => {
         displayName: fullName
     });
     console.log("User registered successfully with full name:", fullName);
+    await signInWithEmailAndPassword(auth, email, password);
     } catch (error) {
         setError('Signup failed. Please try again.');
     }

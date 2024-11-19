@@ -1,3 +1,10 @@
 package com.codeinspector.codecomparision.dto;
 
-public record CodeComparisonResponse(double similarityPercentage, String matchedLines) {}
+import java.util.Map;
+
+public record CodeComparisonResponse(
+        Map<String, String> code1Metrics,
+        Map<String, String> code2Metrics,
+        double similarityPercentage,
+        String matchedLines
+) {}

@@ -120,13 +120,13 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
         ],
       },
       {
-        title: "Models",
-        url: "#",
+        title: "Tree Sitter",
+        url: "/treesitter",
         icon: Bot,
         items: [
           {
-            title: "Genesis",
-            url: "#",
+            title: "codeanalyzer",
+            url: "/codeanalyzer",
           },
           {
             title: "Explorer",
