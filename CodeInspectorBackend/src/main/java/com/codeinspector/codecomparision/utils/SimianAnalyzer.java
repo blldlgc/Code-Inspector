@@ -9,7 +9,9 @@ import java.util.List;
 @Component
 public class SimianAnalyzer {
 
-    private static final String SIMIAN_JAR_PATH = new File("src/main/java/com/codeinspector/codecomparision/libs.simian-4.0.0/simian-4.0.jar").getAbsolutePath();
+    private static final String SIMIAN_JAR_PATH = new File(
+            "src/main/java/com/codeinspector/codecomparision/libs/simian-4.0.0/simian-4.0.0.jar"
+    ).getAbsolutePath();
 
 
     public SimianResult analyzeSimilarity(String code1, String code2) {
@@ -65,6 +67,7 @@ public class SimianAnalyzer {
             String line;
             while ((line = reader.readLine()) != null) {
                 outputLines.add(line);
+                System.out.println("Simian Output: " + line); // Simian çıktısını logla
             }
         }
 
@@ -72,20 +75,23 @@ public class SimianAnalyzer {
         return outputLines;
     }
 
+
     private double calculateSimilarity(List<String> simianOutput) {
-        int duplicateBlocks = 0;
-        int totalBlocks = 0;
+        int duplicateLines = 0;
+        int totalLines = 0;
 
         for (String line : simianOutput) {
-            if (line.contains("Duplicate")) {
-                duplicateBlocks++;
+            if (line.contains("Found") && line.contains("duplicate lines")) {
+                String[] parts = line.split(" ");
+                duplicateLines = Integer.parseInt(parts[1]); // Found X duplicate lines
             }
-            if (line.contains("block")) {
-                totalBlocks++;
+            if (line.contains("Processed a total of") && line.contains("lines")) {
+                String[] parts = line.split(" ");
+                totalLines = Integer.parseInt(parts[4]); // Processed a total of X lines
             }
         }
 
-        return totalBlocks > 0 ? (duplicateBlocks / (double) totalBlocks) * 100 : 0.0;
+        return totalLines > 0 ? (duplicateLines / (double) totalLines) * 100 : 0.0;
     }
 
     private List<String> extractDuplicatedLines(List<String> simianOutput) {

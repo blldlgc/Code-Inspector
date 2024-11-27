@@ -77,7 +77,12 @@ const CodeComparison = () => {
                                 <AccordionTrigger>Similarity Percentage</AccordionTrigger>
                                 <AccordionContent>
                                     <p className="text-2xl font-bold text-blue-600">
-                                        {result.similarityPercentage.toFixed(2)}%
+                                        CPD: 
+                                        {result.CPDsimilarityPercentage.toFixed(2)}%
+                                    </p> 
+                                    <p className="text-2xl font-bold text-blue-600">
+                                        Simian: 
+                                        {result.simianSimilarityPercentage.toFixed(2)}%
                                     </p>
                                 </AccordionContent>
                             </AccordionItem>

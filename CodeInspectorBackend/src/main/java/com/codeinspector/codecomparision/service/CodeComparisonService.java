@@ -33,6 +33,7 @@ public class CodeComparisonService {
                 code1Metrics,
                 code2Metrics,
                 similarityPercentage,
+                simianResult.getSimilarityPercentage(),
                 String.join("\n", duplicatedLines) + "\n\nSimian Report:\n" + simianResult.getSimilarityPercentage() + "% Similarity\n" + String.join("\n", simianResult.getDuplicatedLines())
         );
     }
