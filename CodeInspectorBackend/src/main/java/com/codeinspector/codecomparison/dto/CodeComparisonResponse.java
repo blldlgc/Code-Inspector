@@ -1,4 +1,4 @@
-package com.codeinspector.codecomparision.dto;
+package com.codeinspector.codecomparison.dto;
 
 import java.util.Map;
 

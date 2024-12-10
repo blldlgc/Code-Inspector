@@ -1,4 +1,4 @@
-package com.codeinspector.codecomparision.utils;
+package com.codeinspector.codecomparison.utils;
 
 import net.sourceforge.pmd.cpd.*;
 import org.springframework.stereotype.Component;

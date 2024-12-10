@@ -20,4 +20,5 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ["web-tree-sitter"], // Vite'nin önceden optimize etmesini engelle
   },
+  assetsInclude: ['**/*.wasm'],
 });

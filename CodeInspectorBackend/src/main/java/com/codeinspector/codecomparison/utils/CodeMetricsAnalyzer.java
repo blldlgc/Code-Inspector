@@ -1,4 +1,4 @@
-package com.codeinspector.codecomparision.utils;
+package com.codeinspector.codecomparison.utils;
 
 import org.springframework.stereotype.Component;
 

@@ -1,8 +1,8 @@
-package com.codeinspector.codecomparision.controller;
+package com.codeinspector.codecomparison.controller;
 
-import com.codeinspector.codecomparision.dto.CodeComparisonRequest;
-import com.codeinspector.codecomparision.dto.CodeComparisonResponse;
-import com.codeinspector.codecomparision.service.CodeComparisonService;
+import com.codeinspector.codecomparison.dto.CodeComparisonRequest;
+import com.codeinspector.codecomparison.dto.CodeComparisonResponse;
+import com.codeinspector.codecomparison.service.CodeComparisonService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 

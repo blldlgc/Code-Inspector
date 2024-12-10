@@ -13,6 +13,7 @@ import CodeComparison from './pages/CodeComparison.tsx'
 import { Code } from 'lucide-react'
 import CodeAnalyzer from './components/CodeAnalyzer.tsx'
 import CodeGraph from './pages/CodeGraph.tsx'
+import TreeSitter from './pages/TreeSitter.tsx'
 
 
 
@@ -60,6 +61,16 @@ const AppRouter = () => {
         <ProtectedRoute>
           <MySidebar>
             <CodeGraph />
+          </MySidebar>
+        </ProtectedRoute>
+      ),
+    },
+    {
+      path: "/treesitter",
+      element: (
+        <ProtectedRoute>
+          <MySidebar>
+            <TreeSitter />
           </MySidebar>
         </ProtectedRoute>
       ),

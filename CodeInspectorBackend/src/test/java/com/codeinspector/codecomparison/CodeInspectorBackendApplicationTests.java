@@ -1,4 +1,4 @@
-package com.codeinspector.codecomparision;
+package com.codeinspector.codecomparison;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
