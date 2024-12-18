@@ -173,8 +173,8 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
         ],
       },
       {
-        title: "Settings",
-        url: "#",
+        title: "Code Coverage",
+        url: "/coverage",
         icon: Settings2,
         items: [
           {

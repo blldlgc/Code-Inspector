@@ -11,6 +11,7 @@ import MySidebar from './components/SidebarLayout.tsx';
 import CodeComparison from './pages/CodeComparison.tsx'
 import CodeGraph from './pages/CodeGraph.tsx'
 import TreeSitter from './pages/TreeSitter.tsx'
+import CodeCoverage from './pages/CodeCoverage.tsx'
 
 
 
@@ -68,6 +69,16 @@ const AppRouter = () => {
         <ProtectedRoute>
           <MySidebar>
             <TreeSitter />
+          </MySidebar>
+        </ProtectedRoute>
+      ),
+    },
+    {
+      path: "/coverage",
+      element: (
+        <ProtectedRoute>
+          <MySidebar>
+            <CodeCoverage />
           </MySidebar>
         </ProtectedRoute>
       ),
