@@ -24,68 +24,43 @@ public class TreeSitterService {
             TSNode rootNode = tree.getRootNode();
 
             if (rootNode == null) {
-                throw new IllegalStateException("Root node is null");
+                return new TreeSitterResponse(null, null, "Root node is null");
             }
 
             List<TreeSitterResponse.Node> nodes = new ArrayList<>();
-            Map<String, List<String>> relationships = new HashMap<>();
+            collectGraph(rootNode, nodes, code);
 
-            collectGraph(rootNode, nodes, relationships, code);
-
-            // İlişkiler ve node'ları döndür
-            return new TreeSitterResponse(rootNode.getType(), nodes, relationships, null);
+            return new TreeSitterResponse(rootNode.getType(), nodes, null);
 
         } catch (Exception e) {
-            return new TreeSitterResponse(null, null, null, "Error analyzing code: " + e.getMessage());
+            return new TreeSitterResponse(null, null, "Error analyzing code: " + e.getMessage());
         }
     }
 
-    private void collectGraph(TSNode node, List<TreeSitterResponse.Node> nodes, Map<String, List<String>> relationships, String code) {
+    private void collectGraph(TSNode node, List<TreeSitterResponse.Node> nodes, String code) {
         if (node == null) return;
 
         String nodeType = getNodeType(node);
         String nodeName = getNodeName(node, code);
 
-        if (nodeType.equals("Class") || nodeType.equals("Method")) {
-            TreeSitterResponse.Node currentNode = new TreeSitterResponse.Node(
-                    nodeType + " (" + nodeName + ")",
-                    node.getStartByte(),
-                    node.getEndByte(),
-                    node.getStartPoint().getRow(),
-                    node.getStartPoint().getColumn(),
-                    node.getEndPoint().getRow(),
-                    node.getEndPoint().getColumn(),
-                    new ArrayList<>()
-            );
-            nodes.add(currentNode);
+        List<TreeSitterResponse.Node> childNodes = new ArrayList<>();
 
-            // Metot çağrıları ve ilişkileri ekle
-            if (nodeType.equals("Method")) {
-                for (int i = 0; i < node.getChildCount(); i++) {
-                    TSNode childNode = node.getChild(i);
-
-                    if (childNode.getType().equals("method_invocation")) {
-                        extractCalledMethod(childNode, nodeName, relationships, code);
-                    }
-                }
-            }
-        }
+        TreeSitterResponse.Node currentNode = new TreeSitterResponse.Node(
+                nodeType + " (" + nodeName + ")",
+                node.getStartByte(),
+                node.getEndByte(),
+                node.getStartPoint().getRow(),
+                node.getStartPoint().getColumn(),
+                node.getEndPoint().getRow(),
+                node.getEndPoint().getColumn(),
+                childNodes
+        );
 
         for (int i = 0; i < node.getChildCount(); i++) {
-            collectGraph(node.getChild(i), nodes, relationships, code);
+            collectGraph(node.getChild(i), childNodes, code);
         }
-    }
 
-    private void extractCalledMethod(TSNode methodInvocationNode, String nodeName, Map<String, List<String>> relationships, String code) {
-        for (int j = 0; j < methodInvocationNode.getChildCount(); j++) {
-            TSNode grandChild = methodInvocationNode.getChild(j);
-            if (grandChild.getType().equals("identifier")) {
-                String calledMethodName = getNodeText(code, grandChild);
-                if (calledMethodName != null && !calledMethodName.isEmpty()) {
-                    relationships.computeIfAbsent(nodeName, k -> new ArrayList<>()).add(calledMethodName);
-                }
-            }
-        }
+        nodes.add(currentNode);
     }
 
     private String getNodeName(TSNode node, String code) {
@@ -114,8 +89,6 @@ public class TreeSitterService {
                 return "Class";
             case "method_declaration":
                 return "Method";
-            case "method_invocation":
-                return "Method Call";
             default:
                 return node.getType();
         }

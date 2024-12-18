@@ -1,20 +1,17 @@
 package com.codeinspector.codecomparison.dto;
 
 import java.util.List;
-import java.util.Map;
 
 public class TreeSitterResponse {
     private String rootNodeType;
     private List<Node> nodes;
-    private Map<String, List<String>> relationships;
     private String errorMessage;
 
     public TreeSitterResponse() {}
 
-    public TreeSitterResponse(String rootNodeType, List<Node> nodes, Map<String, List<String>> relationships, String errorMessage) {
+    public TreeSitterResponse(String rootNodeType, List<Node> nodes, String errorMessage) {
         this.rootNodeType = rootNodeType;
         this.nodes = nodes;
-        this.relationships = relationships;
         this.errorMessage = errorMessage;
     }
 
@@ -32,14 +29,6 @@ public class TreeSitterResponse {
 
     public void setNodes(List<Node> nodes) {
         this.nodes = nodes;
-    }
-
-    public Map<String, List<String>> getRelationships() {
-        return relationships;
-    }
-
-    public void setRelationships(Map<String, List<String>> relationships) {
-        this.relationships = relationships;
     }
 
     public String getErrorMessage() {
