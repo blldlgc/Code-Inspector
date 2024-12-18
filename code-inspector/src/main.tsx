@@ -8,10 +8,7 @@ import { DialogComponent } from './components/DialogManager';
 import ProtectedRoute from './components/ProtectedRoute.tsx';
 import { auth } from '@/config/firebase';
 import MySidebar from './components/SidebarLayout.tsx';
-import MyPage from './pages/MyPage.tsx'
 import CodeComparison from './pages/CodeComparison.tsx'
-import { Code } from 'lucide-react'
-import CodeAnalyzer from './components/CodeAnalyzer.tsx'
 import CodeGraph from './pages/CodeGraph.tsx'
 import TreeSitter from './pages/TreeSitter.tsx'
 

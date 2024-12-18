@@ -74,7 +74,7 @@ import {
 import { ReactNode } from 'react';
 
 import { signOut } from 'firebase/auth';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { auth } from "@/config/firebase.ts";
 
 
@@ -90,7 +90,18 @@ const handleLogout = async () => {
 export default function SidebarLayout({ children }: { children: ReactNode }) {
 
   const navigate = useNavigate();
+  const location = useLocation();
   console.log(auth.currentUser?.email);
+
+  // Path ve başlıkları eşleştirip Breadcrumb'a ekleme
+  const pathTitleMap: { [key: string]: string } = {
+    "/codecomparison": "Code Comparison",
+    "/treesitter": "Tree Sitter",
+    "/codeanalyzer": "Code Analyzer",
+    "/": "Home", 
+  };
+  const currentPath = location.pathname;
+  const currentTitle = pathTitleMap[currentPath] || "Unknown Page";
 
   const data = {
     user: {
@@ -445,11 +456,11 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
               <Breadcrumb>
                 <BreadcrumbList>
                   <BreadcrumbItem className="hidden md:block">
-                    <BreadcrumbLink onClick={() => navigate("/")}>Building Your Application</BreadcrumbLink>
+                    <BreadcrumbLink onClick={() => navigate("/")}>Code Inspector</BreadcrumbLink>
                   </BreadcrumbItem>
                   <BreadcrumbSeparator className="hidden md:block" />
                   <BreadcrumbItem>
-                    <BreadcrumbPage>Data Fetching</BreadcrumbPage>
+                    <BreadcrumbPage>{currentTitle}</BreadcrumbPage>
                   </BreadcrumbItem>
                 </BreadcrumbList>
               </Breadcrumb>

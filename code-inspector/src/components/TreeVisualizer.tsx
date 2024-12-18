@@ -1,50 +1,78 @@
-import React from "react";
-import Tree from "react-d3-tree";
+import React, { useEffect, useState } from "react";
+import ReactFlow, {
+  Background,
+  Controls,
+  MiniMap,
+  useNodesState,
+  useEdgesState,
+} from "reactflow";
+import "reactflow/dist/style.css";
 
-const TreeVisualizer = ({ data }) => {
-    const transformNodes = (node) => {
-        // Burada sınıf adı, metod adı gibi bilgileri kullanarak ağacın yapısını şekillendiriyoruz
-        const nodeName = node.type === "class_declaration" ? `Class: ${node.name}` : node.type === "method_declaration" ? `Method: ${node.name}` : node.type;
+// ReactFlow için veriyi dönüştürme
+const transformTreeDataForReactFlow = (nodes) => {
+  const nodeElements = [];
+  const edgeElements = [];
 
-        return {
-            name: nodeName, // Node tipi ya da adı
-            attributes: {
-                startByte: node.startByte,
-                endByte: node.endByte
-            },
-            children: node.children ? node.children.map(transformNodes) : [],
-        };
-    };
+  const traverse = (node, parentId = null, depth = 0, y = 50) => {
+    const nodeId = `${node.startByte}-${node.endByte}`;
+    const xPosition = depth * 200;
 
-    const treeData = transformNodes(data);
+    // Node ekle
+    nodeElements.push({
+      id: nodeId,
+      data: { label: `${node.type} (${node.startRow}:${node.startColumn}-${node.endRow}:${node.endColumn})` },
+      position: { x: xPosition, y: y },
+    });
 
-    return (
-        <div className="w-full h-full">
-            <Tree
-                data={treeData}
-                orientation="vertical"
-                nodeLabelComponent={{
-                    render: <NodeLabel />,
-                    foreignObjectWrapper: {
-                        y: 20,
-                        x: -50
-                    }
-                }}
-            />
-        </div>
-    );
+    // Bağlantı ekle
+    if (parentId) {
+      edgeElements.push({
+        id: `e${parentId}-${nodeId}`,
+        source: parentId,
+        target: nodeId,
+        animated: true,
+      });
+    }
+
+    // Alt çocukları sırayla ekle
+    if (node.children && node.children.length > 0) {
+      node.children.forEach((child, index) =>
+        traverse(child, nodeId, depth + 1, y + (index + 1) * 100)
+      );
+    }
+  };
+
+  nodes.forEach((node) => traverse(node));
+  return { nodes: nodeElements, edges: edgeElements };
 };
 
-const NodeLabel = ({ nodeData }) => {
-    return (
-        <div className="bg-white p-2 border border-gray-400 rounded">
-            <strong>{nodeData.name}</strong>
-            <br />
-            <span>Start Byte: {nodeData.attributes.startByte}</span>
-            <br />
-            <span>End Byte: {nodeData.attributes.endByte}</span>
-        </div>
-    );
+const TreeVisualizer = ({ data }) => {
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+
+  useEffect(() => {
+    if (data) {
+      const { nodes: transformedNodes, edges: transformedEdges } = transformTreeDataForReactFlow(data);
+      setNodes(transformedNodes);
+      setEdges(transformedEdges);
+    }
+  }, [data, setNodes, setEdges]);
+
+  return (
+    <div style={{ width: "100%", height: "500px" }}>
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        fitView
+      >
+        <MiniMap />
+        <Controls />
+        <Background variant="dots" gap={16} size={0.5} />
+      </ReactFlow>
+    </div>
+  );
 };
 
 export default TreeVisualizer;
