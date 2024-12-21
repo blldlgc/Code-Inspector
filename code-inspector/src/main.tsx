@@ -12,6 +12,7 @@ import CodeComparison from './pages/CodeComparison.tsx'
 import CodeGraph from './pages/CodeGraph.tsx'
 import TreeSitter from './pages/TreeSitter.tsx'
 import CodeCoverage from './pages/CodeCoverage.tsx'
+import MetricsAnalyzer from './pages/MetricsAnalyzer.tsx'
 
 
 
@@ -58,16 +59,6 @@ const AppRouter = () => {
       element: (
         <ProtectedRoute>
           <MySidebar>
-            <CodeGraph />
-          </MySidebar>
-        </ProtectedRoute>
-      ),
-    },
-    {
-      path: "/treesitter",
-      element: (
-        <ProtectedRoute>
-          <MySidebar>
             <TreeSitter />
           </MySidebar>
         </ProtectedRoute>
@@ -81,11 +72,25 @@ const AppRouter = () => {
             <CodeCoverage />
           </MySidebar>
         </ProtectedRoute>
-      ),
+      )
+    },
+    {
+      path: "/metrics",
+      element: (
+        <ProtectedRoute>
+          <MySidebar>
+            <MetricsAnalyzer />
+          </MySidebar>
+        </ProtectedRoute>
+      )
     },
     {
       path: "/login",
       element: user ? <Navigate to="/" replace /> : <LoginPage />,
+    },
+    {
+      path: "*",
+      element: <Navigate to="/" replace />
     }
   ]);
 

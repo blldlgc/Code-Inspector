@@ -7,7 +7,7 @@ import {
   Bot,
   ChevronRight,
   ChevronsUpDown,
-  Command,
+  CodeXml,
   CreditCard,
   Folder,
   Frame,
@@ -96,7 +96,7 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
   // Path ve başlıkları eşleştirip Breadcrumb'a ekleme
   const pathTitleMap: { [key: string]: string } = {
     "/codecomparison": "Code Comparison",
-    "/treesitter": "Tree Sitter",
+    "/codegraph": "Code Graph Tool",
     "/codeanalyzer": "Code Analyzer",
     "/": "Home", 
   };
@@ -115,85 +115,26 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
         url: "/codecomparison",
         icon: SquareTerminal,
         isActive: true,
-        items: [
-          {
-            title: "History",
-            url: "#",
-          },
-          {
-            title: "Starred",
-            url: "#",
-          },
-          {
-            title: "Settings",
-            url: "#",
-          },
-        ],
       },
       {
-        title: "Tree Sitter",
-        url: "/treesitter",
+        title: "Code Metrics",
+        url: "/metrics",
+        icon: Sparkles,
+      },
+      {
+        title: "Code Graph Tool",
+        url: "/codegraph",
         icon: Bot,
-        items: [
-          {
-            title: "codeanalyzer",
-            url: "/codeanalyzer",
-          },
-          {
-            title: "Explorer",
-            url: "#",
-          },
-          {
-            title: "Quantum",
-            url: "#",
-          },
-        ],
       },
       {
         title: "Documentation",
         url: "#",
         icon: BookOpen,
-        items: [
-          {
-            title: "Introduction",
-            url: "#",
-          },
-          {
-            title: "Get Started",
-            url: "#",
-          },
-          {
-            title: "Tutorials",
-            url: "#",
-          },
-          {
-            title: "Changelog",
-            url: "#",
-          },
-        ],
       },
       {
         title: "Code Coverage",
         url: "/coverage",
         icon: Settings2,
-        items: [
-          {
-            title: "General",
-            url: "#",
-          },
-          {
-            title: "Team",
-            url: "#",
-          },
-          {
-            title: "Billing",
-            url: "#",
-          },
-          {
-            title: "Limits",
-            url: "#",
-          },
-        ],
       },
     ],
     navSecondary: [
@@ -238,7 +179,7 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
                 <button onClick={() => navigate('/')}
                   className="flex items-center focus:outline-none">
                   <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                    <Command className="size-4" />
+                  <CodeXml className="size-5" />
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-semibold">Code Inspector</span>
@@ -250,47 +191,17 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
         </SidebarHeader>
         <SidebarContent>
           <SidebarGroup>
-            <SidebarGroupLabel>Platform</SidebarGroupLabel>
+            <SidebarGroupLabel>Code Quality Tools</SidebarGroupLabel>
             <SidebarMenu>
               {data.navMain.map((item) => (
-                <Collapsible
-                  key={item.title}
-                  asChild
-                  defaultOpen={item.isActive}
-                >
-                  <SidebarMenuItem>
+                <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild tooltip={item.title}>
-                        <button onClick={() => navigate(item.url)} className="flex items-center focus:outline-none">
-                          <item.icon />
-                          <span>{item.title}</span>
-                        </button>
-                      </SidebarMenuButton>
-                    {item.items?.length ? (
-                      <>
-                        <CollapsibleTrigger asChild>
-                          <SidebarMenuAction className="data-[state=open]:rotate-90">
-                            <ChevronRight />
-                            <span className="sr-only">Toggle</span>
-                          </SidebarMenuAction>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <SidebarMenuSub>
-                            {item.items?.map((subItem) => (
-                              <SidebarMenuSubItem key={subItem.title}>
-                                <SidebarMenuSubButton asChild>
-                                  <button onClick={() => navigate(subItem.url)}
-                                    className="flex items-center focus:outline-none">
-                                    <span>{subItem.title}</span>
-                                  </button>
-                                </SidebarMenuSubButton>
-                              </SidebarMenuSubItem>
-                            ))}
-                          </SidebarMenuSub>
-                        </CollapsibleContent>
-                      </>
-                    ) : null}
-                  </SidebarMenuItem>
-                </Collapsible>
+                    <button onClick={() => navigate(item.url)} className="flex items-center focus:outline-none">
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </button>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               ))}
             </SidebarMenu>
           </SidebarGroup>
@@ -415,28 +326,6 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
                       </div>
                     </div>
                   </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuGroup>
-                    <DropdownMenuItem>
-                      <Sparkles />
-                      Upgrade to Pro
-                    </DropdownMenuItem>
-                  </DropdownMenuGroup>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuGroup>
-                    <DropdownMenuItem>
-                      <BadgeCheck />
-                      Account
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <CreditCard />
-                      Billing
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Bell />
-                      Notifications
-                    </DropdownMenuItem>
-                  </DropdownMenuGroup>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut />

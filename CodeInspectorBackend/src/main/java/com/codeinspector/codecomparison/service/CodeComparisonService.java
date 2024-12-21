@@ -1,10 +1,12 @@
 package com.codeinspector.codecomparison.service;
 
+import org.springframework.stereotype.Service;
+
 import com.codeinspector.codecomparison.dto.CodeComparisonResponse;
+import com.codeinspector.codecomparison.dto.CodeMetricsResponse;
 import com.codeinspector.codecomparison.utils.CodeMetricsAnalyzer;
 import com.codeinspector.codecomparison.utils.DuplicateCodeDetector;
 import com.codeinspector.codecomparison.utils.SimianAnalyzer;
-import org.springframework.stereotype.Service;
 
 @Service
 public class CodeComparisonService {
@@ -36,5 +38,10 @@ public class CodeComparisonService {
                 simianResult.getSimilarityPercentage(),
                 String.join("\n", duplicatedLines) + "\n\nSimian Report:\n" + simianResult.getSimilarityPercentage() + "% Similarity\n" + String.join("\n", simianResult.getDuplicatedLines())
         );
+    }
+
+    public CodeMetricsResponse analyzeMetrics(String code) {
+        var metrics = codeMetricsAnalyzer.analyzeMetrics(code);
+        return new CodeMetricsResponse(metrics);
     }
 }

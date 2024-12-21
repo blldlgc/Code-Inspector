@@ -2,6 +2,8 @@ package com.codeinspector.codecomparison.controller;
 
 import com.codeinspector.codecomparison.dto.CodeComparisonRequest;
 import com.codeinspector.codecomparison.dto.CodeComparisonResponse;
+import com.codeinspector.codecomparison.dto.CodeMetricsRequest;
+import com.codeinspector.codecomparison.dto.CodeMetricsResponse;
 import com.codeinspector.codecomparison.service.CodeComparisonService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -17,5 +19,10 @@ public class CodeComparisonController {
     @PostMapping("/compare")
     public CodeComparisonResponse compareCode(@RequestBody CodeComparisonRequest request) {
         return codeComparisonService.compareCode(request.code1(), request.code2());
+    }
+
+    @PostMapping("/metrics")
+    public CodeMetricsResponse analyzeMetrics(@RequestBody CodeMetricsRequest request) {
+        return codeComparisonService.analyzeMetrics(request.code());
     }
 }

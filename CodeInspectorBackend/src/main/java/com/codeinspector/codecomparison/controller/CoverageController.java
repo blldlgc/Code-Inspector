@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
 
 import java.io.*;
+import java.nio.file.*;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.Document;
@@ -18,26 +19,38 @@ public class CoverageController {
 
     @PostMapping("/coverage")
     public ResponseEntity<CoverageResponse> calculateCoverage(@RequestBody CoverageRequest request) {
+        String testBaseDir = System.getProperty("user.dir") + File.separator + "temp_tests";
+        File testDir = new File(testBaseDir);
         try {
-            // Save application and test code to temporary files
-            String basePath = System.getProperty("java.io.tmpdir") + File.separator + "codecoverage";
-            File baseDir = new File(basePath);
-            if (!baseDir.exists()) {
-                baseDir.mkdirs();
+            // Create temporary test directory
+            if (!testDir.exists()) {
+                testDir.mkdirs();
             }
 
-            saveToFile(basePath + File.separator + "HesapMakinesi.java", request.getAppCode());
-            saveToFile(basePath + File.separator + "HesapMakinesiTest.java", request.getTestCode());
+            // Create proper Maven structure for source and test files
+            String mainSourceDir = testBaseDir + File.separator + "src" + File.separator + "main" + File.separator + "java";
+            String testSourceDir = testBaseDir + File.separator + "src" + File.separator + "test" + File.separator + "java";
+            new File(mainSourceDir).mkdirs();
+            new File(testSourceDir).mkdirs();
+
+            // Save application and test code to the correct Maven structure
+            saveToFile(mainSourceDir + File.separator + "HesapMakinesi.java", request.getAppCode());
+            saveToFile(testSourceDir + File.separator + "HesapMakinesiTest.java", request.getTestCode());
+
+            // Copy pom.xml to temporary directory
+            Files.copy(Paths.get(System.getProperty("user.dir"), "pom.xml"),
+                    Paths.get(testBaseDir, "pom.xml"),
+                    StandardCopyOption.REPLACE_EXISTING);
 
             // Run Maven to generate JaCoCo report
             ProcessBuilder builder = new ProcessBuilder(
-                    "cmd.exe", "/c", "mvnw.cmd", "clean", "test", "jacoco:report"
+                    "cmd.exe", "/c", "C:\\Users\\bdalg\\apache-maven-3.9.9\\bin\\mvn.cmd", "clean", "test", "jacoco:report"
             );
-            builder.directory(baseDir); // Maven projesinin çalışacağı dizin
+            builder.directory(testDir); // Temporary test directory
 
             Process process = builder.start();
 
-            // Maven çıktısını oku ve konsola yazdır
+            // Read Maven output
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
 
@@ -58,16 +71,21 @@ public class CoverageController {
             }
 
             // Parse JaCoCo report
-            String reportPath = basePath + File.separator + "target" + File.separator + "site" + File.separator + "jacoco" + File.separator + "jacoco.xml";
+            String reportPath = testBaseDir + File.separator + "target" + File.separator + "site" + File.separator + "jacoco" + File.separator + "jacoco.xml";
             double coverage = parseCoverageReport(reportPath);
+
+            // Clean up temporary test directory
+            cleanUpDirectory(testDir);
 
             // Return response
             CoverageResponse response = new CoverageResponse(coverage, "Coverage calculated successfully.");
             return ResponseEntity.ok(response);
         } catch (Exception e) {
+            cleanUpDirectory(testDir); // Ensure directory is cleaned up even if an error occurs
             return ResponseEntity.status(500).body(new CoverageResponse(0.0, "Error calculating coverage: " + e.getMessage()));
         }
     }
+
 
     private void saveToFile(String filePath, String content) throws IOException {
         File file = new File(filePath);
@@ -111,4 +129,19 @@ public class CoverageController {
         }
     }
 
+    private void cleanUpDirectory(File directory) {
+        if (directory.exists()) {
+            File[] files = directory.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    if (file.isDirectory()) {
+                        cleanUpDirectory(file);
+                    } else {
+                        file.delete();
+                    }
+                }
+            }
+            directory.delete();
+        }
+    }
 }

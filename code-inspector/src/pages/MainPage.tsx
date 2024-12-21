@@ -1,43 +1,88 @@
-import BlurIn from "@/components/ui/blur-in";
-import TypingAnimation from "@/components/ui/typing-animation";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { motion } from "framer-motion";
+import { Code2, Shield, BarChart, TestTube2, GitCompare } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const MainPage = () => {
-    
+    const navigate = useNavigate();
+
+    const features = [
+        {
+            title: "Code Clone Detection",
+            description: "Detect duplicate code blocks in your project and improve code quality",
+            icon: <GitCompare className="w-6 h-6" />,
+            path: "/code-comparison"
+        },
+        {
+            title: "Code Metrics",
+            description: "Measure your code quality and identify areas for improvement",
+            icon: <Code2 className="w-6 h-6" />,
+            path: "/metrics"
+        },
+        {
+            title: "Security Analysis",
+            description: "Detect security vulnerabilities early and take preventive measures",
+            icon: <Shield className="w-6 h-6" />,
+            path: "/security"
+        },
+        {
+            title: "Visual Analysis",
+            description: "Visualize your code with graphs for better understanding",
+            icon: <BarChart className="w-6 h-6" />,
+            path: "/codegraph"
+        },
+    ];
 
     return (
-        <div className= "flex flex-col items-center justify-center ">
-            <BlurIn
-            word="Code Inspector"
-            className="text-4xl font-bold text-black dark:text-white"
-            duration={0.5}
-            />
-            <TypingAnimation
-            className="text-2xl font-thin text-black dark:text-white"
-            duration={8}
-            text="Welcome to Code Inspector!
+        <div className="container mx-auto px-4 py-8">
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="text-center mb-12 relative"
+            >
+                <Badge 
+                    variant="secondary" 
+                    className="absolute top-2 right-0 translate-x-2"
+                >
+                    v1.0.0 Beta
+                </Badge>
+                <h1 className="text-5xl font-bold mb-4 tracking-tight">
+                    Code Inspector
+                </h1>
+                <h2 className="text-4xl font-bold mb-4 tracking-tight">
+                    Analyze Your Code, Enhance Quality
+                </h2>
+                <p className="text-lg text-muted-foreground mb-8">
+                    Use Code Inspector to analyze your code, detect security vulnerabilities, and improve code quality
+                </p>
+            </motion.div>
 
-Code Inspector is an innovative tool designed to enhance your coding workflow and ensure the quality and security of your code. Whether you are an individual developer or part of a team, Code Inspector provides a comprehensive suite of features to help you maintain clean, efficient, and secure codebases.
-
-Key Features:
-Code Similarity Detection: Identify and quantify the similarity between different code snippets, helping you detect duplicate or similar code easily.
-Graphical Code Representation: Visualize your code as graphs to better understand the structure and relationships within your codebase.
-Code Metrics Generation: Automatically generate at least 10 different metrics from your code to evaluate its complexity, maintainability, and quality.
-Code Smell Detection: Use a rule-based database or third-party libraries to detect code smells and improve your code's health.
-Code Security and Error Prediction: Enhance the security of your code and predict potential errors before they occur.
-Code Coverage Calculation: Calculate the coverage rate of your code by integrating with your project's test suite, providing insights into the thoroughness of your tests.
-Code Inspector aims to revolutionize the way you manage and analyze your code, making it easier to detect issues, improve code quality, and ensure robust security practices.
-
-Join the growing community of developers who trust Code Inspector to streamline their development process and boost productivity."
-            />
-            
-
-            <div className= "flex flex-col items-center justify-center ">
-                
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                {features.map((feature, index) => (
+                    <motion.div
+                        key={index}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, delay: index * 0.1 }}
+                        onClick={() => navigate(feature.path)}
+                        className="cursor-pointer"
+                    >
+                        <Card className="p-6 hover:shadow-lg transition-all duration-300 hover:scale-105 hover:bg-accent">
+                            <div className="mb-4 text-primary">
+                                {feature.icon}
+                            </div>
+                            <h3 className="font-semibold mb-2">{feature.title}</h3>
+                            <p className="text-sm text-muted-foreground">
+                                {feature.description}
+                            </p>
+                        </Card>
+                    </motion.div>
+                ))}
             </div>
-
-            
         </div>
     );
-}
+};
 
 export default MainPage;

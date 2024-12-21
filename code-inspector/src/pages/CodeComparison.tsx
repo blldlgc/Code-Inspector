@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from '@/components/ui/textarea';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
 
 const CodeComparison = () => {
     const [code1, setCode1] = useState('');
@@ -36,7 +37,7 @@ const CodeComparison = () => {
                     <CardTitle>Code Comparison Tool</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid gap-4">
+                    <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block mb-2 font-medium">First Code Snippet:</label>
                             <Textarea
@@ -55,13 +56,15 @@ const CodeComparison = () => {
                                 placeholder="Paste your second code here..."
                             />
                         </div>
-                        <button
-                            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-blue-300"
-                            onClick={handleCompare}
-                            disabled={loading || !code1 || !code2}
-                        >
-                            {loading ? 'Comparing...' : 'Compare Code'}
-                        </button>
+                        <div className="col-span-2">
+                            <Button
+                                className="w-full px-4 py-2"
+                                onClick={handleCompare}
+                                disabled={loading || !code1 || !code2}
+                            >
+                                {loading ? 'Comparing...' : 'Compare Code'}
+                            </Button>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
