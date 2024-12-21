@@ -1,9 +1,11 @@
-    import React, { useState } from 'react';
-    import axios from 'axios';
-    import { Textarea } from "@/components/ui/textarea";
-    import  { Button } from "@/components/ui/button";
+import React, { useState } from 'react';
+import axios from 'axios';
+import { Textarea } from "@/components/ui/textarea";
+import  { Button } from "@/components/ui/button";
+import { PageLayout } from "@/components/PageLayout"
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 
-    function CodeCoverage() {
+export default function CodeCoverage() {
     const [appCode, setAppCode] = useState('');
     const [testCode, setTestCode] = useState('');
     const [coverage, setCoverage] = useState('');
@@ -22,34 +24,62 @@
     };
 
     return (
-        <div className="container mx-auto p-8">
-            <h1 className="text-3xl font-bold text-center mb-8">Code Coverage Tool</h1>
-            <div className="grid grid-cols-2 gap-8 mb-8">
-                <div className="flex flex-col">
-                    <label className="mb-2 font-medium">Application Code</label>
-                    <Textarea
-                        className="h-[400px] resize-none"
-                        placeholder="Application Code"
-                        value={appCode}
-                        onChange={(e) => setAppCode(e.target.value)}
-                    />
-                </div>
-                <div className="flex flex-col">
-                    <label className="mb-2 font-medium">Test Code</label>
-                    <Textarea
-                        className="h-[400px] resize-none"
-                        placeholder="Test Code"
-                        value={testCode}
-                        onChange={(e) => setTestCode(e.target.value)}
-                    />
-                </div>
-            </div>
-            <div className="flex flex-col items-center gap-4">
-                <Button className="w-48" onClick={handleSubmit}>Calculate Coverage</Button>
-                {coverage && <p className="text-xl font-semibold">Code Coverage: {coverage}%</p>}
-            </div>
-        </div>
-    );
-    }
+        <PageLayout
+            title="Code Coverage Analysis"
+            description="Calculate test coverage for your application code."
+        >
+            <div className="grid gap-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Code Input</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Application Code</label>
+                                <Textarea
+                                    value={appCode}
+                                    onChange={(e) => setAppCode(e.target.value)}
+                                    placeholder="Paste your application code here..."
+                                    className="min-h-[300px] font-mono text-sm"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Test Code</label>
+                                <Textarea
+                                    value={testCode}
+                                    onChange={(e) => setTestCode(e.target.value)}
+                                    placeholder="Paste your test code here..."
+                                    className="min-h-[300px] font-mono text-sm"
+                                />
+                            </div>
+                        </div>
+                        <Button
+                            onClick={handleSubmit}
+                            className="mt-6 w-full"
+                            disabled={!appCode || !testCode}
+                        >
+                            Calculate Coverage
+                        </Button>
+                    </CardContent>
+                </Card>
 
-    export default CodeCoverage;
+                {coverage && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Coverage Results</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex items-center justify-center p-6">
+                                <div className="text-center">
+                                    <p className="text-sm font-medium text-muted-foreground">Total Coverage</p>
+                                    <p className="text-5xl font-bold mt-2">{coverage}%</p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+            </div>
+        </PageLayout>
+    );
+}

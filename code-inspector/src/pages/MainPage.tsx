@@ -32,6 +32,12 @@ const MainPage = () => {
             icon: <BarChart className="w-6 h-6" />,
             path: "/codegraph"
         },
+        {
+            title: "Code Coverage",
+            description: "Track and analyze your code's test coverage metrics",
+            icon: <TestTube2 className="w-6 h-6" />,
+            path: "/coverage"
+        }
     ];
 
     return (
@@ -59,7 +65,7 @@ const MainPage = () => {
                 </p>
             </motion.div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            <div className="grid grid-cols-5 gap-4 mb-12">
                 {features.map((feature, index) => (
                     <motion.div
                         key={index}

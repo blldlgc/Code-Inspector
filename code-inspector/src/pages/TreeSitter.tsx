@@ -1,9 +1,14 @@
 import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import TreeVisualizer from "@/components/TreeVisualizer";
+import { PageLayout } from "@/components/PageLayout";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2 } from "lucide-react";
 
-const TreeSitter = () => {
+export default function TreeSitter() {
   const [code, setCode] = useState("");
   const [treeData, setTreeData] = useState(null);
   const [error, setError] = useState(null);
@@ -47,30 +52,75 @@ const TreeSitter = () => {
   };
 
   return (
-    <div className="flex flex-col items-center max-w-4xl max-h-96 mx-auto mt-8">
-      <h1 className="text-2xl font-bold mb-4">Code Analysis with TreeSitter</h1>
+    <PageLayout
+      title="Code Graph Analysis"
+      description="Visualize and analyze the graph structure of your code."
+    >
+      <div className="grid gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Code Input</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Source Code</label>
+              <Textarea
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="Enter your code for graph analysis..."
+                className="min-h-[300px] font-mono text-sm"
+              />
+            </div>
+            <Button 
+              onClick={handleSubmit} 
+              className="mt-6 w-full"
+              disabled={!code || isLoading}
+            >
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isLoading ? "Analyzing..." : "Generate Graph"}
+            </Button>
+          </CardContent>
+        </Card>
 
-      <Textarea
-        value={code}
-        onChange={(e) => setCode(e.target.value)}
-        placeholder="Enter your code here"
-        className="mb-4 w-full border border-gray-300 p-2"
-      />
+        {error && (
+          <AnimatePresence>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            </motion.div>
+          </AnimatePresence>
+        )}
 
-      <Button onClick={handleSubmit} disabled={isLoading}>
-        {isLoading ? "Analyzing..." : "Analyze Code"}
-      </Button>
-
-      {error && <p className="text-red-500 mt-2">{error}</p>}
-
-      {treeData && (
-        <div className="w-full h-fit mt-6 border p-4 rounded bg-gray-50 shadow">
-          <h2 className="text-lg font-semibold mb-2">Tree Visualizer</h2>
-          <TreeVisualizer data={treeData} />
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default TreeSitter;
+        {treeData && (
+          <AnimatePresence>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle>Code Graph Visualization</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="w-full border rounded-lg bg-muted/50 overflow-hidden">
+                    <div className="h-[500px] p-4">
+                      <TreeVisualizer data={treeData} />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </AnimatePresence>
+        )}
+      </div>
+    </PageLayout>
+  )
+}

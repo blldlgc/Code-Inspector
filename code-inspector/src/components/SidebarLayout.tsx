@@ -98,6 +98,7 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
     "/codecomparison": "Code Comparison",
     "/codegraph": "Code Graph Tool",
     "/codeanalyzer": "Code Analyzer",
+    "/metrics": "Code Metrics",
     "/": "Home", 
   };
   const currentPath = location.pathname;
