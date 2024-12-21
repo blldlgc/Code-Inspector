@@ -13,6 +13,7 @@ import CodeGraph from './pages/CodeGraph.tsx'
 import TreeSitter from './pages/TreeSitter.tsx'
 import CodeCoverage from './pages/CodeCoverage.tsx'
 import MetricsAnalyzer from './pages/MetricsAnalyzer.tsx'
+import { ThemeProvider } from "./components/theme-provider"
 
 
 
@@ -95,13 +96,15 @@ const AppRouter = () => {
   ]);
 
   return (
-    <RouterProvider router={router} />
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <RouterProvider router={router} />
+      <DialogComponent />
+    </ThemeProvider>
   );
 };
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AppRouter />
-    <DialogComponent />
   </StrictMode>,
 )

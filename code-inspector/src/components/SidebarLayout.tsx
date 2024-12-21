@@ -76,7 +76,7 @@ import { ReactNode } from 'react';
 import { signOut } from 'firebase/auth';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { auth } from "@/config/firebase.ts";
-
+import { ModeToggle } from "./mode-toggle"
 
 
 const handleLogout = async () => {
@@ -99,6 +99,7 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
     "/codegraph": "Code Graph Tool",
     "/codeanalyzer": "Code Analyzer",
     "/metrics": "Code Metrics",
+    "/coverage": "Code Coverage",
     "/": "Home", 
   };
   const currentPath = location.pathname;
@@ -339,7 +340,7 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
         </SidebarFooter>
       </Sidebar>
         <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-2">
+          <header className="flex h-16 shrink-0 items-center justify-between">
             <div className="flex items-center gap-2 px-4">
               <SidebarTrigger className="-ml-1" />
               <Separator orientation="vertical" className="mr-2 h-4" />
@@ -354,6 +355,9 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
                   </BreadcrumbItem>
                 </BreadcrumbList>
               </Breadcrumb>
+            </div>
+            <div className="flex items-center gap-2 px-4">
+              <ModeToggle />
             </div>
           </header>
           <div className="flex-1 overflow-x-auto">

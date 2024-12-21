@@ -54,18 +54,18 @@ const MainPage = () => {
                 >
                     v1.0.0 Beta
                 </Badge>
-                <h1 className="text-5xl font-bold mb-4 tracking-tight">
+                <h1 className="text-5xl font-bold mb-6 tracking-tight md:text-5xl text-4xl">
                     Code Inspector
                 </h1>
-                <h2 className="text-4xl font-bold mb-4 tracking-tight">
+                <h2 className="text-4xl font-bold mb-4 tracking-tight md:text-4xl text-3xl">
                     Analyze Your Code, Enhance Quality
                 </h2>
-                <p className="text-lg text-muted-foreground mb-8">
+                <p className="text-lg text-muted-foreground mb-8 px-4">
                     Use Code Inspector to analyze your code, detect security vulnerabilities, and improve code quality
                 </p>
             </motion.div>
 
-            <div className="grid grid-cols-5 gap-4 mb-12">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-12">
                 {features.map((feature, index) => (
                     <motion.div
                         key={index}
