@@ -46,7 +46,7 @@ const AppRouter = () => {
       ),
     },
     {
-      path: "/codecomparison",
+      path: "/clonedetector",
       element: (
         <ProtectedRoute>
           <MySidebar>

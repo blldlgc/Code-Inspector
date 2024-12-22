@@ -40,7 +40,7 @@ const CodeComparison = () => {
 
     return (
         <PageLayout
-            title="Code Comparison"
+            title="Clone Detector"
             description="Compare two code snippets and analyze their similarities."
         >
             <div className="grid gap-6">

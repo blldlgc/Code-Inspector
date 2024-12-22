@@ -22,6 +22,10 @@ import {
   Sparkles,
   SquareTerminal,
   Trash2,
+  Copy,
+  BarChart2,
+  GitFork,
+  Shield,
 } from "lucide-react"
 
 import {
@@ -95,7 +99,7 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
 
   // Path ve başlıkları eşleştirip Breadcrumb'a ekleme
   const pathTitleMap: { [key: string]: string } = {
-    "/codecomparison": "Code Comparison",
+    "/clonedetector": "Clone Detector",
     "/codegraph": "Code Graph Tool",
     "/codeanalyzer": "Code Analyzer",
     "/metrics": "Code Metrics",
@@ -113,20 +117,20 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
     },
     navMain: [
       {
-        title: "Code Comparison",
-        url: "/codecomparison",
-        icon: SquareTerminal,
+        title: "Clone Detector",
+        url: "/clonedetector",
+        icon: Copy,
         isActive: true,
       },
       {
         title: "Code Metrics",
         url: "/metrics",
-        icon: Sparkles,
+        icon: BarChart2,
       },
       {
         title: "Code Graph Tool",
         url: "/codegraph",
-        icon: Bot,
+        icon: GitFork,
       },
       {
         title: "Documentation",
@@ -136,7 +140,7 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
       {
         title: "Code Coverage",
         url: "/coverage",
-        icon: Settings2,
+        icon: Shield,
       },
     ],
     navSecondary: [
