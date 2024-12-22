@@ -4,23 +4,65 @@ import { Textarea } from "@/components/ui/textarea";
 import  { Button } from "@/components/ui/button";
 import { PageLayout } from "@/components/PageLayout"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
 
 export default function CodeCoverage() {
     const [appCode, setAppCode] = useState('');
     const [testCode, setTestCode] = useState('');
-    const [coverage, setCoverage] = useState('');
+    const [coverage, setCoverage] = useState<any>(null);
 
     const handleSubmit = async () => {
         try {
-        const response = await axios.post('http://localhost:8080/api/coverage', {
-            appCode: appCode,
-            testCode: testCode,
-        });
-        setCoverage(response.data.coverage);
+            const requestData = {
+                sourceCode: appCode,
+                testCode: testCode
+            };
+
+            const response = await axios.post('http://localhost:8080/api/code/coverage', requestData);
+            
+            setCoverage(response.data);
+            
+            console.log('Coverage Data:', response.data);
         } catch (error) {
-        console.error('Error calculating coverage:', error);
+            console.error('Error calculating coverage:', error);
         }
+    };
+
+    const setExampleCodes = () => {
+        setAppCode(
+`public class Calculator {
+    public int add(int a, int b) {
+        return a + b;
+    }
+    
+    public int subtract(int a, int b) {
+        return a - b;
+    }
+    
+    public int multiply(int a, int b) {
+        return a * b;
+    }
+}`
+        );
         
+        setTestCode(
+`import org.junit.Test;
+import static org.junit.Assert.*;
+
+public class CalculatorTest {
+    private Calculator calc = new Calculator();
+    
+    @Test
+    public void testAdd() {
+        assertEquals(4, calc.add(2, 2));
+    }
+    
+    @Test
+    public void testSubtract() {
+        assertEquals(2, calc.subtract(4, 2));
+    }
+}`
+        );
     };
 
     return (
@@ -31,7 +73,17 @@ export default function CodeCoverage() {
             <div className="grid gap-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Code Input</CardTitle>
+                        <div className="flex items-center justify-between">
+                            <CardTitle>Code Input</CardTitle>
+                            <Button
+                                onClick={setExampleCodes}
+                                variant="outline"
+                                size="sm"
+                                className="text-muted-foreground"
+                            >
+                                Load Example Codes
+                            </Button>
+                        </div>
                     </CardHeader>
                     <CardContent>
                         <div className="grid md:grid-cols-2 gap-6">
@@ -54,26 +106,79 @@ export default function CodeCoverage() {
                                 />
                             </div>
                         </div>
-                        <Button
-                            onClick={handleSubmit}
-                            className="mt-6 w-full"
-                            disabled={!appCode || !testCode}
-                        >
-                            Calculate Coverage
-                        </Button>
+                        <div className="mt-6">
+                            <Button
+                                onClick={handleSubmit}
+                                className="w-full"
+                                disabled={!appCode || !testCode}
+                            >
+                                Calculate Coverage
+                            </Button>
+                        </div>
                     </CardContent>
                 </Card>
 
                 {coverage && (
                     <Card>
                         <CardHeader>
-                            <CardTitle>Coverage Results</CardTitle>
+                            <CardTitle>Coverage Analysis Results</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="flex items-center justify-center p-6">
-                                <div className="text-center">
-                                    <p className="text-sm font-medium text-muted-foreground">Total Coverage</p>
-                                    <p className="text-5xl font-bold mt-2">{coverage}%</p>
+                            <div className="space-y-6">
+                                {/* Overall Coverage Percentage */}
+                                <div className="flex items-center justify-center">
+                                    <div className="text-center">
+                                        <p className="text-sm font-medium text-muted-foreground">Overall Test Coverage</p>
+                                        <div className="mt-2 flex items-baseline justify-center gap-2">
+                                            <p className="text-5xl font-bold">{coverage.coveragePercentage.toFixed(2)}%</p>
+                                            <span className="text-sm text-muted-foreground">
+                                                ({coverage.coveredInstructions}/{coverage.totalInstructions} lines)
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Method-based Coverage */}
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-semibold">Method Coverage</h3>
+                                    <div className="grid gap-4">
+                                        {Object.entries(coverage.methodCoverages).map(([methodName, data]) => {
+                                            const percentage = (data.coveredLines / data.totalLines) * 100;
+                                            return (
+                                                <div key={methodName} className="rounded-lg border p-4">
+                                                    <div className="flex justify-between items-center mb-2">
+                                                        <code className="text-sm font-mono">{methodName}</code>
+                                                        <span className={cn(
+                                                            "px-2.5 py-0.5 rounded-full text-xs font-medium",
+                                                            percentage === 100 
+                                                                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                                                : percentage === 0 
+                                                                    ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                                                                    : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                                                        )}>
+                                                            {percentage.toFixed(0)}%
+                                                        </span>
+                                                    </div>
+                                                    <div className="w-full bg-secondary rounded-full h-2">
+                                                        <div 
+                                                            className={cn(
+                                                                "h-2 rounded-full transition-all",
+                                                                percentage === 100 
+                                                                    ? "bg-green-500"
+                                                                    : percentage === 0 
+                                                                        ? "bg-red-500"
+                                                                        : "bg-yellow-500"
+                                                            )}
+                                                            style={{ width: `${percentage}%` }}
+                                                        />
+                                                    </div>
+                                                    <p className="text-sm text-muted-foreground mt-2">
+                                                        {data.coveredLines} / {data.totalLines} lines covered
+                                                    </p>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             </div>
                         </CardContent>
