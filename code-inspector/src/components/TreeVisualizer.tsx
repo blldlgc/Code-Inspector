@@ -10,17 +10,32 @@ import "reactflow/dist/style.css";
 
 // Gösterilmeyecek node tipleri
 const EXCLUDED_NODE_TYPES = [
-  "( (Unnamed)",
-  ") (Unnamed)",
-  "{ (Unnamed)",
-  "} (Unnamed)",
-  "; (Unnamed)",
-  ": (Unnamed)",
-  ". (Unnamed)",
-  "< (Unnamed)",
-  "> (Unnamed)",
-  "= (Unnamed)",
-  "modifiers (Unnamed)",
+  "(",
+  ")",
+  "{",
+  "}",
+  ";",
+  ":",
+  ".",
+  "<",
+  ">",
+  "=",
+  "import",
+  "class",
+  "modifiers",
+  "identifier",
+  "scoped_identifier",
+  "type_identifier",
+  "return",
+  "block",
+  "public",
+  "private",
+  "protected",
+  "static",
+  "final",
+  "abstract",
+  "synchronized",
+  "for"
 ];
 
 // ReactFlow için veriyi dönüştürme
@@ -28,10 +43,48 @@ const transformTreeDataForReactFlow = (nodes) => {
   const nodeElements = [];
   const edgeElements = [];
 
+  // Modifier'lar için renk şeması ekleyelim
+  const modifierStyles = {
+    public: {
+      background: '#e6ffe6', // açık yeşil
+      border: '1px solid #28a745',
+      color: '#28a745',
+      fontWeight: 'bold'
+    },
+    private: {
+      background: '#ffe6e6', // açık kırmızı
+      border: '1px solid #dc3545',
+      color: '#dc3545',
+      fontWeight: 'bold'
+    },
+    protected: {
+      background: '#fff3e6', // açık turuncu
+      border: '1px solid #fd7e14',
+      color: '#fd7e14',
+      fontWeight: 'bold'
+    }
+  };
+
   const traverse = (node, parentId = null, depth = 0, y = 50) => {
-    // Node tipini kontrol et - tam eşleşme arayalım
+    let modifiers = "";
+    let nodeStyle = {};
+
+    if (node.children) {
+      const modifierNode = node.children.find(child => child.type === "modifiers");
+      if (modifierNode && modifierNode.children) {
+        modifiers = modifierNode.children
+          .map(m => m.type)
+          .join(" ") + " ";
+        
+        // İlk modifier'a göre stil seç
+        const firstModifier = modifierNode.children[0]?.type;
+        if (firstModifier in modifierStyles) {
+          nodeStyle = modifierStyles[firstModifier];
+        }
+      }
+    }
+
     if (EXCLUDED_NODE_TYPES.includes(node.type.trim())) {
-      // Alt çocukları doğrudan üst node'a bağla
       if (node.children && node.children.length > 0) {
         node.children.forEach((child, index) =>
           traverse(child, parentId, depth, y + (index + 1) * 100)
@@ -43,11 +96,14 @@ const transformTreeDataForReactFlow = (nodes) => {
     const nodeId = `${node.startByte}-${node.endByte}`;
     const xPosition = depth * 200;
 
-    // Node ekle
+    // Node'u modifier bilgisiyle birlikte ekle ve stil uygula
     nodeElements.push({
       id: nodeId,
-      data: { label: `${node.type} (${node.startRow}:${node.startColumn}-${node.endRow}:${node.endColumn})` },
+      data: { 
+        label: `${modifiers}${node.type} (${node.startRow}:${node.startColumn}-${node.endRow}:${node.endColumn})` 
+      },
       position: { x: xPosition, y: y },
+      style: nodeStyle
     });
 
     // Bağlantı ekle

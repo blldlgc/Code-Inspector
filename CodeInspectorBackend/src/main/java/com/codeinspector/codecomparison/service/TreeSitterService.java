@@ -1,14 +1,16 @@
 package com.codeinspector.codecomparison.service;
 
-import com.codeinspector.codecomparison.dto.TreeSitterRequest;
-import com.codeinspector.codecomparison.dto.TreeSitterResponse;
-import org.springframework.stereotype.Service;
-import org.treesitter.*;
-
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+
+import org.springframework.stereotype.Service;
+import org.treesitter.TSLanguage;
+import org.treesitter.TSNode;
+import org.treesitter.TSParser;
+import org.treesitter.TSTree;
+import org.treesitter.TreeSitterJava;
+
+import com.codeinspector.codecomparison.dto.TreeSitterResponse;
 
 @Service
 public class TreeSitterService {
@@ -46,7 +48,7 @@ public class TreeSitterService {
         List<TreeSitterResponse.Node> childNodes = new ArrayList<>();
 
         TreeSitterResponse.Node currentNode = new TreeSitterResponse.Node(
-                nodeType + " (" + nodeName + ")",
+                nodeName.isEmpty() ? nodeType : nodeType + " (" + nodeName + ")",
                 node.getStartByte(),
                 node.getEndByte(),
                 node.getStartPoint().getRow(),
@@ -64,16 +66,72 @@ public class TreeSitterService {
     }
 
     private String getNodeName(TSNode node, String code) {
-        if (node == null) return "Unnamed";
+        if (node == null) return "";
 
         String nodeType = node.getType();
-        if (nodeType.equals("class_declaration") || nodeType.equals("method_declaration")) {
-            TSNode nameNode = node.getChildByFieldName("name");
-            if (nameNode != null) {
-                return getNodeText(code, nameNode);
-            }
+        switch (nodeType) {
+            case "class_declaration":
+            case "method_declaration":
+            case "constructor_declaration":
+                TSNode nameNode = node.getChildByFieldName("name");
+                if (nameNode != null) {
+                    return getNodeText(code, nameNode);
+                }
+                break;
+            
+            case "variable_declaration":
+            case "local_variable_declaration":
+            case "field_declaration":
+                TSNode declarator = node.getChildByFieldName("declarator");
+                if (declarator != null) {
+                    TSNode varName = declarator.getChildByFieldName("name");
+                    if (varName != null) {
+                        return getNodeText(code, varName);
+                    }
+                }
+                break;
+            
+            case "formal_parameter":
+                TSNode paramName = node.getChildByFieldName("name");
+                if (paramName != null) {
+                    return getNodeText(code, paramName);
+                }
+                break;
+            
+            case "import_declaration":
+                return getNodeText(code, node);
+            
+            
+            case "method_invocation":
+                TSNode methodName = node.getChildByFieldName("name");
+                if (methodName != null) {
+                    return getNodeText(code, methodName);
+                }
+                break;
+            
+            case "package_declaration":
+                return getNodeText(code, node);
+            
+            case "variable_declarator":
+                TSNode varNameNode = node.getChildByFieldName("name");
+                if (varNameNode != null) {
+                    String varName = getNodeText(code, varNameNode);
+                    TSNode typeNode = node.getParent().getChildByFieldName("type");
+                    if (typeNode != null) {
+                        String typeName = getNodeText(code, typeNode);
+                        return "(" + typeName + " " + varName + ")";
+                    }
+                    return "(" + varName + ")";
+                }
+                break;
+
+            case "type_identifier":
+                return "(" + getNodeText(code, node) + ")";
+            
+            case "primitive_type":
+                return "(" + getNodeText(code, node) + ")";
         }
-        return "Unnamed";
+        return "";
     }
 
     private String getNodeText(String code, TSNode node) {
@@ -94,3 +152,5 @@ public class TreeSitterService {
         }
     }
 }
+
+
