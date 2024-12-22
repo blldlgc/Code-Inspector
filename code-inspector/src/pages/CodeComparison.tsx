@@ -5,12 +5,18 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/
 import { Button } from "@/components/ui/button";
 import { PageLayout } from "@/components/PageLayout"
 import { motion, AnimatePresence } from "framer-motion";
+import { exampleCodes } from '@/constants/exampleCodes';
 
 const CodeComparison = () => {
     const [code1, setCode1] = useState('');
     const [code2, setCode2] = useState('');
     const [result, setResult] = useState(null);
     const [loading, setLoading] = useState(false);
+
+    const setExampleCodes = () => {
+        setCode1(exampleCodes.comparison.code1);
+        setCode2(exampleCodes.comparison.code2);
+    };
 
     const handleCompare = async () => {
         try {
@@ -40,7 +46,17 @@ const CodeComparison = () => {
             <div className="grid gap-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Code Input</CardTitle>
+                        <div className="flex items-center justify-between">
+                            <CardTitle>Code Input</CardTitle>
+                            <Button
+                                onClick={setExampleCodes}
+                                variant="outline"
+                                size="sm"
+                                className="text-muted-foreground"
+                            >
+                                Load Example Codes
+                            </Button>
+                        </div>
                     </CardHeader>
                     <CardContent>
                         <div className="grid md:grid-cols-2 gap-6">

@@ -87,7 +87,7 @@ const transformTreeDataForReactFlow = (nodes) => {
     if (EXCLUDED_NODE_TYPES.includes(node.type.trim())) {
       if (node.children && node.children.length > 0) {
         node.children.forEach((child, index) =>
-          traverse(child, parentId, depth, y + (index + 1) * 100)
+          traverse(child, parentId, depth, y)
         );
       }
       return;
@@ -102,7 +102,7 @@ const transformTreeDataForReactFlow = (nodes) => {
       data: { 
         label: `${modifiers}${node.type} (${node.startRow}:${node.startColumn}-${node.endRow}:${node.endColumn})` 
       },
-      position: { x: xPosition, y: y },
+      position: { x: xPosition, y },
       style: nodeStyle
     });
 
@@ -116,11 +116,17 @@ const transformTreeDataForReactFlow = (nodes) => {
       });
     }
 
-    // Alt çocukları sırayla ekle
+    // Alt çocuklar için y pozisyonunu hesapla
     if (node.children && node.children.length > 0) {
-      node.children.forEach((child, index) =>
-        traverse(child, nodeId, depth + 1, y + (index + 1) * 100)
+      const visibleChildren = node.children.filter(
+        child => !EXCLUDED_NODE_TYPES.includes(child.type.trim())
       );
+      
+      node.children.forEach((child, index) => {
+        // Sadece görünür node'lar için y offset'i artır
+        const yOffset = visibleChildren.findIndex(vc => vc === child) + 1;
+        traverse(child, nodeId, depth + 1, y + (yOffset > 0 ? yOffset * 100 : 0));
+      });
     }
   };
 

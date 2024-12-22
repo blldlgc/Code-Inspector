@@ -5,6 +5,7 @@ import  { Button } from "@/components/ui/button";
 import { PageLayout } from "@/components/PageLayout"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { exampleCodes } from '@/constants/exampleCodes';
 
 export default function CodeCoverage() {
     const [appCode, setAppCode] = useState('');
@@ -29,40 +30,8 @@ export default function CodeCoverage() {
     };
 
     const setExampleCodes = () => {
-        setAppCode(
-`public class Calculator {
-    public int add(int a, int b) {
-        return a + b;
-    }
-    
-    public int subtract(int a, int b) {
-        return a - b;
-    }
-    
-    public int multiply(int a, int b) {
-        return a * b;
-    }
-}`
-        );
-        
-        setTestCode(
-`import org.junit.Test;
-import static org.junit.Assert.*;
-
-public class CalculatorTest {
-    private Calculator calc = new Calculator();
-    
-    @Test
-    public void testAdd() {
-        assertEquals(4, calc.add(2, 2));
-    }
-    
-    @Test
-    public void testSubtract() {
-        assertEquals(2, calc.subtract(4, 2));
-    }
-}`
-        );
+        setAppCode(exampleCodes.coverage.appCode);
+        setTestCode(exampleCodes.coverage.testCode);
     };
 
     return (

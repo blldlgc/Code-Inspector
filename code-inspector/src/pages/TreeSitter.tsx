@@ -51,6 +51,45 @@ export default function TreeSitter() {
     }
   };
 
+  const setExampleCode = () => {
+    setCode(
+`// This is a sample Java code for testing
+        public class SampleClass {
+
+        // Variable declarations
+        private int count;
+        private String name;
+
+        // Constructor
+        public SampleClass(String name) {
+            this.name = name;
+            this.count = 0;
+        }
+
+        // A sample method
+        public void increment() {
+            // Increment the count
+            count++;
+        }
+
+        // Another method with loops and conditions
+        public void analyze(int[] numbers) {
+            for (int num : numbers) {
+                if (num % 2 == 0) {
+                    System.out.println("Even number: " + num);
+                } else {
+                    System.out.println("Odd number: " + num);
+                }
+            }
+        }
+
+        // Method calling another method
+        public void process() {
+            increment(); 
+        }
+    }`);
+  };
+
   return (
     <PageLayout
       title="Code Graph Analysis"
@@ -59,7 +98,17 @@ export default function TreeSitter() {
       <div className="grid gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Code Input</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Code Input</CardTitle>
+              <Button
+                onClick={setExampleCode}
+                variant="outline"
+                size="sm"
+                className="text-muted-foreground"
+              >
+                Load Example Code
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">

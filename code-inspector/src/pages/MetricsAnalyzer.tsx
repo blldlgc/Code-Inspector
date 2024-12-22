@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2 } from "lucide-react"
 import { PageLayout } from "@/components/PageLayout"
 import { motion, AnimatePresence } from "framer-motion"
+import { exampleCodes } from '@/constants/exampleCodes';
 
 interface MetricsResponse {
   metrics: Record<string, string>;
@@ -41,6 +42,10 @@ export default function MetricsAnalyzer() {
     }
   }
 
+  const setExampleCode = () => {
+    setCode(exampleCodes.metrics);
+  };
+
   return (
     <PageLayout 
       title="Code Metrics Analysis"
@@ -49,7 +54,17 @@ export default function MetricsAnalyzer() {
       <div className="grid gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Code Input</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Code Input</CardTitle>
+              <Button
+                onClick={setExampleCode}
+                variant="outline"
+                size="sm"
+                className="text-muted-foreground"
+              >
+                Load Example Code
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
