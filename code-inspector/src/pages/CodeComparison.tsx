@@ -86,46 +86,77 @@ const CodeComparison = () => {
                                     <CardTitle>Comparison Results</CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <Accordion type="multiple" className="w-full">
-                                        <AccordionItem value="similarity" >
+                                    <Accordion type="multiple" className="w-full" defaultValue={["similarity"]}>
+                                        <AccordionItem value="similarity">
                                             <AccordionTrigger>Similarity Percentage</AccordionTrigger>
                                             <AccordionContent>
-                                                <p className="text-2xl font-bold text-blue-600">
-                                                    CPD: 
-                                                    {result.CPDsimilarityPercentage.toFixed(2)}%
-                                                </p> 
-                                                <p className="text-2xl font-bold text-blue-600">
-                                                    Simian: 
-                                                    {result.simianSimilarityPercentage.toFixed(2)}%
-                                                </p>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div className="p-4 rounded-lg border bg-card text-card-foreground shadow-sm">
+                                                        <div className="space-y-2">
+                                                            <h3 className="text-sm font-medium text-muted-foreground">CPD Similarity</h3>
+                                                            <div className="flex items-center justify-between">
+                                                                <p className="text-3xl font-bold text-primary">
+                                                                    {result.CPDsimilarityPercentage.toFixed(2)}%
+                                                                </p>
+                                                                <div className={`px-3 py-1 rounded-full text-sm ${
+                                                                    result.CPDsimilarityPercentage > 80 ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                                                                    result.CPDsimilarityPercentage > 50 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                                                                    'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                                                }`}>
+                                                                    {result.CPDsimilarityPercentage > 80 ? 'High' :
+                                                                     result.CPDsimilarityPercentage > 50 ? 'Medium' : 'Low'}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="p-4 rounded-lg border bg-card text-card-foreground shadow-sm">
+                                                        <div className="space-y-2">
+                                                            <h3 className="text-sm font-medium text-muted-foreground">Simian Similarity</h3>
+                                                            <div className="flex items-center justify-between">
+                                                                <p className="text-3xl font-bold text-primary">
+                                                                    {result.simianSimilarityPercentage.toFixed(2)}%
+                                                                </p>
+                                                                <div className={`px-3 py-1 rounded-full text-sm ${
+                                                                    result.simianSimilarityPercentage > 80 ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                                                                    result.simianSimilarityPercentage > 50 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                                                                    'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                                                }`}>
+                                                                    {result.simianSimilarityPercentage > 80 ? 'High' :
+                                                                     result.simianSimilarityPercentage > 50 ? 'Medium' : 'Low'}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </AccordionContent>
                                         </AccordionItem>
 
                                         <AccordionItem value="matchedLines">
                                             <AccordionTrigger>Matched Lines</AccordionTrigger>
                                             <AccordionContent>
-                                                <pre className="bg-gray-100 p-4 rounded-md">{result.matchedLines}</pre>
+                                                <pre className="bg-muted p-4 rounded-md overflow-x-auto">{result.matchedLines}</pre>
                                             </AccordionContent>
                                         </AccordionItem>
 
                                         <AccordionItem value="metrics">
                                             <AccordionTrigger>Comparison Metrics</AccordionTrigger>
                                             <AccordionContent>
-                                                <table className="w-full border-collapse border border-gray-200">
+                                                <table className="w-full border-collapse">
                                                     <thead>
                                                         <tr>
-                                                            <th className="border border-gray-300 px-4 py-2">Metric</th>
-                                                            <th className="border border-gray-300 px-4 py-2">Code 1</th>
-                                                            <th className="border border-gray-300 px-4 py-2">Code 2</th>
+                                                            <th className="border border-border px-4 py-2 bg-muted">Metric</th>
+                                                            <th className="border border-border px-4 py-2 bg-muted">Code 1</th>
+                                                            <th className="border border-border px-4 py-2 bg-muted">Code 2</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
                                                         {result.code1Metrics &&
                                                             Object.keys(result.code1Metrics).map((key) => (
                                                                 <tr key={key}>
-                                                                    <td className="border border-gray-300 px-4 py-2">{key}</td>
-                                                                    <td className="border border-gray-300 px-4 py-2">{result.code1Metrics[key]}</td>
-                                                                    <td className="border border-gray-300 px-4 py-2">{result.code2Metrics[key]}</td>
+                                                                    <td className="border border-border px-4 py-2">{key}</td>
+                                                                    <td className="border border-border px-4 py-2">{result.code1Metrics[key]}</td>
+                                                                    <td className="border border-border px-4 py-2">{result.code2Metrics[key]}</td>
                                                                 </tr>
                                                             ))}
                                                     </tbody>

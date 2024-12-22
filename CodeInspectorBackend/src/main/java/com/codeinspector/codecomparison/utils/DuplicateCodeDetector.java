@@ -1,13 +1,20 @@
 package com.codeinspector.codecomparison.utils;
 
-import net.sourceforge.pmd.cpd.*;
-import org.springframework.stereotype.Component;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Component;
+
+import net.sourceforge.pmd.cpd.CPD;
+import net.sourceforge.pmd.cpd.CPDConfiguration;
+import net.sourceforge.pmd.cpd.LanguageFactory;
+import net.sourceforge.pmd.cpd.Match;
 
 @Component
 public class DuplicateCodeDetector {
@@ -34,9 +41,16 @@ public class DuplicateCodeDetector {
     }
 
     public double calculateSimilarityPercentage(String code1, String code2, List<String> duplicatedLines) {
-        int duplicateLineCount = duplicatedLines.size();
-        int totalLines = Math.max(countLines(code1), countLines(code2));
-        return totalLines > 0 ? (duplicateLineCount / (double) totalLines) * 100 : 0.0;
+        List<String> code1LinesList = getNonEmptyLines(code1);
+        List<String> code2LinesList = getNonEmptyLines(code2);
+        
+        List<String> uniqueDuplicatedLines = new ArrayList<>(new HashSet<>(duplicatedLines));
+        int duplicateLineCount = uniqueDuplicatedLines.size();
+        
+        int totalUniqueLines = Math.max(code1LinesList.size(), code2LinesList.size());
+        
+        if (totalUniqueLines == 0) return 0.0;
+        return Math.min(100.0, (duplicateLineCount * 100.0) / totalUniqueLines);
     }
 
     private List<String> getDuplicatedLines(CPD cpd) {
@@ -44,8 +58,10 @@ public class DuplicateCodeDetector {
         Iterator<Match> matches = cpd.getMatches();
         while (matches.hasNext()) {
             Match match = matches.next();
-            for (Mark mark : match) {
-                String line = mark.getSourceCodeSlice().strip();
+            String duplicateCode = match.getSourceCodeSlice().strip();
+            String[] lines = duplicateCode.split("\n");
+            for (String line : lines) {
+                line = line.strip();
                 if (!line.isEmpty() && !line.equals("}") && !line.equals("{")) {
                     duplicatedLines.add(line);
                 }
@@ -65,5 +81,12 @@ public class DuplicateCodeDetector {
 
     private int countLines(String code) {
         return code.strip().split("\n").length;
+    }
+
+    private List<String> getNonEmptyLines(String code) {
+        return Arrays.stream(code.split("\n"))
+                .map(String::strip)
+                .filter(line -> !line.isEmpty() && !line.equals("}") && !line.equals("{"))
+                .collect(Collectors.toList());
     }
 }

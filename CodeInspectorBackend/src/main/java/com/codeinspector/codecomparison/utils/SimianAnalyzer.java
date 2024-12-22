@@ -1,16 +1,20 @@
 package com.codeinspector.codecomparison.utils;
 
-import org.springframework.stereotype.Component;
-
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.springframework.stereotype.Component;
 
 @Component
 public class SimianAnalyzer {
 
     private static final String SIMIAN_JAR_PATH = new File(
-            "src/main/java/com/codeinspector/codecomparision/libs/simian-4.0.0/simian-4.0.0.jar"
+            "src/main/java/com/codeinspector/codecomparison/libs/simian-4.0.0/simian-4.0.0.jar"
     ).getAbsolutePath();
 
 

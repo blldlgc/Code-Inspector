@@ -8,12 +8,38 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 
+// Gösterilmeyecek node tipleri
+const EXCLUDED_NODE_TYPES = [
+  "( (Unnamed)",
+  ") (Unnamed)",
+  "{ (Unnamed)",
+  "} (Unnamed)",
+  "; (Unnamed)",
+  ": (Unnamed)",
+  ". (Unnamed)",
+  "< (Unnamed)",
+  "> (Unnamed)",
+  "= (Unnamed)",
+  "modifiers (Unnamed)",
+];
+
 // ReactFlow için veriyi dönüştürme
 const transformTreeDataForReactFlow = (nodes) => {
   const nodeElements = [];
   const edgeElements = [];
 
   const traverse = (node, parentId = null, depth = 0, y = 50) => {
+    // Node tipini kontrol et - tam eşleşme arayalım
+    if (EXCLUDED_NODE_TYPES.includes(node.type.trim())) {
+      // Alt çocukları doğrudan üst node'a bağla
+      if (node.children && node.children.length > 0) {
+        node.children.forEach((child, index) =>
+          traverse(child, parentId, depth, y + (index + 1) * 100)
+        );
+      }
+      return;
+    }
+
     const nodeId = `${node.startByte}-${node.endByte}`;
     const xPosition = depth * 200;
 
