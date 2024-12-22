@@ -1,4 +1,4 @@
- Code Inspector
+# Code Inspector
 
 <div align="center">
   <img src="code-inspector/public/logo.png" alt="Code Inspector Logo" width="200"/>
