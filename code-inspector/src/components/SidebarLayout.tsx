@@ -26,6 +26,7 @@ import {
   BarChart2,
   GitFork,
   Shield,
+  TestTube2,
 } from "lucide-react"
 
 import {
@@ -141,6 +142,11 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
         title: "Code Coverage",
         url: "/coverage",
         icon: Shield,
+      },
+      {
+        title: "Test Generator",
+        url: "/testgenerator",
+        icon: TestTube2,
       },
     ],
     navSecondary: [

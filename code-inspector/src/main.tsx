@@ -9,11 +9,11 @@ import ProtectedRoute from './components/ProtectedRoute.tsx';
 import { auth } from '@/config/firebase';
 import MySidebar from './components/SidebarLayout.tsx';
 import CodeComparison from './pages/CodeComparison.tsx'
-import CodeGraph from './pages/CodeGraph.tsx'
 import TreeSitter from './pages/TreeSitter.tsx'
 import CodeCoverage from './pages/CodeCoverage.tsx'
 import MetricsAnalyzer from './pages/MetricsAnalyzer.tsx'
 import { ThemeProvider } from "./components/theme-provider"
+import TestGenerator from './pages/TestGenerator.tsx'
 
 
 
@@ -81,6 +81,16 @@ const AppRouter = () => {
         <ProtectedRoute>
           <MySidebar>
             <MetricsAnalyzer />
+          </MySidebar>
+        </ProtectedRoute>
+      )
+    },
+    {
+      path: "/testgenerator",
+      element: (
+        <ProtectedRoute>
+          <MySidebar>
+            <TestGenerator />
           </MySidebar>
         </ProtectedRoute>
       )

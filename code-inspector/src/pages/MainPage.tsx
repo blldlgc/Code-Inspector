@@ -12,7 +12,7 @@ const MainPage = () => {
             title: "Code Clone Detection",
             description: "Detect duplicate code blocks in your project and improve code quality",
             icon: <GitCompare className="w-6 h-6" />,
-            path: "/code-comparison"
+            path: "/clonedetector"
         },
         {
             title: "Code Metrics",
