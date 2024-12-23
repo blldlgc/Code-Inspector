@@ -27,6 +27,8 @@ import {
   GitFork,
   Shield,
   TestTube2,
+  AlertTriangle,
+  ExternalLink,
 } from "lucide-react"
 
 import {
@@ -83,6 +85,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { auth } from "@/config/firebase.ts";
 import { ModeToggle } from "./mode-toggle"
 
+const GITHUB_REPO = "https://github.com/blldlgc/code-inspector";
+const GITHUB_ISSUES = `${GITHUB_REPO}/issues`;
+const GITHUB_DISCUSSIONS = `${GITHUB_REPO}/discussions`;
 
 const handleLogout = async () => {
   try {
@@ -116,50 +121,93 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
       email: auth.currentUser?.email ?? "m@example.com",
       avatar: "/avatars/shadcn.jpg",
     },
-    navMain: [
+    // Ana menü grupları
+    menuGroups: [
       {
-        title: "Clone Detector",
-        url: "/clonedetector",
-        icon: Copy,
-        isActive: true,
+        title: "Code Analysis Tools",
+        items: [
+          {
+            title: "Clone Detector",
+            url: "/clonedetector",
+            icon: Copy,
+            description: "Identify duplicate code fragments",
+          },
+          {
+            title: "Code Metrics",
+            url: "/metrics",
+            icon: BarChart2,
+            description: "Analyze code complexity and quality metrics",
+          },
+          {
+            title: "Code Smell",
+            url: "/codesmell",
+            icon: AlertTriangle,
+            description: "Detect potential design flaws",
+          },
+        ],
       },
       {
-        title: "Code Metrics",
-        url: "/metrics",
-        icon: BarChart2,
+        title: "Visualization Tools",
+        items: [
+          {
+            title: "Code Graph Tool",
+            url: "/codegraph",
+            icon: GitFork,
+            description: "Visualize code structure and dependencies",
+          },
+        ],
       },
       {
-        title: "Code Graph Tool",
-        url: "/codegraph",
-        icon: GitFork,
+        title: "Testing and Validation",
+        items: [
+          {
+            title: "Code Coverage",
+            url: "/coverage",
+            icon: Shield,
+            description: "Measure test coverage",
+          },
+          {
+            title: "Auto Test Generator",
+            url: "/testgenerator",
+            icon: TestTube2,
+            description: "Generate automated tests",
+          },
+        ],
       },
       {
-        title: "Documentation",
-        url: "#",
-        icon: BookOpen,
-      },
-      {
-        title: "Code Coverage",
-        url: "/coverage",
-        icon: Shield,
-      },
-      {
-        title: "Test Generator",
-        url: "/testgenerator",
-        icon: TestTube2,
+        title: "Code Quality Assurance",
+        items: [
+          {
+            title: "Quality & Error Prediction",
+            url: "/quality",
+            icon: Sparkles,
+            description: "Evaluate code quality and predict errors",
+          },
+        ],
       },
     ],
     navSecondary: [
       {
         title: "Support",
-        url: "#",
+        url: GITHUB_DISCUSSIONS,
         icon: LifeBuoy,
+        description: "Get help from the community",
+        external: true
       },
       {
         title: "Feedback",
-        url: "#",
+        url: GITHUB_ISSUES,
         icon: Send,
+        description: "Report issues or suggest features",
+        external: true
       },
+      {
+        title: "Documentation",
+        url: `${GITHUB_REPO}#readme`,
+        icon: BookOpen,
+        description: "Read the documentation",
+        external: true
+      }
     ],
     projects: [
       {
@@ -180,6 +228,15 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
     ],
   }
   
+  // Helper function for external links
+  const handleNavigation = (url: string, external: boolean) => {
+    if (external) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } else {
+      navigate(url);
+    }
+  };
+
   return (
     <div className="w-screen h-screen overflow-x-hidden">
       <SidebarProvider>
@@ -202,80 +259,53 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
           </SidebarMenu>
         </SidebarHeader>
         <SidebarContent>
-          <SidebarGroup>
-            <SidebarGroupLabel>Code Quality Tools</SidebarGroupLabel>
-            <SidebarMenu>
-              {data.navMain.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild tooltip={item.title}>
-                    <button onClick={() => navigate(item.url)} className="flex items-center focus:outline-none">
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </button>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroup>
-          <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-            <SidebarGroupLabel>Projects</SidebarGroupLabel>
-            <SidebarMenu>
-              {data.projects.map((item) => (
-                <SidebarMenuItem key={item.name}>
-                  <SidebarMenuButton asChild>
-                    <button onClick={() => navigate(item.url)}
-                      className="flex items-center focus:outline-none">
-                      <item.icon />
-                      <span>{item.name}</span>
-                    </button>
-                  </SidebarMenuButton>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <SidebarMenuAction showOnHover>
-                        <MoreHorizontal />
-                        <span className="sr-only">More</span>
-                      </SidebarMenuAction>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      className="w-48"
-                      side="bottom"
-                      align="end"
+          {/* Gruplandırılmış menü öğeleri */}
+          {data.menuGroups.map((group) => (
+            <SidebarGroup key={group.title}>
+              <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
+              <SidebarMenu>
+                {group.items.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton 
+                      asChild 
+                      tooltip={item.description}
                     >
-                      <DropdownMenuItem>
-                        <Folder className="text-muted-foreground" />
-                        <span>View Project</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Share className="text-muted-foreground" />
-                        <span>Share Project</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem>
-                        <Trash2 className="text-muted-foreground" />
-                        <span>Delete Project</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </SidebarMenuItem>
-              ))}
-              <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <MoreHorizontal />
-                  <span>More</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroup>
+                      <button 
+                        onClick={() => navigate(item.url)}
+                        className="flex items-center focus:outline-none"
+                      >
+                        <item.icon className="mr-2 h-4 w-4" />
+                        <span>{item.title}</span>
+                      </button>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroup>
+          ))}
+
+          {/* Secondary menu items */}
           <SidebarGroup className="mt-auto">
             <SidebarGroupContent>
               <SidebarMenu>
                 {data.navSecondary.map((item) => (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild size="sm">
-                      <button onClick={() => navigate(item.url)}
-                        className="flex items-center focus:outline-none">
-                        <item.icon />
-                        <span>{item.title}</span>
+                    <SidebarMenuButton 
+                      asChild 
+                      size="sm"
+                      tooltip={item.description}
+                    >
+                      <button 
+                        onClick={() => handleNavigation(item.url, item.external)}
+                        className="flex items-center justify-between w-full focus:outline-none"
+                      >
+                        <span className="flex items-center">
+                          <item.icon className="mr-2 h-4 w-4" />
+                          <span>{item.title}</span>
+                        </span>
+                        {item.external && (
+                          <ExternalLink className="h-3 w-3 opacity-50" />
+                        )}
                       </button>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

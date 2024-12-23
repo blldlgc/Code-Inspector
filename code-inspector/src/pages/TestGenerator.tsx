@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils"
+import { exampleCodes } from '@/constants/exampleCodes';
 
 interface TestResult {
     testCode: string;
@@ -52,6 +53,10 @@ export default function TestGenerator() {
         }
     };
 
+    const setExampleCodes = () => {
+        setSourceCode(exampleCodes.testGenerator.sourceCode);
+    };
+
     return (
         <PageLayout
             title="Test Generator"
@@ -60,7 +65,17 @@ export default function TestGenerator() {
             <div className="grid gap-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Source Code</CardTitle>
+                    <div className="flex items-center justify-between">
+                            <CardTitle>Code Input</CardTitle>
+                            <Button
+                                onClick={setExampleCodes}
+                                variant="outline"
+                                size="sm"
+                                className="text-muted-foreground"
+                            >
+                                Load Example Codes
+                            </Button>
+                        </div>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-2">

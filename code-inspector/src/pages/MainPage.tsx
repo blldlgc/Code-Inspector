@@ -37,6 +37,12 @@ const MainPage = () => {
             description: "Track and analyze your code's test coverage metrics",
             icon: <TestTube2 className="w-6 h-6" />,
             path: "/coverage"
+        },
+        {
+            title: "Test Generator",
+            description: "Automatically generate unit tests for your Java code",
+            icon: <TestTube2 className="w-6 h-6" />,
+            path: "/testgenerator"
         }
     ];
 
