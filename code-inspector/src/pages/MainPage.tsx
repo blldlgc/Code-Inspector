@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
-import { Code2, Shield, BarChart, TestTube2, GitCompare } from "lucide-react";
+import { Code2, Shield, BarChart, TestTube2, GitCompare, AlertTriangle, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const MainPage = () => {
@@ -20,12 +20,7 @@ const MainPage = () => {
             icon: <Code2 className="w-6 h-6" />,
             path: "/metrics"
         },
-        {
-            title: "Security Analysis",
-            description: "Detect security vulnerabilities early and take preventive measures",
-            icon: <Shield className="w-6 h-6" />,
-            path: "/security"
-        },
+        
         {
             title: "Visual Analysis",
             description: "Visualize your code with graphs for better understanding",
@@ -35,14 +30,26 @@ const MainPage = () => {
         {
             title: "Code Coverage",
             description: "Track and analyze your code's test coverage metrics",
-            icon: <TestTube2 className="w-6 h-6" />,
+            icon: <Shield className="w-6 h-6" />,
             path: "/coverage"
         },
         {
-            title: "Test Generator",
-            description: "Automatically generate unit tests for your Java code",
+            title: "Auto Test Generator",
+            description: "Generate automated tests for your Java code",
             icon: <TestTube2 className="w-6 h-6" />,
             path: "/testgenerator"
+        },
+        {
+            title: "Code Smell",
+            description: "Detect potential design flaws in your code",
+            icon: <AlertTriangle className="w-6 h-6" />,
+            path: "/codesmell"
+        },
+        {
+            title: "Quality & Error Prediction",
+            description: "Evaluate code quality and predict potential errors",
+            icon: <Sparkles className="w-6 h-6" />,
+            path: "/quality"
         }
     ];
 
@@ -67,11 +74,11 @@ const MainPage = () => {
                     Analyze Your Code, Enhance Quality
                 </h2>
                 <p className="text-lg text-muted-foreground mb-8 px-4">
-                    Use Code Inspector to analyze your code, detect security vulnerabilities, and improve code quality
+                    Use Code Inspector to analyze your code, detect issues, and improve overall code quality
                 </p>
             </motion.div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-12">
+            <div className="flex flex-wrap justify-center gap-4 mb-12">
                 {features.map((feature, index) => (
                     <motion.div
                         key={index}
@@ -79,9 +86,9 @@ const MainPage = () => {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: index * 0.1 }}
                         onClick={() => navigate(feature.path)}
-                        className="cursor-pointer"
+                        className="cursor-pointer w-[280px]"
                     >
-                        <Card className="p-6 hover:shadow-lg transition-all duration-300 hover:scale-105 hover:bg-accent">
+                        <Card className="p-6 hover:shadow-lg transition-all duration-300 hover:scale-105 hover:bg-accent h-[200px]">
                             <div className="mb-4 text-primary">
                                 {feature.icon}
                             </div>
@@ -92,6 +99,10 @@ const MainPage = () => {
                         </Card>
                     </motion.div>
                 ))}
+            </div>
+
+            <div className="text-center mt-8 text-sm text-muted-foreground">
+                Made with ❤️ by Code Inspector Team
             </div>
         </div>
     );

@@ -73,11 +73,11 @@ const handleInputChange = (setter: React.Dispatch<React.SetStateAction<string>>,
                     <img 
                         src="/black_on_white.png" 
                         alt="Code Inspector Logo" 
-                        className="h-72 w-auto dark:invert rounded-lg" 
+                        className="h-72 w-auto dark:invert rounded-lg " 
                     />
                 </div>
                 
-                <Tabs defaultValue="login" className="w-full ">
+                <Tabs defaultValue="login" className="w-full shadow">
                     <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="login">Log in</TabsTrigger>
                         <TabsTrigger value="signup">Sign up</TabsTrigger>
