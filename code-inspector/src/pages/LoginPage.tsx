@@ -66,9 +66,17 @@ const handleInputChange = (setter: React.Dispatch<React.SetStateAction<string>>,
 
     return (
 
-        <div className="flex items-center justify-center w-screen h-screen bg-gray-50">
+        <div className="flex items-center justify-center w-screen h-screen bg-background">
 
             <div className="w-full max-w-[400px] p-4 flex flex-col items-center">
+                <div className="mb-8">
+                    <img 
+                        src="/black_on_white.png" 
+                        alt="Code Inspector Logo" 
+                        className="h-72 w-auto dark:invert rounded-lg" 
+                    />
+                </div>
+                
                 <Tabs defaultValue="login" className="w-full ">
                     <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="login">Log in</TabsTrigger>
