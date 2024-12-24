@@ -1,3 +1,0 @@
-winget install SonarSource.SonarScanner
-
-setx PATH "%PATH%;C:\sonar-scanner\bin"

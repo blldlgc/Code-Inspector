@@ -8,11 +8,12 @@ import { DialogComponent } from './components/DialogManager';
 import ProtectedRoute from './components/ProtectedRoute.tsx';
 import { auth } from '@/config/firebase';
 import MySidebar from './components/SidebarLayout.tsx';
-import MyPage from './pages/MyPage.tsx'
 import CodeComparison from './pages/CodeComparison.tsx'
-import { Code } from 'lucide-react'
-import CodeAnalyzer from './components/CodeAnalyzer.tsx'
-import CodeGraph from './pages/CodeGraph.tsx'
+import TreeSitter from './pages/TreeSitter.tsx'
+import CodeCoverage from './pages/CodeCoverage.tsx'
+import MetricsAnalyzer from './pages/MetricsAnalyzer.tsx'
+import { ThemeProvider } from "./components/theme-provider"
+import TestGenerator from './pages/TestGenerator.tsx'
 
 
 
@@ -45,7 +46,7 @@ const AppRouter = () => {
       ),
     },
     {
-      path: "/codecomparison",
+      path: "/clonedetector",
       element: (
         <ProtectedRoute>
           <MySidebar>
@@ -59,25 +60,61 @@ const AppRouter = () => {
       element: (
         <ProtectedRoute>
           <MySidebar>
-            <CodeGraph />
+            <TreeSitter />
           </MySidebar>
         </ProtectedRoute>
       ),
     },
     {
+      path: "/coverage",
+      element: (
+        <ProtectedRoute>
+          <MySidebar>
+            <CodeCoverage />
+          </MySidebar>
+        </ProtectedRoute>
+      )
+    },
+    {
+      path: "/metrics",
+      element: (
+        <ProtectedRoute>
+          <MySidebar>
+            <MetricsAnalyzer />
+          </MySidebar>
+        </ProtectedRoute>
+      )
+    },
+    {
+      path: "/testgenerator",
+      element: (
+        <ProtectedRoute>
+          <MySidebar>
+            <TestGenerator />
+          </MySidebar>
+        </ProtectedRoute>
+      )
+    },
+    {
       path: "/login",
       element: user ? <Navigate to="/" replace /> : <LoginPage />,
+    },
+    {
+      path: "*",
+      element: <Navigate to="/" replace />
     }
   ]);
 
   return (
-    <RouterProvider router={router} />
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <RouterProvider router={router} />
+      <DialogComponent />
+    </ThemeProvider>
   );
 };
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AppRouter />
-    <DialogComponent />
   </StrictMode>,
 )
