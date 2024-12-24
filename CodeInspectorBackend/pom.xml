@@ -28,26 +28,26 @@
 	</scm>
 	<properties>
 		<java.version>21</java.version>
-		<sonar.host.url>http://localhost:9000</sonar.host.url>
-		<sonar.projectKey>Code-Inspector</sonar.projectKey>
-		<sonar.login>sqp_fd46b2cfafc287d1760577e03a8cf31df412d860</sonar.login>
+		<maven.compiler.source>21</maven.compiler.source>
+		<maven.compiler.target>21</maven.compiler.target>
+		<sonar.host.url>http://localhost:9000</sonar.host.url> <!-- SonarQube sunucunuzun URL'si -->
+		<sonar.login>projectToken</sonar.login> <!-- SonarQube token'ınız -->
 	</properties>
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
-
-		<dependency>
-			<groupId>org.projectlombok</groupId>
-			<artifactId>lombok</artifactId>
-			<optional>true</optional>
-		</dependency>
-		<dependency>
+			<dependency>
+				<groupId>org.projectlombok</groupId>
+				<artifactId>lombok</artifactId>
+				<optional>true</optional>
+			</dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+
 
 		<dependency>
 			<groupId>net.sourceforge.pmd</groupId>
@@ -102,3 +102,21 @@
 	</build>
 
 </project>
+
+<dependency>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-databind</artifactId>
+    <version>2.15.2</version>
+</dependency>
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-compiler-plugin</artifactId>
+    <version>3.11.0</version>
+    <configuration>
+        <source>${java.version}</source>
+        <target>${java.version}</target>
+        <compilerArgs>
+            <arg>--enable-preview</arg>
+        </compilerArgs>
+    </configuration>
+</plugin>
