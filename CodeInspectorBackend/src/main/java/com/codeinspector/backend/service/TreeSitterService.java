@@ -1,4 +1,4 @@
-package com.codeinspector.codecomparison.service;
+package com.codeinspector.backend.service;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,7 +10,7 @@ import org.treesitter.TSParser;
 import org.treesitter.TSTree;
 import org.treesitter.TreeSitterJava;
 
-import com.codeinspector.codecomparison.dto.TreeSitterResponse;
+import com.codeinspector.backend.dto.TreeSitterResponse;
 
 @Service
 public class TreeSitterService {

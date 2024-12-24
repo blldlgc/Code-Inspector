@@ -1,9 +1,8 @@
-package com.codeinspector.codecomparison;
-import com.codeinspector.codecomparison.utils.CodeMetricsAnalyzer;
+package com.codeinspector.backend;
+import com.codeinspector.backend.utils.CodeMetricsAnalyzer;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.util.HashMap;
 import java.util.Map;
 
 public class CodeMetricsAnalyzerTest {

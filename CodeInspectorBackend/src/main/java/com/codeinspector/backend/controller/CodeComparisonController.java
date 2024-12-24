@@ -1,4 +1,4 @@
-package com.codeinspector.codecomparison.controller;
+package com.codeinspector.backend.controller;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -12,17 +12,17 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.codeinspector.codecomparison.dto.CodeComparisonRequest;
-import com.codeinspector.codecomparison.dto.CodeComparisonResponse;
-import com.codeinspector.codecomparison.dto.CodeMetricsRequest;
-import com.codeinspector.codecomparison.dto.CodeMetricsResponse;
-import com.codeinspector.codecomparison.dto.TestCoverageRequest;
-import com.codeinspector.codecomparison.dto.TestCoverageResponse;
-import com.codeinspector.codecomparison.dto.TestGenerationRequest;
-import com.codeinspector.codecomparison.dto.TestGenerationResponse;
-import com.codeinspector.codecomparison.service.CodeComparisonService;
-import com.codeinspector.codecomparison.utils.TestCoverageAnalyzer;
-import com.codeinspector.codecomparison.utils.TestGenerator;
+import com.codeinspector.backend.dto.CodeComparisonRequest;
+import com.codeinspector.backend.dto.CodeComparisonResponse;
+import com.codeinspector.backend.dto.CodeMetricsRequest;
+import com.codeinspector.backend.dto.CodeMetricsResponse;
+import com.codeinspector.backend.dto.TestCoverageRequest;
+import com.codeinspector.backend.dto.TestCoverageResponse;
+import com.codeinspector.backend.dto.TestGenerationRequest;
+import com.codeinspector.backend.dto.TestGenerationResponse;
+import com.codeinspector.backend.service.CodeComparisonService;
+import com.codeinspector.backend.utils.TestCoverageAnalyzer;
+import com.codeinspector.backend.utils.TestGenerator;
 
 @RestController
 @RequestMapping("/api/code")

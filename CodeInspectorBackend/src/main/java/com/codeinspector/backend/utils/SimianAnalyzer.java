@@ -1,4 +1,4 @@
-package com.codeinspector.codecomparison.utils;
+package com.codeinspector.backend.utils;
 
 import java.io.BufferedReader;
 import java.io.File;

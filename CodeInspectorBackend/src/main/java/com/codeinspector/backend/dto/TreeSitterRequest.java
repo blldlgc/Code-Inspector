@@ -1,4 +1,4 @@
-package com.codeinspector.codecomparison.dto;
+package com.codeinspector.backend.dto;
 
 public class TreeSitterRequest {
     private String code;
