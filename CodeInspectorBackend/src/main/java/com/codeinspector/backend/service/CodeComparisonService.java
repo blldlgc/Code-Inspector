@@ -1,12 +1,12 @@
-package com.codeinspector.codecomparison.service;
+package com.codeinspector.backend.service;
 
 import org.springframework.stereotype.Service;
 
-import com.codeinspector.codecomparison.dto.CodeComparisonResponse;
-import com.codeinspector.codecomparison.dto.CodeMetricsResponse;
-import com.codeinspector.codecomparison.utils.CodeMetricsAnalyzer;
-import com.codeinspector.codecomparison.utils.DuplicateCodeDetector;
-import com.codeinspector.codecomparison.utils.SimianAnalyzer;
+import com.codeinspector.backend.dto.CodeComparisonResponse;
+import com.codeinspector.backend.dto.CodeMetricsResponse;
+import com.codeinspector.backend.utils.CodeMetricsAnalyzer;
+import com.codeinspector.backend.utils.DuplicateCodeDetector;
+import com.codeinspector.backend.utils.SimianAnalyzer;
 
 @Service
 public class CodeComparisonService {

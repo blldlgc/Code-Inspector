@@ -1,8 +1,8 @@
-package com.codeinspector.codecomparison.dto;
+package com.codeinspector.backend.dto;
 
 import java.util.Map;
 
-import com.codeinspector.codecomparison.model.MethodCoverage;
+import com.codeinspector.backend.model.MethodCoverage;
 
 public record TestGenerationResponse(
     String testCode,

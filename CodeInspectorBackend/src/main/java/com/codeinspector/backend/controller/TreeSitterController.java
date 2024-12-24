@@ -1,8 +1,8 @@
-package com.codeinspector.codecomparison.controller;
+package com.codeinspector.backend.controller;
 
-import com.codeinspector.codecomparison.dto.TreeSitterRequest;
-import com.codeinspector.codecomparison.dto.TreeSitterResponse;
-import com.codeinspector.codecomparison.service.TreeSitterService;
+import com.codeinspector.backend.dto.TreeSitterRequest;
+import com.codeinspector.backend.dto.TreeSitterResponse;
+import com.codeinspector.backend.service.TreeSitterService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 

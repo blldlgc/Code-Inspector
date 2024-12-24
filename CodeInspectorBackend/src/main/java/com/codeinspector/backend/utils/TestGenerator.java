@@ -1,4 +1,4 @@
-package com.codeinspector.codecomparison.utils;
+package com.codeinspector.backend.utils;
 
 import java.util.ArrayList;
 import java.util.HashMap;

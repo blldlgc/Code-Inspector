@@ -1,4 +1,4 @@
-package com.codeinspector.codecomparison.model;
+package com.codeinspector.backend.model;
 
 public class MethodCoverage {
     private final String methodName;

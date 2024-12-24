@@ -1,4 +1,4 @@
-package com.codeinspector.codecomparison.dto;
+package com.codeinspector.backend.dto;
 
 public record TestGenerationRequest(
     String sourceCode,

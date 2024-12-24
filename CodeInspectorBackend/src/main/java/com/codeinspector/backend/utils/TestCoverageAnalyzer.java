@@ -1,4 +1,4 @@
-package com.codeinspector.codecomparison.utils;
+package com.codeinspector.backend.utils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Component;
 
-import com.codeinspector.codecomparison.model.MethodCoverage;
+import com.codeinspector.backend.model.MethodCoverage;
 
 @Component
 public class TestCoverageAnalyzer {
