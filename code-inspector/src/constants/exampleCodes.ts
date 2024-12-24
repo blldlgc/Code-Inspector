@@ -134,5 +134,27 @@ public class CalculatorTest {
         return a / b;
     }
 }`
-  }
+  },
+  codeSmells: `public class OrderProcessor {
+    public void processOrder(String customerName, String address, double amount) {
+        System.out.println("Processing order for " + customerName);
+        System.out.println("Shipping to: " + address);
+        if (amount > 0) {
+            System.out.println("Valid amount: " + amount);
+        } else {
+            System.out.println("Invalid amount");
+            return;
+        }
+        double discount = 0.0;
+        if (amount > 100) {
+            discount = amount * 0.1;
+            System.out.println("Discount applied: " + discount);
+        }
+        double finalAmount = amount - discount;
+        System.out.println("Final amount: " + finalAmount);
+        System.out.println("Order processed successfully!");
+    }
+}
+
+}`
 }; 
