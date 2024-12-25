@@ -332,23 +332,76 @@ public class AdvancedSecurityAnalyzer {
     }
 
     private double calculateOverallScore(int critical, int high, int medium, int low) {
-        double total = critical * 10 + high * 5 + medium * 2 + low;
-        return Math.max(0, 100 - total);
+        double baseScore = 100.0;
+        
+        // Ağırlıklı ceza puanları
+        baseScore -= critical * 25.0; // Kritik sorunlar
+        baseScore -= high * 15.0;     // Yüksek riskli sorunlar
+        baseScore -= medium * 10.0;   // Orta riskli sorunlar
+        baseScore -= low * 5.0;       // Düşük riskli sorunlar
+        
+        return Math.max(0, Math.min(100, baseScore));
     }
 
     private double calculateSecurityScore(Map<String, List<SecurityIssue>> vulnerabilities) {
-        // Implement security score calculation logic
-        return 100.0; // Placeholder
+        double baseScore = 100.0;
+        
+        // Her güvenlik sorunu için ceza puanı
+        for (List<SecurityIssue> issues : vulnerabilities.values()) {
+            for (SecurityIssue issue : issues) {
+                switch (issue.riskLevel()) {
+                    case CRITICAL -> baseScore -= 25.0; // Kritik sorun: -25 puan
+                    case HIGH -> baseScore -= 15.0;     // Yüksek risk: -15 puan
+                    case MEDIUM -> baseScore -= 10.0;   // Orta risk: -10 puan
+                    case LOW -> baseScore -= 5.0;       // Düşük risk: -5 puan
+                }
+            }
+        }
+        
+        return Math.max(0, Math.min(100, baseScore));
     }
 
     private double calculateCodeQualityScore(Map<String, List<SecurityIssue>> vulnerabilities) {
-        // Implement code quality score calculation logic
-        return 100.0; // Placeholder
+        double baseScore = 100.0;
+        int codeQualityIssues = 0;
+        
+        // Code quality sorunlarını say
+        for (List<SecurityIssue> issues : vulnerabilities.values()) {
+            for (SecurityIssue issue : issues) {
+                if (isCodeQualityIssue(issue.type())) {
+                    codeQualityIssues++;
+                    switch (issue.riskLevel()) {
+                        case CRITICAL -> baseScore -= 20.0;
+                        case HIGH -> baseScore -= 15.0;
+                        case MEDIUM -> baseScore -= 10.0;
+                        case LOW -> baseScore -= 5.0;
+                    }
+                }
+            }
+        }
+        
+        return Math.max(0, Math.min(100, baseScore));
+    }
+
+    private boolean isCodeQualityIssue(String issueType) {
+        return issueType.equals("NULL_CHECK") || 
+               issueType.equals("UNSAFE_LOGGING") ||
+               issueType.contains("CODE_SMELL");
     }
 
     private double calculateCategoryScore(List<SecurityIssue> issues) {
-        // Implement category score calculation logic
-        return 100.0; // Placeholder
+        double baseScore = 100.0;
+        
+        for (SecurityIssue issue : issues) {
+            switch (issue.riskLevel()) {
+                case CRITICAL -> baseScore -= 30.0;
+                case HIGH -> baseScore -= 20.0;
+                case MEDIUM -> baseScore -= 10.0;
+                case LOW -> baseScore -= 5.0;
+            }
+        }
+        
+        return Math.max(0, Math.min(100, baseScore));
     }
 
     private int findRuleViolationLine(String sourceCode, SecurityRule rule) {
