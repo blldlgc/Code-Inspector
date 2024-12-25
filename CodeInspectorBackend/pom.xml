@@ -32,8 +32,6 @@
 		<maven.compiler.target>21</maven.compiler.target>
 		<sonar.host.url>http://localhost:9000</sonar.host.url> <!-- SonarQube sunucunuzun URL'si -->
 		<sonar.login>projectToken</sonar.login> <!-- SonarQube token'ınız -->
-		<sonar.organization>blldlgc</sonar.organization>
-		<sonar.host.url>https://sonarcloud.io</sonar.host.url>
 	</properties>
 	<dependencies>
 		<dependency>
