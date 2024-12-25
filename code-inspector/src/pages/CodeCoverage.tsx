@@ -13,7 +13,7 @@ interface MethodCoverage {
     totalLines: number;
 }
 
-interface CoverageResult {
+interface Coverage {
     coveragePercentage: number;
     coveredInstructions: number;
     totalInstructions: number;
@@ -23,7 +23,7 @@ interface CoverageResult {
 export default function CodeCoverage() {
     const [appCode, setAppCode] = useState('');
     const [testCode, setTestCode] = useState('');
-    const [coverage, setCoverage] = useState<any>(null);
+    const [coverage, setCoverage] = useState<Coverage | null>(null);
 
     const handleSubmit = async () => {
         try {
@@ -124,8 +124,9 @@ export default function CodeCoverage() {
                                 <div className="space-y-4">
                                     <h3 className="text-lg font-semibold">Method Coverage</h3>
                                     <div className="grid gap-4">
-                                        {Object.entries(coverage.methodCoverages).map(([methodName, data]: [string, MethodCoverage]) => {
-                                            const percentage = (data.coveredLines / data.totalLines) * 100;
+                                        {Object.entries(coverage.methodCoverages).map(([methodName, data]) => {
+                                            const methodData = data as MethodCoverage;
+                                            const percentage = (methodData.coveredLines / methodData.totalLines) * 100;
                                             return (
                                                 <div key={methodName} className="rounded-lg border p-4">
                                                     <div className="flex justify-between items-center mb-2">
@@ -155,7 +156,7 @@ export default function CodeCoverage() {
                                                         />
                                                     </div>
                                                     <p className="text-sm text-muted-foreground mt-2">
-                                                        {data.coveredLines} / {data.totalLines} lines covered
+                                                        {methodData.coveredLines} / {methodData.totalLines} lines covered
                                                     </p>
                                                 </div>
                                             );
