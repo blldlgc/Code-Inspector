@@ -83,7 +83,7 @@ const CodeSecurity = () => {
     };
 
     const setExampleCode = () => {
-        setSourceCode(exampleCodes.security || '');
+        setSourceCode(exampleCodes.codesecurity || '');
     };
 
     return (
