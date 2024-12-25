@@ -179,7 +179,7 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
         items: [
           {
             title: "Quality & Error Prediction",
-            url: "/quality",
+            url: "/codesecurity",
             icon: Sparkles,
             description: "Evaluate code quality and predict errors",
           },

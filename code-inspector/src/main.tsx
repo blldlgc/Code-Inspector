@@ -15,7 +15,7 @@ import MetricsAnalyzer from './pages/MetricsAnalyzer.tsx'
 import { ThemeProvider } from "./components/theme-provider"
 import TestGenerator from './pages/TestGenerator.tsx'
 import CodeSmells from './pages/CodeSmells.tsx'
-
+import CodeSecurity from './pages/CodeSecurity.tsx'
 
 
 const AppRouter = () => {
@@ -102,6 +102,16 @@ const AppRouter = () => {
         <ProtectedRoute>
           <MySidebar>
             <CodeSmells />
+          </MySidebar>
+        </ProtectedRoute>
+      )
+    },
+    {
+      path: "/codesecurity",
+      element: (
+        <ProtectedRoute>
+          <MySidebar>
+            <CodeSecurity />
           </MySidebar>
         </ProtectedRoute>
       )
