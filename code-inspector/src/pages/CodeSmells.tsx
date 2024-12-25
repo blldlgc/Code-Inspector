@@ -8,10 +8,25 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
 import axios from 'axios';
 import { exampleCodes } from '@/constants/exampleCodes';
+import { cn } from "@/lib/utils";
+
+interface SmellScores {
+    [key: string]: number;
+}
+
+interface SmellDetails {
+    [key: string]: string[];
+}
+
+interface AnalysisResult {
+    smellScores: SmellScores;
+    smellDetails: SmellDetails;
+    overallScore: number;
+}
 
 const CodeSmells = () => {
     const [sourceCode, setSourceCode] = useState('');
-    const [results, setResults] = useState(null);
+    const [results, setResults] = useState<AnalysisResult | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -19,9 +34,8 @@ const CodeSmells = () => {
         setLoading(true);
         setError('');
         try {
-            const response = await axios.post('http://localhost:8080/api/sonar/analyze', {
-                sourceCode: sourceCode,
-                projectKey: `squ_c75726952288a8ba06f6d9191b66db8c2917d741`
+            const response = await axios.post('http://localhost:8080/api/code-analysis/analyze', {
+                sourceCode: sourceCode
             });
             setResults(response.data);
         } catch (err) {
@@ -101,15 +115,53 @@ const CodeSmells = () => {
                         >
                             <Card>
                                 <CardHeader>
-                                    <CardTitle>Analysis Results</CardTitle>
+                                    <div className="flex items-center justify-between">
+                                        <CardTitle>Analysis Results</CardTitle>
+                                        <div className={cn(
+                                            "px-3 py-1 rounded-full text-sm",
+                                            results.overallScore > 80 ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" :
+                                            results.overallScore > 50 ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200" :
+                                            "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                                        )}>
+                                            Overall Score: {results.overallScore.toFixed(2)}%
+                                        </div>
+                                    </div>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        <ResultCard title="Bugs" value={results.bugs} />
-                                        <ResultCard title="Vulnerabilities" value={results.vulnerabilities} />
-                                        <ResultCard title="Code Smells" value={results.codeSmells} />
-                                        <ResultCard title="Coverage" value={`${results.coverage.toFixed(2)}%`} />
-                                        <ResultCard title="Duplicated Lines" value={`${results.duplicatedLinesDensity.toFixed(2)}%`} />
+                                    <div className="grid gap-4">
+                                        {Object.entries(results.smellScores).map(([smellType, score]) => (
+                                            <div key={smellType} className="rounded-lg border p-4">
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <span className="font-medium">{smellType}</span>
+                                                    <span className={cn(
+                                                        "px-2.5 py-0.5 rounded-full text-xs font-medium",
+                                                        score > 80 ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" :
+                                                        score > 50 ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200" :
+                                                        "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                                                    )}>
+                                                        {score.toFixed(0)}%
+                                                    </span>
+                                                </div>
+                                                <div className="w-full bg-secondary rounded-full h-2">
+                                                    <div 
+                                                        className={cn(
+                                                            "h-2 rounded-full transition-all",
+                                                            score > 80 ? "bg-green-500" :
+                                                            score > 50 ? "bg-yellow-500" :
+                                                            "bg-red-500"
+                                                        )}
+                                                        style={{ width: `${score}%` }}
+                                                    />
+                                                </div>
+                                                {results.smellDetails[smellType] && (
+                                                    <div className="mt-2 text-sm text-muted-foreground">
+                                                        {results.smellDetails[smellType].map((detail, index) => (
+                                                            <div key={index}>{detail}</div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
                                     </div>
                                 </CardContent>
                             </Card>
@@ -120,17 +172,5 @@ const CodeSmells = () => {
         </PageLayout>
     );
 };
-
-const ResultCard = ({ title, value }) => (
-    <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="flex flex-col p-4 border rounded-lg bg-muted/50"
-    >
-        <span className="text-sm font-medium text-muted-foreground">{title}</span>
-        <span className="text-2xl font-bold mt-1">{value}</span>
-    </motion.div>
-);
 
 export default CodeSmells;

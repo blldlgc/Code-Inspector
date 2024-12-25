@@ -135,26 +135,28 @@ public class CalculatorTest {
     }
 }`
   },
-  codeSmells: `public class OrderProcessor {
-    public void processOrder(String customerName, String address, double amount) {
-        System.out.println("Processing order for " + customerName);
-        System.out.println("Shipping to: " + address);
-        if (amount > 0) {
-            System.out.println("Valid amount: " + amount);
-        } else {
-            System.out.println("Invalid amount");
-            return;
-        }
-        double discount = 0.0;
-        if (amount > 100) {
-            discount = amount * 0.1;
-            System.out.println("Discount applied: " + discount);
-        }
-        double finalAmount = amount - discount;
-        System.out.println("Final amount: " + finalAmount);
-        System.out.println("Order processed successfully!");
-    }
-}
+  codeSmells: `public class Sample {
+    private String name;
+    private int age;
+    private double salary;
 
+    public Sample(String name, int age, double salary) {
+        this.name = name;
+        this.age = age;
+        this.salary = salary;
+    }
+
+    public void displayInfo() {
+        if (age > 18 && salary > 5000) {
+            System.out.println(name + " is eligible.");
+        } else {
+            System.out.println(name + " is not eligible.");
+        }
+    }
+
+    public void calculateBonus() {
+        double bonus = salary * 0.1;
+        System.out.println("Bonus: " + bonus);
+    }
 }`
 }; 
