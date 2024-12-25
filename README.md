@@ -16,7 +16,6 @@ Code Inspector is a sophisticated code analysis tool designed to help developers
 - **Duplicate Code Detection**: Identifies code duplications and suggests improvements
 - **AST Visualization**: Interactive visualization of Abstract Syntax Trees
 - **Real-time Analysis**: Instant feedback on code quality
-- **Multiple Language Support**: Currently supports Java with extensibility for other languages
 - **Modern UI**: Built with React and Tailwind CSS for a seamless user experience
 
 ## 🛠️ Tech Stack
@@ -27,6 +26,7 @@ Code Inspector is a sophisticated code analysis tool designed to help developers
 - Tailwind CSS
 - Vite
 - React Flow for graph representations
+- Shadcn Component library
 
 ### Backend
 - Java 21
