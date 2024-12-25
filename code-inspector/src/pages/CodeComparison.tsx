@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from '@/components/ui/textarea';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
@@ -7,10 +7,22 @@ import { PageLayout } from "@/components/PageLayout"
 import { motion, AnimatePresence } from "framer-motion";
 import { exampleCodes } from '@/constants/exampleCodes';
 
+interface ComparisonResult {
+  CPDsimilarityPercentage: number;
+  simianSimilarityPercentage: number;
+  matchedLines: string;
+  code1Metrics: {
+    [key: string]: number;
+  };
+  code2Metrics: {
+    [key: string]: number;
+  };
+}
+
 const CodeComparison = () => {
     const [code1, setCode1] = useState('');
     const [code2, setCode2] = useState('');
-    const [result, setResult] = useState(null);
+    const [result, setResult] = useState<ComparisonResult | null>(null);
     const [loading, setLoading] = useState(false);
 
     const setExampleCodes = () => {

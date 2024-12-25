@@ -1,12 +1,29 @@
-import React, { useEffect, useState } from "react";
+import { useEffect } from "react";
 import ReactFlow, {
   Background,
   Controls,
   MiniMap,
   useNodesState,
   useEdgesState,
+  Node,
+  Edge
 } from "reactflow";
 import "reactflow/dist/style.css";
+
+interface TreeNode {
+  type: string;
+  startByte: number;
+  endByte: number;
+  startRow: number;
+  startColumn: number;
+  endRow: number;
+  endColumn: number;
+  children?: TreeNode[];
+}
+
+interface TreeVisualizerProps {
+  data: TreeNode[];
+}
 
 // Gösterilmeyecek node tipleri
 const EXCLUDED_NODE_TYPES = [
@@ -39,33 +56,33 @@ const EXCLUDED_NODE_TYPES = [
 ];
 
 // ReactFlow için veriyi dönüştürme
-const transformTreeDataForReactFlow = (nodes) => {
-  const nodeElements = [];
-  const edgeElements = [];
+const transformTreeDataForReactFlow = (nodes: TreeNode[]) => {
+  const nodeElements: Node[] = [];
+  const edgeElements: Edge[] = [];
 
   // Modifier'lar için renk şeması ekleyelim
   const modifierStyles = {
     public: {
-      background: '#e6ffe6', // açık yeşil
+      background: '#e6ffe6',
       border: '1px solid #28a745',
       color: '#28a745',
       fontWeight: 'bold'
     },
     private: {
-      background: '#ffe6e6', // açık kırmızı
+      background: '#ffe6e6',
       border: '1px solid #dc3545',
       color: '#dc3545',
       fontWeight: 'bold'
     },
     protected: {
-      background: '#fff3e6', // açık turuncu
+      background: '#fff3e6',
       border: '1px solid #fd7e14',
       color: '#fd7e14',
       fontWeight: 'bold'
     }
   };
 
-  const traverse = (node, parentId = null, depth = 0, y = 50) => {
+  const traverse = (node: TreeNode, parentId: string | null = null, depth = 0, y = 50) => {
     let modifiers = "";
     let nodeStyle = {};
 
@@ -76,17 +93,16 @@ const transformTreeDataForReactFlow = (nodes) => {
           .map(m => m.type)
           .join(" ") + " ";
         
-        // İlk modifier'a göre stil seç
         const firstModifier = modifierNode.children[0]?.type;
-        if (firstModifier in modifierStyles) {
-          nodeStyle = modifierStyles[firstModifier];
+        if (firstModifier && firstModifier in modifierStyles) {
+          nodeStyle = modifierStyles[firstModifier as keyof typeof modifierStyles];
         }
       }
     }
 
     if (EXCLUDED_NODE_TYPES.includes(node.type.trim())) {
       if (node.children && node.children.length > 0) {
-        node.children.forEach((child, index) =>
+        node.children.forEach((child) =>
           traverse(child, parentId, depth, y)
         );
       }
@@ -96,7 +112,6 @@ const transformTreeDataForReactFlow = (nodes) => {
     const nodeId = `${node.startByte}-${node.endByte}`;
     const xPosition = depth * 200;
 
-    // Node'u modifier bilgisiyle birlikte ekle ve stil uygula
     nodeElements.push({
       id: nodeId,
       data: { 
@@ -106,7 +121,6 @@ const transformTreeDataForReactFlow = (nodes) => {
       style: nodeStyle
     });
 
-    // Bağlantı ekle
     if (parentId) {
       edgeElements.push({
         id: `e${parentId}-${nodeId}`,
@@ -116,14 +130,12 @@ const transformTreeDataForReactFlow = (nodes) => {
       });
     }
 
-    // Alt çocuklar için y pozisyonunu hesapla
     if (node.children && node.children.length > 0) {
       const visibleChildren = node.children.filter(
         child => !EXCLUDED_NODE_TYPES.includes(child.type.trim())
       );
       
-      node.children.forEach((child, index) => {
-        // Sadece görünür node'lar için y offset'i artır
+      node.children.forEach((child) => {
         const yOffset = visibleChildren.findIndex(vc => vc === child) + 1;
         traverse(child, nodeId, depth + 1, y + (yOffset > 0 ? yOffset * 100 : 0));
       });
@@ -134,7 +146,7 @@ const transformTreeDataForReactFlow = (nodes) => {
   return { nodes: nodeElements, edges: edgeElements };
 };
 
-const TreeVisualizer = ({ data }) => {
+const TreeVisualizer = ({ data }: TreeVisualizerProps) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 

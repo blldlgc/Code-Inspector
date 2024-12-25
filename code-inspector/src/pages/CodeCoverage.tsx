@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import axios from 'axios';
 import { Textarea } from "@/components/ui/textarea";
 import  { Button } from "@/components/ui/button";
