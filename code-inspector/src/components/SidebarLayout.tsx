@@ -1,27 +1,16 @@
 "use client"
 
 import {
-  BadgeCheck,
-  Bell,
   BookOpen,
-  Bot,
-  ChevronRight,
   ChevronsUpDown,
   CodeXml,
-  CreditCard,
-  Folder,
   Frame,
   LifeBuoy,
   LogOut,
   Map,
-  MoreHorizontal,
   PieChart,
   Send,
-  Settings2,
-  Share,
   Sparkles,
-  SquareTerminal,
-  Trash2,
   Copy,
   BarChart2,
   GitFork,
@@ -44,15 +33,10 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
+
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -69,12 +53,8 @@ import {
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
-  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
