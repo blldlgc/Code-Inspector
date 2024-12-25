@@ -5,10 +5,10 @@ import TreeSitter from "@/pages/TreeSitter";
 
 // Mock `TreeVisualizer` bileşeni
 jest.mock("@/components/TreeVisualizer", () => {
-    return ({ data }: { data: any }) => (
+    return () => (
       <div data-testid="tree-visualizer">Mock Tree Visualizer</div>
     );
-  });
+});
   
   
 

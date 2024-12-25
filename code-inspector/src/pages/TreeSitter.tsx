@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,8 +10,8 @@ import { Loader2 } from "lucide-react";
 
 export default function TreeSitter() {
   const [code, setCode] = useState("");
-  const [treeData, setTreeData] = useState(null);
-  const [error, setError] = useState(null);
+  const [treeData, setTreeData] = useState<any[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async () => {

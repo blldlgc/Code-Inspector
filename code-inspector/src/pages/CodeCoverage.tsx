@@ -7,6 +7,21 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { exampleCodes } from '@/constants/exampleCodes';
 
+interface MethodCoverage {
+    methodName: string;
+    coveredLines: number;
+    totalLines: number;
+}
+
+interface CoverageData {
+    coveragePercentage: number;
+    coveredInstructions: number;
+    totalInstructions: number;
+    methodCoverages: {
+        [key: string]: MethodCoverage;
+    };
+}
+
 export default function CodeCoverage() {
     const [appCode, setAppCode] = useState('');
     const [testCode, setTestCode] = useState('');
@@ -111,7 +126,7 @@ export default function CodeCoverage() {
                                 <div className="space-y-4">
                                     <h3 className="text-lg font-semibold">Method Coverage</h3>
                                     <div className="grid gap-4">
-                                        {Object.entries(coverage.methodCoverages).map(([methodName, data]) => {
+                                        {Object.entries(coverage.methodCoverages).map(([methodName, data]: [string, MethodCoverage]) => {
                                             const percentage = (data.coveredLines / data.totalLines) * 100;
                                             return (
                                                 <div key={methodName} className="rounded-lg border p-4">

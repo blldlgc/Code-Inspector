@@ -7,7 +7,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      fs: false, // fs modülünü tarayıcı ortamında devre dışı bırak
+      fs: path.resolve(__dirname, "./src/empty-module.js")
     },
   },
   build: {

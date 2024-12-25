@@ -38,8 +38,9 @@ const CodeSmells = () => {
                 sourceCode: sourceCode
             });
             setResults(response.data);
-        } catch (err) {
-            setError('Analysis failed: ' + err.message);
+        } catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }

@@ -6,7 +6,8 @@ import ReactFlow, {
   useNodesState,
   useEdgesState,
   Node,
-  Edge
+  Edge,
+  BackgroundVariant
 } from "reactflow";
 import "reactflow/dist/style.css";
 
@@ -196,7 +197,7 @@ const TreeVisualizer = ({ data }: TreeVisualizerProps) => {
         >
           <MiniMap />
           <Controls />
-          <Background variant="dots" gap={16} size={0.5} />
+          <Background variant={BackgroundVariant.DOTS} gap={16} size={0.5} />
         </ReactFlow>
       </div>
     </div>
