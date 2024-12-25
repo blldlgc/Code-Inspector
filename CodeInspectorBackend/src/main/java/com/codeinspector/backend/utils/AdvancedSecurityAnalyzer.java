@@ -20,6 +20,32 @@ import com.codeinspector.backend.model.security.VulnerabilityPattern;
 
 @Component
 public class AdvancedSecurityAnalyzer {
+    // SecurityMetrics sınıfını static fields olarak taşıyalım
+    private static final Map<String, Integer> CWE_WEIGHTS = Map.of(
+        "SQL_INJECTION", 89,     // CWE-89
+        "XSS", 79,              // CWE-79
+        "BROKEN_AUTH", 287,     // CWE-287
+        "SENSITIVE_DATA", 200,   // CWE-200
+        "UNSAFE_LOGGING", 532,   // CWE-532
+        "NULL_CHECK", 476       // CWE-476
+    );
+
+    private static final Map<RiskLevel, Double> SEVERITY_MULTIPLIERS = Map.of(
+        RiskLevel.CRITICAL, 5.0,
+        RiskLevel.HIGH, 3.0,
+        RiskLevel.MEDIUM, 2.0,
+        RiskLevel.LOW, 1.0
+    );
+
+    private static final Map<String, Double> EXPLOITABILITY_MULTIPLIERS = Map.of(
+        "SQL_INJECTION", 1.0,    // Remote exploit possible
+        "XSS", 0.9,             // Remote exploit possible
+        "BROKEN_AUTH", 0.8,      // Local access needed
+        "SENSITIVE_DATA", 0.7,   // Local access needed
+        "UNSAFE_LOGGING", 0.4,   // Limited impact
+        "NULL_CHECK", 0.3       // Runtime only
+    );
+
     private final Map<String, VulnerabilityPattern> securityPatterns = new HashMap<>();
     private final List<SecurityRule> securityRules = new ArrayList<>();
 
@@ -332,32 +358,44 @@ public class AdvancedSecurityAnalyzer {
     }
 
     private double calculateOverallScore(int critical, int high, int medium, int low) {
+        // CVSS v3.0 benzeri hesaplama
         double baseScore = 100.0;
         
-        // Ağırlıklı ceza puanları
-        baseScore -= critical * 25.0; // Kritik sorunlar
-        baseScore -= high * 15.0;     // Yüksek riskli sorunlar
-        baseScore -= medium * 10.0;   // Orta riskli sorunlar
-        baseScore -= low * 5.0;       // Düşük riskli sorunlar
+        // Impact skorları
+        baseScore -= (critical * 25.0); // Critical: 9.0-10.0 CVSS
+        baseScore -= (high * 15.0);     // High: 7.0-8.9 CVSS
+        baseScore -= (medium * 10.0);   // Medium: 4.0-6.9 CVSS
+        baseScore -= (low * 5.0);       // Low: 0.1-3.9 CVSS
         
+        // Normalize
         return Math.max(0, Math.min(100, baseScore));
     }
 
     private double calculateSecurityScore(Map<String, List<SecurityIssue>> vulnerabilities) {
         double baseScore = 100.0;
-        
-        // Her güvenlik sorunu için ceza puanı
-        for (List<SecurityIssue> issues : vulnerabilities.values()) {
+        double totalImpact = 0.0;
+        int totalIssues = 0;
+
+        for (Map.Entry<String, List<SecurityIssue>> entry : vulnerabilities.entrySet()) {
+            String issueType = entry.getKey();
+            List<SecurityIssue> issues = entry.getValue();
+            
             for (SecurityIssue issue : issues) {
-                switch (issue.riskLevel()) {
-                    case CRITICAL -> baseScore -= 25.0; // Kritik sorun: -25 puan
-                    case HIGH -> baseScore -= 15.0;     // Yüksek risk: -15 puan
-                    case MEDIUM -> baseScore -= 10.0;   // Orta risk: -10 puan
-                    case LOW -> baseScore -= 5.0;       // Düşük risk: -5 puan
-                }
+                double severityMultiplier = SEVERITY_MULTIPLIERS.get(issue.riskLevel());
+                double exploitabilityMultiplier = EXPLOITABILITY_MULTIPLIERS.getOrDefault(issueType, 0.5);
+                int cweWeight = CWE_WEIGHTS.getOrDefault(issueType, 100);
+                
+                double issueImpact = (cweWeight / 100.0) * severityMultiplier * exploitabilityMultiplier;
+                totalImpact += issueImpact;
+                totalIssues++;
             }
         }
-        
+
+        if (totalIssues > 0) {
+            double averageImpact = totalImpact / totalIssues;
+            baseScore -= (averageImpact * 20);
+        }
+
         return Math.max(0, Math.min(100, baseScore));
     }
 
@@ -390,18 +428,18 @@ public class AdvancedSecurityAnalyzer {
     }
 
     private double calculateCategoryScore(List<SecurityIssue> issues) {
-        double baseScore = 100.0;
+        if (issues.isEmpty()) return 100.0;
         
+        double totalImpact = 0.0;
         for (SecurityIssue issue : issues) {
-            switch (issue.riskLevel()) {
-                case CRITICAL -> baseScore -= 30.0;
-                case HIGH -> baseScore -= 20.0;
-                case MEDIUM -> baseScore -= 10.0;
-                case LOW -> baseScore -= 5.0;
-            }
+            double severityImpact = SEVERITY_MULTIPLIERS.get(issue.riskLevel());
+            double exploitabilityImpact = EXPLOITABILITY_MULTIPLIERS.getOrDefault(issue.type(), 0.5);
+            
+            totalImpact += (severityImpact * 0.6) + (exploitabilityImpact * 0.4);
         }
         
-        return Math.max(0, Math.min(100, baseScore));
+        double averageImpact = totalImpact / issues.size();
+        return Math.max(0, Math.min(100, 100 - (averageImpact * 20)));
     }
 
     private int findRuleViolationLine(String sourceCode, SecurityRule rule) {
@@ -486,5 +524,43 @@ public class AdvancedSecurityAnalyzer {
         });
         
         return report.toString();
+    }
+
+    private double calculateRiskScore(Map<String, List<SecurityIssue>> vulnerabilities) {
+        double totalRisk = 0.0;
+        int totalIssues = 0;
+
+        for (Map.Entry<String, List<SecurityIssue>> entry : vulnerabilities.entrySet()) {
+            String issueType = entry.getKey();
+            List<SecurityIssue> issues = entry.getValue();
+            
+            for (SecurityIssue issue : issues) {
+                double severityRisk = SEVERITY_MULTIPLIERS.get(issue.riskLevel());
+                double exploitabilityRisk = EXPLOITABILITY_MULTIPLIERS.getOrDefault(issueType, 0.5);
+                double technicalDebtRisk = calculateTechnicalDebtRisk(issue);
+                
+                double issueRisk = (severityRisk * 0.4) + 
+                                 (exploitabilityRisk * 0.3) + 
+                                 (technicalDebtRisk * 0.3);
+                
+                totalRisk += issueRisk;
+                totalIssues++;
+            }
+        }
+
+        if (totalIssues == 0) return 100.0;
+        
+        double normalizedRisk = (totalRisk / totalIssues) * 25;
+        return Math.max(0, Math.min(100, 100 - normalizedRisk));
+    }
+
+    private double calculateTechnicalDebtRisk(SecurityIssue issue) {
+        // Tahmini düzeltme sürelerine göre risk
+        return switch (issue.riskLevel()) {
+            case CRITICAL -> 1.0;  // 1 gün veya daha fazla
+            case HIGH -> 0.8;      // 4-8 saat
+            case MEDIUM -> 0.5;    // 2-4 saat
+            case LOW -> 0.2;       // 1-2 saat
+        };
     }
 }
