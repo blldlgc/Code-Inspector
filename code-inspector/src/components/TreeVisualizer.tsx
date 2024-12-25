@@ -147,18 +147,46 @@ const TreeVisualizer = ({ data }) => {
   }, [data, setNodes, setEdges]);
 
   return (
-    <div style={{ width: "100%", height: "500px" }}>
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        fitView
-      >
-        <MiniMap />
-        <Controls />
-        <Background variant="dots" gap={16} size={0.5} />
-      </ReactFlow>
+    <div>
+      {/* Renk açıklamaları */}
+      <div className="mb-4 flex gap-4">
+        <div className="flex items-center">
+          <div className="w-4 h-4 mr-2 rounded" style={{ 
+            background: '#e6ffe6',
+            border: '1px solid #28a745'
+          }}></div>
+          <span className="text-sm">Public</span>
+        </div>
+        <div className="flex items-center">
+          <div className="w-4 h-4 mr-2 rounded" style={{ 
+            background: '#ffe6e6',
+            border: '1px solid #dc3545'
+          }}></div>
+          <span className="text-sm">Private</span>
+        </div>
+        <div className="flex items-center">
+          <div className="w-4 h-4 mr-2 rounded" style={{ 
+            background: '#fff3e6',
+            border: '1px solid #fd7e14'
+          }}></div>
+          <span className="text-sm">Protected</span>
+        </div>
+      </div>
+
+      {/* Mevcut ReactFlow komponenti */}
+      <div style={{ width: "100%", height: "450px" }}>
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          fitView
+        >
+          <MiniMap />
+          <Controls />
+          <Background variant="dots" gap={16} size={0.5} />
+        </ReactFlow>
+      </div>
     </div>
   );
 };
