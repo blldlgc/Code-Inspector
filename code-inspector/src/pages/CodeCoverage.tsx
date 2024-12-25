@@ -13,13 +13,11 @@ interface MethodCoverage {
     totalLines: number;
 }
 
-interface CoverageData {
+interface CoverageResult {
     coveragePercentage: number;
     coveredInstructions: number;
     totalInstructions: number;
-    methodCoverages: {
-        [key: string]: MethodCoverage;
-    };
+    methodCoverages: Record<string, MethodCoverage>;
 }
 
 export default function CodeCoverage() {

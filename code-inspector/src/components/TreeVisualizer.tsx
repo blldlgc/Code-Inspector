@@ -197,7 +197,7 @@ const TreeVisualizer = ({ data }: TreeVisualizerProps) => {
         >
           <MiniMap />
           <Controls />
-          <Background variant={BackgroundVariant.DOTS} gap={16} size={0.5} />
+          <Background variant={BackgroundVariant.Dots} gap={16} size={0.5} />
         </ReactFlow>
       </div>
     </div>

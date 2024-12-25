@@ -43,9 +43,10 @@ export default function TreeSitter() {
       } else {
         throw new Error("Invalid data structure from API.");
       }
-    } catch (error) {
-      console.error("Error:", error);
-      setError(`An error occurred: ${error.message}`);
+    } catch (err: unknown) {
+      console.error("Error:", err);
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+      setError(`An error occurred: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
