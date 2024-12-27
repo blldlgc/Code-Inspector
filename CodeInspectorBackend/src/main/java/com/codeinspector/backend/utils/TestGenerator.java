@@ -74,26 +74,20 @@ public class TestGenerator {
         test.append("    @Test\n");
         test.append("    public void test" + capitalize(method.name) + "() {\n");
         
+        // Test kurulumu
         test.append("        // Test setup\n");
         String className = extractClassName(sourceCode);
         test.append("        " + className + " instance = new " + className + "();\n\n");
         
+        // Test yürütme
         test.append("        // Test execution\n");
-        if (method.name.equals("add")) {
-            test.append("        int result = instance.add(5, 3);\n\n");
-            test.append("        // Assertions\n");
-            test.append("        assertEquals(8, result);\n");
-        } else if (method.name.equals("subtract")) {
-            test.append("        int result = instance.subtract(10, 4);\n\n");
-            test.append("        // Assertions\n");
-            test.append("        assertEquals(6, result);\n");
-        } else {
-            test.append(generateTestExecution(method));
-            test.append("\n        // Assertions\n");
-            test.append(generateAssertions(method));
-        }
-        test.append("    }\n\n");
+        test.append(generateTestExecution(method));
         
+        // Assertions
+        test.append("\n        // Assertions\n");
+        test.append(generateAssertions(method));
+        
+        test.append("    }\n\n");
         return test.toString();
     }
     
@@ -106,15 +100,67 @@ public class TestGenerator {
     }
     
     private String generateAssertions(MethodInfo method) {
-        switch (method.returnType) {
+        StringBuilder assertions = new StringBuilder();
+        
+        switch (method.returnType.toLowerCase()) {
             case "void":
-                return "        // No assertions for void methods\n";
+                assertions.append("        // Void metodlar için assertion gerekmez\n");
+                break;
             case "boolean":
-                return "        assertTrue(result);\n";
-            case "String":
-                return "        assertNotNull(result);\n";
+                assertions.append("        // Boolean dönüş değeri için assertion\n");
+                assertions.append("        assertTrue(result);\n");
+                break;
+            case "int":
+            case "long":
+            case "short":
+            case "byte":
+                assertions.append("        // Sayısal dönüş değeri için assertion\n");
+                assertions.append("        assertNotNull(result);\n");
+                assertions.append("        assertTrue(result >= " + getMinValue(method.returnType) + ");\n");
+                assertions.append("        assertTrue(result <= " + getMaxValue(method.returnType) + ");\n");
+                break;
+            case "double":
+            case "float":
+                assertions.append("        // Ondalıklı sayı dönüş değeri için assertion\n");
+                assertions.append("        assertNotNull(result);\n");
+                assertions.append("        assertTrue(!Double.isNaN(result));\n");
+                break;
+            case "string":
+                assertions.append("        // String dönüş değeri için assertion\n");
+                assertions.append("        assertNotNull(result);\n");
+                assertions.append("        assertTrue(!result.isEmpty());\n");
+                break;
             default:
-                return "        assertNotNull(result);\n";
+                if (method.returnType.contains("List") || method.returnType.contains("Set") || 
+                    method.returnType.contains("Map") || method.returnType.contains("Collection")) {
+                    assertions.append("        // Koleksiyon dönüş değeri için assertion\n");
+                    assertions.append("        assertNotNull(result);\n");
+                } else {
+                    assertions.append("        // Özel nesne dönüş değeri için assertion\n");
+                    assertions.append("        assertNotNull(result);\n");
+                }
+        }
+        
+        return assertions.toString();
+    }
+    
+    private String getMinValue(String type) {
+        switch (type.toLowerCase()) {
+            case "byte": return "Byte.MIN_VALUE";
+            case "short": return "Short.MIN_VALUE";
+            case "int": return "Integer.MIN_VALUE";
+            case "long": return "Long.MIN_VALUE";
+            default: return "0";
+        }
+    }
+    
+    private String getMaxValue(String type) {
+        switch (type.toLowerCase()) {
+            case "byte": return "Byte.MAX_VALUE";
+            case "short": return "Short.MAX_VALUE";
+            case "int": return "Integer.MAX_VALUE";
+            case "long": return "Long.MAX_VALUE";
+            default: return "0";
         }
     }
     

@@ -16,7 +16,7 @@ import { ThemeProvider } from "./components/theme-provider"
 import TestGenerator from './pages/TestGenerator.tsx'
 import CodeSmells from './pages/CodeSmells.tsx'
 import CodeSecurity from './pages/CodeSecurity.tsx'
-
+import GeminiApiExample from './pages/GeminiComponent.tsx'
 
 const AppRouter = () => {
   const [user, setUser] = useState<any>(null);
@@ -112,6 +112,16 @@ const AppRouter = () => {
         <ProtectedRoute>
           <MySidebar>
             <CodeSecurity />
+          </MySidebar>
+        </ProtectedRoute>
+      )
+    },
+    {
+      path: "/gemini",
+      element: (
+        <ProtectedRoute>
+          <MySidebar>
+            <GeminiApiExample />
           </MySidebar>
         </ProtectedRoute>
       )
