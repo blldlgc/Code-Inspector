@@ -34,6 +34,7 @@ export default function MetricsAnalyzer() {
         throw new Error("An error occurred while analyzing metrics")
       }
        const data: MetricsResponse = await response.json()
+       console.log(data)
       setMetrics(data.metrics)
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred")
@@ -116,20 +117,22 @@ export default function MetricsAnalyzer() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {Object.entries(metrics).map(([key, value], index) => (
-                      <motion.div
-                        key={key}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, delay: index * 0.1 }}
-                        className="flex flex-col p-4 border rounded-lg bg-muted/50"
-                      >
-                        <span className="text-sm font-medium text-muted-foreground capitalize">
-                          {key.replace(/([A-Z])/g, ' $1').trim()}
-                        </span>
-                        <span className="text-2xl font-bold mt-1">{value}</span>
-                      </motion.div>
-                    ))}
+                    {Object.entries(metrics)
+                      .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
+                      .map(([key, value], index) => (
+                        <motion.div
+                          key={key}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3, delay: index * 0.1 }}
+                          className="flex flex-col p-4 border rounded-lg bg-muted/50"
+                        >
+                          <span className="text-sm font-medium text-muted-foreground capitalize">
+                            {key.replace(/([A-Z])/g, ' $1').trim()}
+                          </span>
+                          <span className="text-2xl font-bold mt-1">{value}</span>
+                        </motion.div>
+                      ))}
                   </div>
                 </CardContent>
               </Card>
