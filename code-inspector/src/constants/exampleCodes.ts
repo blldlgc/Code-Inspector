@@ -255,4 +255,52 @@ export const exampleCodes = {
       }
   }
   `,
+codesecurity: `public class Test {
+    private String password = "123456";
+    public void login(String username, String password) {
+        Statement stmt = connection.createStatement();
+        String query = "SELECT * FROM users WHERE username='" + username + "' AND password='" + password + "'";
+        stmt.executeQuery(query);
+    }
+    public void processData(String data) {
+        if(data != null) {
+            System.out.println(data);
+        }
+    }
+}`,
+codeGraph: `// This is a sample Java code for testing
+        public class SampleClass {
+
+        // Variable declarations
+        private int count;
+        private String name;
+
+        // Constructor
+        public SampleClass(String name) {
+            this.name = name;
+            this.count = 0;
+        }
+
+        // A sample method
+        public void increment() {
+            // Increment the count
+            count++;
+        }
+
+        // Another method with loops and conditions
+        public void analyze(int[] numbers) {
+            for (int num : numbers) {
+                if (num % 2 == 0) {
+                    System.out.println("Even number: " + num);
+                } else {
+                    System.out.println("Odd number: " + num);
+                }
+            }
+        }
+
+        // Method calling another method
+        public void process() {
+            increment(); 
+        }
+    }`,
   }; 
