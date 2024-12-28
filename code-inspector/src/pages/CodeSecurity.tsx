@@ -83,6 +83,46 @@ const CodeSecurity = () => {
         }
     };
 
+    const getRiskGrade = (score: number) => {
+        if (score >= 90) return 'A+';
+        if (score >= 85) return 'A';
+        if (score >= 80) return 'A-';
+        if (score >= 75) return 'B+';
+        if (score >= 70) return 'B';
+        if (score >= 65) return 'B-';
+        if (score >= 60) return 'C+';
+        if (score >= 55) return 'C';
+        if (score >= 50) return 'C-';
+        if (score >= 45) return 'D+';
+        if (score >= 40) return 'D';
+        if (score >= 35) return 'D-';
+        return 'F';
+    };
+
+    const getGradeColor = (grade: string) => {
+        if (grade.startsWith('A')) return 'text-green-600 dark:text-green-400';
+        if (grade.startsWith('B')) return 'text-blue-600 dark:text-blue-400';
+        if (grade.startsWith('C')) return 'text-yellow-600 dark:text-yellow-400';
+        if (grade.startsWith('D')) return 'text-orange-600 dark:text-orange-400';
+        return 'text-red-600 dark:text-red-400';
+    };
+
+    const getScoreColor = (score: number) => {
+        if (score >= 80) return 'text-green-600 dark:text-green-400';
+        if (score >= 60) return 'text-blue-600 dark:text-blue-400';
+        if (score >= 40) return 'text-yellow-600 dark:text-yellow-400';
+        if (score >= 20) return 'text-orange-600 dark:text-orange-400';
+        return 'text-red-600 dark:text-red-400';
+    };
+
+    const getIssuesColor = (total: number) => {
+        if (total === 0) return 'text-green-600 dark:text-green-400';
+        if (total <= 2) return 'text-blue-600 dark:text-blue-400';
+        if (total <= 5) return 'text-yellow-600 dark:text-yellow-400';
+        if (total <= 8) return 'text-orange-600 dark:text-orange-400';
+        return 'text-red-600 dark:text-red-400';
+    };
+
     const setExampleCode = () => {
         setSourceCode(exampleCodes.codesecurity || '');
     };
@@ -155,17 +195,23 @@ const CodeSecurity = () => {
                                                 <Shield className="h-4 w-4" />
                                                 <span className="text-sm font-medium">Security Score</span>
                                             </div>
-                                            <p className="text-2xl font-bold mt-2">
+                                            <p className={cn(
+                                                "text-2xl font-bold mt-2",
+                                                getScoreColor(results.riskMetrics.securityScore)
+                                            )}>
                                                 {results.riskMetrics.securityScore.toFixed(1)}%
                                             </p>
                                         </div>
                                         <div className="p-4 rounded-lg border">
                                             <div className="flex items-center gap-2">
                                                 <AlertTriangle className="h-4 w-4" />
-                                                <span className="text-sm font-medium">Risk Score</span>
+                                                <span className="text-sm font-medium">Risk Grade</span>
                                             </div>
-                                            <p className="text-2xl font-bold mt-2">
-                                                {results.riskMetrics.overallRiskScore.toFixed(1)}
+                                            <p className={cn(
+                                                "text-2xl font-bold mt-2",
+                                                getGradeColor(getRiskGrade(results.riskMetrics.overallRiskScore))
+                                            )}>
+                                                {getRiskGrade(results.riskMetrics.overallRiskScore)}
                                             </p>
                                         </div>
                                         <div className="p-4 rounded-lg border">
@@ -173,7 +219,15 @@ const CodeSecurity = () => {
                                                 <AlertCircle className="h-4 w-4" />
                                                 <span className="text-sm font-medium">Total Issues</span>
                                             </div>
-                                            <p className="text-2xl font-bold mt-2">
+                                            <p className={cn(
+                                                "text-2xl font-bold mt-2",
+                                                getIssuesColor(
+                                                    results.riskMetrics.criticalIssues + 
+                                                    results.riskMetrics.highIssues + 
+                                                    results.riskMetrics.mediumIssues + 
+                                                    results.riskMetrics.lowIssues
+                                                )
+                                            )}>
                                                 {results.riskMetrics.criticalIssues + 
                                                  results.riskMetrics.highIssues + 
                                                  results.riskMetrics.mediumIssues + 

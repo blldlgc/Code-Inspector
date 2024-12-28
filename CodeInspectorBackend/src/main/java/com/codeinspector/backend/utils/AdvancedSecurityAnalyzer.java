@@ -20,31 +20,35 @@ import com.codeinspector.backend.model.security.VulnerabilityPattern;
 
 @Component
 public class AdvancedSecurityAnalyzer {
-    // SecurityMetrics sınıfını static fields olarak taşıyalım
-    private static final Map<String, Integer> CWE_WEIGHTS = Map.of(
-        "SQL_INJECTION", 89,     // CWE-89
-        "XSS", 79,              // CWE-79
-        "BROKEN_AUTH", 287,     // CWE-287
-        "SENSITIVE_DATA", 200,   // CWE-200
-        "UNSAFE_LOGGING", 532,   // CWE-532
-        "NULL_CHECK", 476       // CWE-476
-    );
+    private static final class SecurityMetrics {
+        // CWE bazlı ağırlıklar
+        private static final Map<String, Integer> CWE_WEIGHTS = Map.of(
+            "SQL_INJECTION", 89,     // CWE-89
+            "XSS", 79,              // CWE-79
+            "BROKEN_AUTH", 287,     // CWE-287
+            "SENSITIVE_DATA", 200,   // CWE-200
+            "UNSAFE_LOGGING", 532,   // CWE-532
+            "NULL_CHECK", 476       // CWE-476
+        );
 
-    private static final Map<RiskLevel, Double> SEVERITY_MULTIPLIERS = Map.of(
-        RiskLevel.CRITICAL, 5.0,
-        RiskLevel.HIGH, 3.0,
-        RiskLevel.MEDIUM, 2.0,
-        RiskLevel.LOW, 1.0
-    );
+        // Severity çarpanları
+        private static final Map<RiskLevel, Double> SEVERITY_MULTIPLIERS = Map.of(
+            RiskLevel.CRITICAL, 5.0,
+            RiskLevel.HIGH, 3.0,
+            RiskLevel.MEDIUM, 2.0,
+            RiskLevel.LOW, 1.0
+        );
 
-    private static final Map<String, Double> EXPLOITABILITY_MULTIPLIERS = Map.of(
-        "SQL_INJECTION", 1.0,    // Remote exploit possible
-        "XSS", 0.9,             // Remote exploit possible
-        "BROKEN_AUTH", 0.8,      // Local access needed
-        "SENSITIVE_DATA", 0.7,   // Local access needed
-        "UNSAFE_LOGGING", 0.4,   // Limited impact
-        "NULL_CHECK", 0.3       // Runtime only
-    );
+        // Exploitability çarpanları
+        private static final Map<String, Double> EXPLOITABILITY_MULTIPLIERS = Map.of(
+            "SQL_INJECTION", 1.0,    // Remote exploit possible
+            "XSS", 0.9,             // Remote exploit possible
+            "BROKEN_AUTH", 0.8,      // Local access needed
+            "SENSITIVE_DATA", 0.7,   // Local access needed
+            "UNSAFE_LOGGING", 0.4,   // Limited impact
+            "NULL_CHECK", 0.3       // Runtime only
+        );
+    }
 
     private final Map<String, VulnerabilityPattern> securityPatterns = new HashMap<>();
     private final List<SecurityRule> securityRules = new ArrayList<>();
@@ -381,19 +385,21 @@ public class AdvancedSecurityAnalyzer {
             List<SecurityIssue> issues = entry.getValue();
             
             for (SecurityIssue issue : issues) {
-                double severityMultiplier = SEVERITY_MULTIPLIERS.get(issue.riskLevel());
-                double exploitabilityMultiplier = EXPLOITABILITY_MULTIPLIERS.getOrDefault(issueType, 0.5);
-                int cweWeight = CWE_WEIGHTS.getOrDefault(issueType, 100);
+                double severityMultiplier = SecurityMetrics.SEVERITY_MULTIPLIERS.get(issue.riskLevel());
+                double exploitabilityMultiplier = SecurityMetrics.EXPLOITABILITY_MULTIPLIERS.getOrDefault(issueType, 0.5);
+                int cweWeight = SecurityMetrics.CWE_WEIGHTS.getOrDefault(issueType, 100);
                 
+                // CVSS benzeri hesaplama
                 double issueImpact = (cweWeight / 100.0) * severityMultiplier * exploitabilityMultiplier;
                 totalImpact += issueImpact;
                 totalIssues++;
             }
         }
 
+        // Normalize impact
         if (totalIssues > 0) {
             double averageImpact = totalImpact / totalIssues;
-            baseScore -= (averageImpact * 20);
+            baseScore -= (averageImpact * 20); // Scale factor
         }
 
         return Math.max(0, Math.min(100, baseScore));
@@ -432,8 +438,8 @@ public class AdvancedSecurityAnalyzer {
         
         double totalImpact = 0.0;
         for (SecurityIssue issue : issues) {
-            double severityImpact = SEVERITY_MULTIPLIERS.get(issue.riskLevel());
-            double exploitabilityImpact = EXPLOITABILITY_MULTIPLIERS.getOrDefault(issue.type(), 0.5);
+            double severityImpact = SecurityMetrics.SEVERITY_MULTIPLIERS.get(issue.riskLevel());
+            double exploitabilityImpact = SecurityMetrics.EXPLOITABILITY_MULTIPLIERS.getOrDefault(issue.type(), 0.5);
             
             totalImpact += (severityImpact * 0.6) + (exploitabilityImpact * 0.4);
         }
@@ -535,10 +541,12 @@ public class AdvancedSecurityAnalyzer {
             List<SecurityIssue> issues = entry.getValue();
             
             for (SecurityIssue issue : issues) {
-                double severityRisk = SEVERITY_MULTIPLIERS.get(issue.riskLevel());
-                double exploitabilityRisk = EXPLOITABILITY_MULTIPLIERS.getOrDefault(issueType, 0.5);
+                // Risk faktörleri
+                double severityRisk = SecurityMetrics.SEVERITY_MULTIPLIERS.get(issue.riskLevel());
+                double exploitabilityRisk = SecurityMetrics.EXPLOITABILITY_MULTIPLIERS.getOrDefault(issueType, 0.5);
                 double technicalDebtRisk = calculateTechnicalDebtRisk(issue);
                 
+                // Toplam risk hesaplama
                 double issueRisk = (severityRisk * 0.4) + 
                                  (exploitabilityRisk * 0.3) + 
                                  (technicalDebtRisk * 0.3);
@@ -550,7 +558,8 @@ public class AdvancedSecurityAnalyzer {
 
         if (totalIssues == 0) return 100.0;
         
-        double normalizedRisk = (totalRisk / totalIssues) * 25;
+        // Risk skoru hesaplama (ters orantılı - yüksek risk = düşük skor)
+        double normalizedRisk = (totalRisk / totalIssues) * 25; // Scale factor
         return Math.max(0, Math.min(100, 100 - normalizedRisk));
     }
 
