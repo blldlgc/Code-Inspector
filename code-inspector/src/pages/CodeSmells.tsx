@@ -50,6 +50,15 @@ const CodeSmells = () => {
         setSourceCode(exampleCodes.codeSmells);
     };
 
+    const getGradeAndColor = (score: number) => {
+        if (score >= 90) return { grade: 'A', color: 'text-emerald-500' };
+        if (score >= 80) return { grade: 'B', color: 'text-green-500' };
+        if (score >= 70) return { grade: 'C', color: 'text-yellow-500' };
+        if (score >= 60) return { grade: 'D', color: 'text-orange-500' };
+        if (score >= 45) return { grade: 'E', color: 'text-red-400' };
+        return { grade: 'F', color: 'text-red-600' };
+    };
+
     return (
         <PageLayout 
             title="Code Smell Detector" 
@@ -130,39 +139,47 @@ const CodeSmells = () => {
                                 </CardHeader>
                                 <CardContent>
                                     <div className="grid gap-4">
-                                        {Object.entries(results.smellScores).map(([smellType, score]) => (
-                                            <div key={smellType} className="rounded-lg border p-4">
-                                                <div className="flex justify-between items-center mb-2">
-                                                    <span className="font-medium">{smellType}</span>
-                                                    <span className={cn(
-                                                        "px-2.5 py-0.5 rounded-full text-xs font-medium",
-                                                        score > 80 ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" :
-                                                        score > 50 ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200" :
-                                                        "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                                                    )}>
-                                                        {score.toFixed(0)}%
-                                                    </span>
-                                                </div>
-                                                <div className="w-full bg-secondary rounded-full h-2">
-                                                    <div 
-                                                        className={cn(
-                                                            "h-2 rounded-full transition-all",
-                                                            score > 80 ? "bg-green-500" :
-                                                            score > 50 ? "bg-yellow-500" :
-                                                            "bg-red-500"
-                                                        )}
-                                                        style={{ width: `${score}%` }}
-                                                    />
-                                                </div>
-                                                {results.smellDetails[smellType] && (
-                                                    <div className="mt-2 text-sm text-muted-foreground">
-                                                        {results.smellDetails[smellType].map((detail, index) => (
-                                                            <div key={index}>{detail}</div>
-                                                        ))}
+                                        {Object.entries(results.smellScores).map(([smellType, score]) => {
+                                            const { grade, color } = getGradeAndColor(score);
+                                            return (
+                                                <div key={smellType} className="rounded-lg border p-4">
+                                                    <div className="flex justify-between items-center mb-2">
+                                                        <div className="flex items-center gap-4">
+                                                            <span className={`text-2xl font-bold ${color}`}>
+                                                                {grade}
+                                                            </span>
+                                                            <span className="font-medium">{smellType}</span>
+                                                        </div>
+                                                        <span className={cn(
+                                                            "px-2.5 py-0.5 rounded-full text-xs font-medium",
+                                                            score > 80 ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" :
+                                                            score > 50 ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200" :
+                                                            "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                                                        )}>
+                                                            {score.toFixed(0)}%
+                                                        </span>
                                                     </div>
-                                                )}
-                                            </div>
-                                        ))}
+                                                    <div className="w-full bg-secondary rounded-full h-2">
+                                                        <div 
+                                                            className={cn(
+                                                                "h-2 rounded-full transition-all",
+                                                                score > 80 ? "bg-green-500" :
+                                                                score > 50 ? "bg-yellow-500" :
+                                                                "bg-red-500"
+                                                            )}
+                                                            style={{ width: `${score}%` }}
+                                                        />
+                                                    </div>
+                                                    {results.smellDetails[smellType] && (
+                                                        <div className="mt-2 text-sm text-muted-foreground">
+                                                            {results.smellDetails[smellType].map((detail, index) => (
+                                                                <div key={index}>{detail}</div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </CardContent>
                             </Card>
