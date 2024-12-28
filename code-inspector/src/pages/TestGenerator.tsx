@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils"
 import { exampleCodes } from '@/constants/exampleCodes';
+import { generateContent } from '@/lib/api';
 
 interface TestResult {
     testCode: string;
@@ -17,14 +18,10 @@ interface TestResult {
     success: boolean;
     errorMessage: string | null;
     coveragePercentage: number;
-    coveredInstructions: number;
-    totalInstructions: number;
-    methodCoverages: {
-        [key: string]: {
-            methodName: string;
-            coveredLines: number;
-            totalLines: number;
-        };
+    coveredLines: number;
+    totalLines: number;
+    methodCoverage: {
+        [key: string]: [number, number]; // [coveredLines, totalLines]
     };
 }
 
@@ -39,12 +36,44 @@ export default function TestGenerator() {
             setLoading(true);
             setError(null);
 
-            const response = await axios.post('http://localhost:8080/api/code/generate-test', {
-                sourceCode
+            // Gemini API'ye gönderilecek prompt
+            const prompt = `
+                Please analyze this Java code and generate comprehensive unit tests for it.
+                The tests should:
+                - Use JUnit 4 framework
+                - Include assertions for all possible scenarios
+                - Cover edge cases
+                - Have clear test method names
+                - Include comments explaining each test
+                - Return the code between triple backticks (''')
+                
+                Here's the code to generate tests for:
+                
+                ${sourceCode}
+            `;
+
+            // Gemini API'den test kodunu al
+            const rawResponse = await generateContent(prompt);
+
+            // Test kodunu ''' işaretleri arasından çıkar
+            const codeMatch = rawResponse.match(/```java([\s\S]*?)```/);
+            const generatedTestCode = codeMatch ? codeMatch[1].trim() : rawResponse;
+        
+
+            // Backend'e kaynak kodu ve üretilen test kodunu gönder
+            const response = await axios.post('http://localhost:8080/api/coverage', {
+                sourceCode,
+                testCode: generatedTestCode
+            });
+            console.log(response);
+            
+
+            // Sonuçları state'e kaydet
+            setResult({
+                ...response.data,
+                testCode: generatedTestCode
             });
 
-            setResult(response.data);
-            console.log(response.data);
         } catch (error) {
             setError('Test generation failed. Please check your code and try again.');
             console.error('Error:', error);
@@ -123,7 +152,7 @@ export default function TestGenerator() {
                         >
                             <Card>
                                 <CardHeader>
-                                    <CardTitle>Generated Tests</CardTitle>
+                                    <CardTitle>AI Generated Tests</CardTitle>
                                 </CardHeader>
                                 <CardContent>
                                     <div className="space-y-6">
@@ -139,8 +168,8 @@ export default function TestGenerator() {
                                             </div>
                                             <div className="p-4 rounded-lg border bg-card">
                                                 <p className="text-sm text-muted-foreground">Status</p>
-                                                <p className={`text-2xl font-bold ${result.success ? 'text-green-500' : 'text-red-500'}`}>
-                                                    {result.success ? 'Success' : 'Failed'}
+                                                <p className={`text-2xl font-bold ${result.coveragePercentage > 80 ? 'text-green-500' : 'text-red-500'}`}>
+                                                    {result.coveragePercentage > 80 ? 'Success' : 'Failed'}
                                                 </p>
                                             </div>
                                         </div>
@@ -169,8 +198,8 @@ export default function TestGenerator() {
                                 <div className="space-y-4">
                                     <h3 className="text-lg font-semibold">Method Coverage</h3>
                                     <div className="grid gap-4">
-                                        {Object.entries(result.methodCoverages).map(([methodName, data]) => {
-                                            const percentage = (data.coveredLines / data.totalLines) * 100;
+                                        {Object.entries(result.methodCoverage || {}).map(([methodName, [covered, total]]) => {
+                                            const percentage = (covered / total) * 100;
                                             return (
                                                 <div key={methodName} className="rounded-lg border p-4">
                                                     <div className="flex justify-between items-center mb-2">
@@ -200,7 +229,7 @@ export default function TestGenerator() {
                                                         />
                                                     </div>
                                                     <p className="text-sm text-muted-foreground mt-2">
-                                                        {data.coveredLines} / {data.totalLines} lines covered
+                                                        {covered} / {total} lines covered
                                                     </p>
                                                 </div>
                                             );

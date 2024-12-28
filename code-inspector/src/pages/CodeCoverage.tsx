@@ -8,16 +8,14 @@ import { cn } from "@/lib/utils"
 import { exampleCodes } from '@/constants/exampleCodes';
 
 interface MethodCoverage {
-    methodName: string;
-    coveredLines: number;
-    totalLines: number;
+    [key: string]: [number, number]; // [coveredLines, totalLines]
 }
 
 interface Coverage {
     coveragePercentage: number;
-    coveredInstructions: number;
-    totalInstructions: number;
-    methodCoverages: Record<string, MethodCoverage>;
+    coveredLines: number;
+    totalLines: number;
+    methodCoverage: MethodCoverage;
 }
 
 export default function CodeCoverage() {
@@ -32,10 +30,9 @@ export default function CodeCoverage() {
                 testCode: testCode
             };
 
-            const response = await axios.post('http://localhost:8080/api/code/coverage', requestData);
+            const response = await axios.post('http://localhost:8080/api/coverage', requestData);
             
             setCoverage(response.data);
-            
             console.log('Coverage Data:', response.data);
         } catch (error) {
             console.error('Error calculating coverage:', error);
@@ -107,26 +104,36 @@ export default function CodeCoverage() {
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-6">
-                                {/* Overall Coverage Percentage */}
-                                <div className="flex items-center justify-center">
-                                    <div className="text-center">
-                                        <p className="text-sm font-medium text-muted-foreground">Overall Test Coverage</p>
-                                        <div className="mt-2 flex items-baseline justify-center gap-2">
-                                            <p className="text-5xl font-bold">{coverage.coveragePercentage.toFixed(2)}%</p>
+                                {/* Genel Kapsama Yüzdesi */}
+                                <div className="p-6 border rounded-lg">
+                                    <div className="text-center space-y-4">
+                                        <p className="text-lg font-medium text-muted-foreground">Overall Test Coverage</p>
+                                        <div className="flex items-baseline justify-center gap-3">
+                                            <p className="text-5xl font-bold text-primary">{coverage.coveragePercentage.toFixed(2)}%</p>
                                             <span className="text-sm text-muted-foreground">
-                                                ({coverage.coveredInstructions}/{coverage.totalInstructions} lines)
+                                                ({coverage.coveredLines}/{coverage.totalLines} lines)
                                             </span>
+                                        </div>
+                                        <div className="w-full bg-secondary rounded-full h-3 mt-4">
+                                            <div 
+                                                className={cn(
+                                                    "h-3 rounded-full transition-all",
+                                                    coverage.coveragePercentage > 80 ? "bg-green-500" :
+                                                    coverage.coveragePercentage > 50 ? "bg-yellow-500" :
+                                                    "bg-red-500"
+                                                )}
+                                                style={{ width: `${coverage.coveragePercentage}%` }}
+                                            />
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Method-based Coverage */}
+                                {/* Metot Bazlı Kapsama */}
                                 <div className="space-y-4">
                                     <h3 className="text-lg font-semibold">Method Coverage</h3>
                                     <div className="grid gap-4">
-                                        {Object.entries(coverage.methodCoverages).map(([methodName, data]) => {
-                                            const methodData = data as MethodCoverage;
-                                            const percentage = (methodData.coveredLines / methodData.totalLines) * 100;
+                                        {Object.entries(coverage.methodCoverage).map(([methodName, [covered, total]]) => {
+                                            const percentage = (covered / total) * 100;
                                             return (
                                                 <div key={methodName} className="rounded-lg border p-4">
                                                     <div className="flex justify-between items-center mb-2">
@@ -156,7 +163,7 @@ export default function CodeCoverage() {
                                                         />
                                                     </div>
                                                     <p className="text-sm text-muted-foreground mt-2">
-                                                        {methodData.coveredLines} / {methodData.totalLines} lines covered
+                                                        {covered} / {total} lines covered
                                                     </p>
                                                 </div>
                                             );
