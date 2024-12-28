@@ -2,14 +2,35 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import TreeVisualizer from "@/components/TreeVisualizer";
 import { PageLayout } from "@/components/PageLayout";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
+import GraphVisualizer from "@/components/GraphVisualizer";
+import TreeVisualizer from "@/components/TreeVisualizer";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { exampleCodes } from '@/constants/exampleCodes';
 
-export default function TreeSitter() {
+interface ComplexityNode {
+  label: string;
+  startLine: number;
+  endLine: number;
+  children?: ComplexityNode[];
+  type: string;
+  code: string;
+  complexity: number;
+}
+
+interface GraphData {
+  rootNode: ComplexityNode;
+  complexity: number;
+  error: string | null;
+  complexityDetails: string[];
+}
+
+export default function CodeGraph() {
   const [code, setCode] = useState("");
+  const [graphData, setGraphData] = useState<GraphData | null>(null);
   const [treeData, setTreeData] = useState<any[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -19,82 +40,49 @@ export default function TreeSitter() {
     setIsLoading(true);
 
     if (!code.trim()) {
-      setError("Code cannot be empty.");
+      setError("Kod boş olamaz.");
       setIsLoading(false);
       return;
     }
 
     try {
-      const res = await fetch("http://localhost:8080/api/tree-sitter", {
+      const complexityRes = await fetch("http://localhost:8080/api/code/graph", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code }),
       });
 
-      if (!res.ok) {
-        throw new Error(`HTTP error! Status: ${res.status}`);
+      const treeSitterRes = await fetch("http://localhost:8080/api/tree-sitter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
+
+      if (!complexityRes.ok || !treeSitterRes.ok) {
+        throw new Error(`HTTP hatası!`);
       }
 
-      const data = await res.json();
-      console.log("API Response:", data);
+      const complexityData = await complexityRes.json();
+      const treeSitterData = await treeSitterRes.json();
 
-      if (data && data.nodes && Array.isArray(data.nodes)) {
-        setTreeData(data.nodes); // Gelen veriyi ayarla
-      } else {
-        throw new Error("Invalid data structure from API.");
-      }
+      setGraphData(complexityData);
+      setTreeData(treeSitterData.nodes);
     } catch (err: unknown) {
-      console.error("Error:", err);
-      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
-      setError(`An error occurred: ${errorMessage}`);
+      const errorMessage = err instanceof Error ? err.message : 'Bilinmeyen bir hata oluştu';
+      setError(`Bir hata oluştu: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
   };
 
   const setExampleCode = () => {
-    setCode(
-`// This is a sample Java code for testing
-        public class SampleClass {
-
-        // Variable declarations
-        private int count;
-        private String name;
-
-        // Constructor
-        public SampleClass(String name) {
-            this.name = name;
-            this.count = 0;
-        }
-
-        // A sample method
-        public void increment() {
-            // Increment the count
-            count++;
-        }
-
-        // Another method with loops and conditions
-        public void analyze(int[] numbers) {
-            for (int num : numbers) {
-                if (num % 2 == 0) {
-                    System.out.println("Even number: " + num);
-                } else {
-                    System.out.println("Odd number: " + num);
-                }
-            }
-        }
-
-        // Method calling another method
-        public void process() {
-            increment(); 
-        }
-    }`);
+    setCode(exampleCodes.codeGraph);
   };
 
   return (
     <PageLayout
       title="Code Graph Analysis"
-      description="Visualize and analyze the graph structure of your code."
+      description="Visualize and analyze the complexity graph of your code."
     >
       <div className="grid gap-6">
         <Card>
@@ -147,7 +135,7 @@ export default function TreeSitter() {
           </AnimatePresence>
         )}
 
-        {treeData && (
+        {(graphData || treeData) && (
           <AnimatePresence>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -157,14 +145,29 @@ export default function TreeSitter() {
             >
               <Card>
                 <CardHeader>
-                  <CardTitle>Code Graph Visualization</CardTitle>
+                  <CardTitle>Code Analysis Results</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="w-full border rounded-lg bg-muted/50 overflow-hidden">
-                    <div className="h-[500px] p-4">
-                      <TreeVisualizer data={treeData} />
-                    </div>
-                  </div>
+                  <Tabs defaultValue="complexity" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="complexity">Complexity Graph</TabsTrigger>
+                      <TabsTrigger value="treesitter">AST Visualization</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="complexity">
+                      <div className="w-full border rounded-lg bg-muted/50 overflow-hidden">
+                        <div className="h-[500px] p-4">
+                          {graphData && <GraphVisualizer data={graphData.rootNode} />}
+                        </div>
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="treesitter">
+                      <div className="w-full border rounded-lg bg-muted/50 overflow-hidden">
+                        <div className="h-[500px] p-4">
+                          {treeData && <TreeVisualizer data={treeData} />}
+                        </div>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
                 </CardContent>
               </Card>
             </motion.div>
@@ -172,5 +175,5 @@ export default function TreeSitter() {
         )}
       </div>
     </PageLayout>
-  )
-}
+  );
+} 

@@ -9,7 +9,6 @@ import ProtectedRoute from './components/ProtectedRoute.tsx';
 import { auth } from '@/config/firebase';
 import MySidebar from './components/SidebarLayout.tsx';
 import CodeComparison from './pages/CodeComparison.tsx'
-import TreeSitter from './pages/TreeSitter.tsx'
 import CodeCoverage from './pages/CodeCoverage.tsx'
 import MetricsAnalyzer from './pages/MetricsAnalyzer.tsx'
 import { ThemeProvider } from "./components/theme-provider"
@@ -17,6 +16,7 @@ import TestGenerator from './pages/TestGenerator.tsx'
 import CodeSmells from './pages/CodeSmells.tsx'
 import CodeSecurity from './pages/CodeSecurity.tsx'
 import GeminiApiExample from './pages/GeminiComponent.tsx'
+import CodeGraph from './pages/CodeGraph.tsx'
 
 const AppRouter = () => {
   const [user, setUser] = useState<any>(null);
@@ -61,7 +61,7 @@ const AppRouter = () => {
       element: (
         <ProtectedRoute>
           <MySidebar>
-            <TreeSitter />
+            <CodeGraph />
           </MySidebar>
         </ProtectedRoute>
       ),

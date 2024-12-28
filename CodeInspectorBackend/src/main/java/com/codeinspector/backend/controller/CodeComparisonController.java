@@ -20,7 +20,10 @@ import com.codeinspector.backend.dto.TestCoverageRequest;
 import com.codeinspector.backend.dto.TestCoverageResponse;
 import com.codeinspector.backend.dto.TestGenerationRequest;
 import com.codeinspector.backend.dto.TestGenerationResponse;
+import com.codeinspector.backend.dto.CodeGraphRequest;
+import com.codeinspector.backend.dto.GraphResponse;
 import com.codeinspector.backend.service.CodeComparisonService;
+import com.codeinspector.backend.service.CodeGraphService;
 import com.codeinspector.backend.utils.TestCoverageAnalyzer;
 import com.codeinspector.backend.utils.TestGenerator;
 
@@ -32,15 +35,18 @@ public class CodeComparisonController {
     private final CodeComparisonService codeComparisonService;
     private final TestCoverageAnalyzer testCoverageAnalyzer;
     private final TestGenerator testGenerator;
+    private final CodeGraphService codeGraphService;
 
     @Autowired
     public CodeComparisonController(
             CodeComparisonService codeComparisonService,
             TestCoverageAnalyzer testCoverageAnalyzer,
-            TestGenerator testGenerator) {
+            TestGenerator testGenerator,
+            CodeGraphService codeGraphService) {
         this.codeComparisonService = codeComparisonService;
         this.testCoverageAnalyzer = testCoverageAnalyzer;
         this.testGenerator = testGenerator;
+        this.codeGraphService = codeGraphService;
     }
 
     @PostMapping("/compare")
@@ -106,5 +112,10 @@ public class CodeComparisonController {
                     Map.of()
                 ));
         }
+    }
+
+    @PostMapping("/graph")
+    public GraphResponse generateGraph(@RequestBody CodeGraphRequest request) {
+        return codeGraphService.analyzeCode(request.code());
     }
 }
