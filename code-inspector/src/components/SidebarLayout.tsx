@@ -64,6 +64,7 @@ import { signOut } from 'firebase/auth';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { auth } from "@/config/firebase.ts";
 import { ModeToggle } from "./mode-toggle"
+import { AIChatBox } from "@/components/AIChatBox";
 
 const GITHUB_REPO = "https://github.com/blldlgc/code-inspector";
 const GITHUB_ISSUES = `${GITHUB_REPO}/issues`;
@@ -389,6 +390,7 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
   </div>
 </div>
         </SidebarInset>
+        <AIChatBox />
       </SidebarProvider>
     </div>
   );
