@@ -12,6 +12,7 @@ import { exampleCodes } from '@/constants/exampleCodes';
 import { generateContent } from '@/lib/api';
 import { useLocation } from 'react-router-dom';
 import { toast } from "sonner"
+import { RainbowButton } from '@/components/ui/rainbow-button';
 
 interface TestResult {
     testCode: string;
@@ -128,14 +129,14 @@ export default function TestGenerator() {
                                 className="min-h-[300px] font-mono text-sm"
                             />
                         </div>
-                        <Button
+                        <RainbowButton
                             onClick={handleSubmit}
-                            className="mt-6 w-full"
+                            className="mt-6 w-full hover:scale-[1.01] transition-transform"
                             disabled={!sourceCode || loading}
                         >
                             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {loading ? "Generating Tests..." : "Generate Tests"}
-                        </Button>
+                            {loading ? "AI is crafting your tests..." : "Generate Tests with AI"}
+                        </RainbowButton>
                     </CardContent>
                 </Card>
 
