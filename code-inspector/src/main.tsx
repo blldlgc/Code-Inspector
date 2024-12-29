@@ -17,6 +17,7 @@ import CodeSmells from './pages/CodeSmells.tsx'
 import CodeSecurity from './pages/CodeSecurity.tsx'
 import GeminiApiExample from './pages/GeminiComponent.tsx'
 import CodeGraph from './pages/CodeGraph.tsx'
+import { Toaster } from './components/ui/sonner.tsx'
 
 const AppRouter = () => {
   const [user, setUser] = useState<any>(null);
@@ -140,6 +141,7 @@ const AppRouter = () => {
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
       <RouterProvider router={router} />
       <DialogComponent />
+      <Toaster />
     </ThemeProvider>
   );
 };

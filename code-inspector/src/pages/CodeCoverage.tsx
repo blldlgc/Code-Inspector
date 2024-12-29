@@ -6,6 +6,8 @@ import { PageLayout } from "@/components/PageLayout"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { exampleCodes } from '@/constants/exampleCodes';
+import { useNavigate } from "react-router-dom";
+import { RainbowButton } from '@/components/ui/rainbow-button';
 
 interface MethodCoverage {
     [key: string]: [number, number]; // [coveredLines, totalLines]
@@ -22,6 +24,7 @@ export default function CodeCoverage() {
     const [appCode, setAppCode] = useState('');
     const [testCode, setTestCode] = useState('');
     const [coverage, setCoverage] = useState<Coverage | null>(null);
+    const navigate = useNavigate();
 
     const handleSubmit = async () => {
         try {
@@ -125,6 +128,19 @@ export default function CodeCoverage() {
                                                 style={{ width: `${coverage.coveragePercentage}%` }}
                                             />
                                         </div>
+                                        {coverage.coveragePercentage < 100 && (
+                                            <div className="mt-4 space-y-4">
+                                                <RainbowButton
+                                                    onClick={() => navigate('/testgenerator', { state: { sourceCode: appCode } })}
+                                                    className="w-full max-w-sm mx-auto"
+                                                >
+                                                    Improve with AI Test Generator
+                                                </RainbowButton>
+                                                <p className="text-sm text-muted-foreground text-center">
+                                                    Use our AI-powered Test Generator to improve your test coverage
+                                                </p>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 

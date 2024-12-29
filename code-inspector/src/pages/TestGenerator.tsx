@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -6,10 +6,12 @@ import { PageLayout } from "@/components/PageLayout";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2 } from "lucide-react";
+import { Loader2, Copy } from "lucide-react";
 import { cn } from "@/lib/utils"
 import { exampleCodes } from '@/constants/exampleCodes';
 import { generateContent } from '@/lib/api';
+import { useLocation } from 'react-router-dom';
+import { toast } from "sonner"
 
 interface TestResult {
     testCode: string;
@@ -26,10 +28,18 @@ interface TestResult {
 }
 
 export default function TestGenerator() {
+    const location = useLocation();
     const [sourceCode, setSourceCode] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [result, setResult] = useState<TestResult | null>(null);
+
+    // Sayfa yüklendiğinde state'ten gelen kodu al
+    useEffect(() => {
+        if (location.state?.sourceCode) {
+            setSourceCode(location.state.sourceCode);
+        }
+    }, [location]);
 
     const handleSubmit = async () => {
         try {
@@ -54,24 +64,26 @@ export default function TestGenerator() {
 
             // Gemini API'den test kodunu al
             const rawResponse = await generateContent(prompt);
+            console.log(rawResponse);
 
             // Test kodunu ''' işaretleri arasından çıkar
             const codeMatch = rawResponse.match(/```java([\s\S]*?)```/);
             const generatedTestCode = codeMatch ? codeMatch[1].trim() : rawResponse;
-        
+
+            // Test sayısını hesapla (@Test anotasyonlarını say)
+            const numberOfTests = (generatedTestCode.match(/@Test/g) || []).length;
 
             // Backend'e kaynak kodu ve üretilen test kodunu gönder
             const response = await axios.post('http://localhost:8080/api/coverage', {
                 sourceCode,
                 testCode: generatedTestCode
             });
-            console.log(response);
-            
 
             // Sonuçları state'e kaydet
             setResult({
                 ...response.data,
-                testCode: generatedTestCode
+                testCode: generatedTestCode,
+                numberOfTests // Test sayısını ekle
             });
 
         } catch (error) {
@@ -184,10 +196,17 @@ export default function TestGenerator() {
                                                     className="min-h-[300px] font-mono text-sm bg-muted"
                                                 />
                                                 <Button
-                                                    onClick={() => navigator.clipboard.writeText(result.testCode)}
+                                                    onClick={() => {
+                                                        navigator.clipboard.writeText(result.testCode);
+                                                        toast("Code copied to clipboard", {
+                                                            description: "Test code has been copied successfully",
+                                                            duration: 2500,
+                                                            icon: <Copy className="h-4 w-4 text-blue-500" />,
+                                                        });
+                                                    }}
                                                     variant="outline"
                                                     size="sm"
-                                                    className="absolute top-2 right-2"
+                                                    className="absolute top-2 right-6"
                                                 >
                                                     Copy Code
                                                 </Button>
