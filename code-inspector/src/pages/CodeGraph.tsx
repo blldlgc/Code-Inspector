@@ -38,6 +38,7 @@ export default function CodeGraph() {
   const handleSubmit = async () => {
     setError(null);
     setIsLoading(true);
+    setTreeData(null);
 
     if (!code.trim()) {
       setError("Kod boş olamaz.");
@@ -52,21 +53,29 @@ export default function CodeGraph() {
         body: JSON.stringify({ code }),
       });
 
-      const treeSitterRes = await fetch("http://localhost:8080/api/tree-sitter", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code }),
-      });
-
-      if (!complexityRes.ok || !treeSitterRes.ok) {
-        throw new Error(`HTTP hatası!`);
+      if (!complexityRes.ok) {
+        throw new Error(`Complexity analizi hatası!`);
       }
 
       const complexityData = await complexityRes.json();
-      const treeSitterData = await treeSitterRes.json();
-
       setGraphData(complexityData);
-      setTreeData(treeSitterData.nodes);
+
+      try {
+        const treeSitterRes = await fetch("http://localhost:8080/api/tree-sitter", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code }),
+        });
+
+        if (!treeSitterRes.ok) {
+          throw new Error(`TreeSitter analizi hatası!`);
+        }
+
+        const treeSitterData = await treeSitterRes.json();
+        setTreeData(treeSitterData.nodes);
+      } catch (treeErr) {
+        console.error("TreeSitter hatası:", treeErr);
+      }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Bilinmeyen bir hata oluştu';
       setError(`Bir hata oluştu: ${errorMessage}`);
@@ -149,9 +158,11 @@ export default function CodeGraph() {
                 </CardHeader>
                 <CardContent>
                   <Tabs defaultValue="complexity" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
+                    <TabsList className="grid w-full" style={{ 
+                      gridTemplateColumns: treeData ? "1fr 1fr" : "1fr" 
+                    }}>
                       <TabsTrigger value="complexity">Complexity Graph</TabsTrigger>
-                      <TabsTrigger value="treesitter">AST Visualization</TabsTrigger>
+                      {treeData && <TabsTrigger value="treesitter">AST Visualization</TabsTrigger>}
                     </TabsList>
                     <TabsContent value="complexity">
                       <div className="w-full border rounded-lg bg-muted/50 overflow-hidden">
