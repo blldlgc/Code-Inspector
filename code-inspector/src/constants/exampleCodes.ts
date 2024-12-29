@@ -114,214 +114,105 @@ export const exampleCodes = {
   }`
     },
     testGenerator: {
-      sourceCode: `import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
+      sourceCode: `public class AdvancedCalculator {
 
-// Arayüz tanımları
-interface Shape {
-    double area();
-    String name();
-}
-
-interface Drawable {
-    void draw();
-}
-
-interface Transformable {
-    void scale(double factor);
-}
-
-interface Colorable {
-    void setColor(String color);
-    String getColor();
-}
-
-// Bir sınıf
-class Circle implements Shape, Drawable, Transformable, Colorable {
-    private double radius;
-    private String color;
-
-    public Circle(double radius) {
-        this.radius = radius;
-        this.color = "Undefined";
+    // Toplama
+    public double add(double a, double b) {
+        return a + b;
     }
 
-    @Override
-    public double area() {
-        return Math.PI * radius * radius;
+    // Çıkarma
+    public double subtract(double a, double b) {
+        return a - b;
     }
 
-    @Override
-    public String name() {
-        return "Circle";
+    // Çarpma
+    public double multiply(double a, double b) {
+        return a * b;
     }
 
-    @Override
-    public void draw() {
-        System.out.println("Drawing a Circle with radius: " + radius + " and color: " + color);
-    }
-
-    @Override
-    public void scale(double factor) {
-        radius *= factor;
-        System.out.println("Scaled Circle to radius: " + radius);
-    }
-
-    @Override
-    public void setColor(String color) {
-        this.color = color;
-    }
-
-    @Override
-    public String getColor() {
-        return color;
-    }
-}
-
-// Başka bir sınıf
-class Rectangle implements Shape, Drawable, Transformable, Colorable {
-    private double width, height;
-    private String color;
-
-    public Rectangle(double width, double height) {
-        this.width = width;
-        this.height = height;
-        this.color = "Undefined";
-    }
-
-    @Override
-    public double area() {
-        return width * height;
-    }
-
-    @Override
-    public String name() {
-        return "Rectangle";
-    }
-
-    @Override
-    public void draw() {
-        System.out.println("Drawing a Rectangle with width: " + width + " and height: " + height + " and color: " + color);
-    }
-
-    @Override
-    public void scale(double factor) {
-        width *= factor;
-        height *= factor;
-        System.out.println("Scaled Rectangle to width: " + width + " and height: " + height);
-    }
-
-    @Override
-    public void setColor(String color) {
-        this.color = color;
-    }
-
-    @Override
-    public String getColor() {
-        return color;
-    }
-}
-
-// Karmaşık bir sınıf
-class ShapeManager {
-    private final List<Shape> shapes = new ArrayList<>();
-    private final ExecutorService executor = Executors.newCachedThreadPool();
-
-    public void addShape(Shape shape) {
-        shapes.add(shape);
-    }
-
-    public void displayShapes() {
-        shapes.forEach(shape -> {
-            System.out.println("Shape: " + shape.name() + ", Area: " + shape.area());
-            if (shape instanceof Drawable) {
-                ((Drawable) shape).draw();
-            }
-        });
-    }
-
-    public void applyScaling(double factor) {
-        shapes.stream()
-              .filter(shape -> shape instanceof Transformable)
-              .forEach(shape -> ((Transformable) shape).scale(factor));
-    }
-
-    public void paintShapes(String color) {
-        shapes.stream()
-              .filter(shape -> shape instanceof Colorable)
-              .forEach(shape -> ((Colorable) shape).setColor(color));
-    }
-
-    public void executeConcurrentTasks() {
-        executor.submit(() -> {
-            System.out.println("Task 1: Displaying shapes...");
-            displayShapes();
-        });
-
-        executor.submit(() -> {
-            System.out.println("Task 2: Scaling shapes...");
-            applyScaling(1.5);
-        });
-
-        executor.submit(() -> {
-            System.out.println("Task 3: Painting shapes...");
-            paintShapes("Red");
-        });
-
-        executor.shutdown();
-    }
-}
-
-// Ana sınıf
-public class MixedJava {
-
-    public static void main(String[] args) {
-        ShapeManager manager = new ShapeManager();
-
-        Circle circle1 = new Circle(5);
-        Rectangle rectangle1 = new Rectangle(4, 6);
-
-        Circle circle2 = new Circle(3);
-        Rectangle rectangle2 = new Rectangle(2, 8);
-
-        manager.addShape(circle1);
-        manager.addShape(rectangle1);
-        manager.addShape(circle2);
-        manager.addShape(rectangle2);
-
-        System.out.println("Initial Shapes:");
-        manager.displayShapes();
-
-        System.out.println("\nExecuting Concurrent Tasks:");
-        manager.executeConcurrentTasks();
-
-        // Dosya işlemleri
-        System.out.println("\nPerforming File Operations...");
-        readFile("example.txt");
-        writeFile("output.txt", "This is a test message written to the file.");
-    }
-
-    private static void readFile(String fileName) {
-        try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                System.out.println("Read: " + line);
-            }
-        } catch (IOException e) {
-            System.err.println("Error reading file: " + e.getMessage());
+    // Bölme
+    public double divide(double a, double b) {
+        if (b == 0) {
+            throw new ArithmeticException("Cannot divide by zero");
         }
+        return a / b;
     }
 
-    private static void writeFile(String fileName, String content) {
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(fileName))) {
-            bw.write(content);
-            System.out.println("Write successful to " + fileName);
-        } catch (IOException e) {
-            System.err.println("Error writing file: " + e.getMessage());
+    // Üs alma
+    public double power(double base, double exponent) {
+        return Math.pow(base, exponent);
+    }
+
+    // Karekök
+    public double squareRoot(double number) {
+        if (number < 0) {
+            throw new IllegalArgumentException("Cannot calculate square root of a negative number");
         }
+        return Math.sqrt(number);
+    }
+
+    // Mod alma
+    public double mod(double a, double b) {
+        if (b == 0) {
+            throw new ArithmeticException("Cannot calculate mod with zero");
+        }
+        return a % b;
+    }
+
+    // Faktöriyel
+    public int factorial(int n) {
+        if (n < 0) {
+            throw new IllegalArgumentException("Number must be non-negative");
+        }
+        int result = 1;
+        for (int i = 1; i <= n; i++) {
+            result *= i;
+        }
+        return result;
+    }
+
+    // Ortalama hesaplama
+    public double average(double[] numbers) {
+        if (numbers == null || numbers.length == 0) {
+            throw new IllegalArgumentException("Array cannot be null or empty");
+        }
+        double sum = 0;
+        for (double num : numbers) {
+            sum += num;
+        }
+        return sum / numbers.length;
+    }
+
+    // En büyük sayıyı bulma
+    public double max(double[] numbers) {
+        if (numbers == null || numbers.length == 0) {
+            throw new IllegalArgumentException("Array cannot be null or empty");
+        }
+        double max = numbers[0];
+        for (double num : numbers) {
+            if (num > max) {
+                max = num;
+            }
+        }
+        return max;
+    }
+
+    // En küçük sayıyı bulma
+    public double min(double[] numbers) {
+        if (numbers == null || numbers.length == 0) {
+            throw new IllegalArgumentException("Array cannot be null or empty");
+        }
+        double min = numbers[0];
+        for (double num : numbers) {
+            if (num < min) {
+                min = num;
+            }
+        }
+        return min;
     }
 }
+
 `
     },
     codeSmells: `public class ExampleClass {

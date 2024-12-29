@@ -277,29 +277,65 @@ public class InMemoryCoverageAnalyzer {
         try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null, null)) {
             Iterable<? extends JavaFileObject> compilationUnits = fileManager.getJavaFileObjects(javaFiles);
 
+            // JUnit jar'ının yolunu bul
+            String junitPath = findJUnitJarPath();
+            
             List<String> options = new ArrayList<>();
             options.add("-source");
             options.add("17");
             options.add("-target");
             options.add("17");
+            options.add("-d");
+            options.add(tempDir.getAbsolutePath());
             options.add("-classpath");
-            options.add(System.getProperty("java.class.path") + File.pathSeparator + tempDir.getAbsolutePath());
+            options.add(System.getProperty("java.class.path") + 
+                       File.pathSeparator + tempDir.getAbsolutePath() + 
+                       File.pathSeparator + junitPath);
+            options.add("-Xlint:none");
+            options.add("-proc:none");
 
             JavaCompiler.CompilationTask task = compiler.getTask(
                     null, fileManager, diagnostics, options, null, compilationUnits);
 
             boolean success = task.call();
             if (!success) {
-                StringBuilder sb = new StringBuilder("Derleme hatası:\n");
+                List<String> errors = new ArrayList<>();
                 for (Diagnostic<?> d : diagnostics.getDiagnostics()) {
-                    sb.append(d.toString()).append("\n");
+                    System.err.println("Diagnostic: " + d.getMessage(null));
+                    if (d.getKind() == Diagnostic.Kind.ERROR && 
+                        !d.getMessage(null).contains("has private access")) {
+                        errors.add(d.toString());
+                    }
                 }
-                throw new RuntimeException(sb.toString());
+                
+                if (!errors.isEmpty()) {
+                    StringBuilder sb = new StringBuilder("Derleme hatası:\n");
+                    errors.forEach(error -> sb.append(error).append("\n"));
+                    throw new RuntimeException(sb.toString());
+                }
             }
         }
     }
 
+    private String findJUnitJarPath() {
+        try {
+            // JUnit sınıfının lokasyonunu bul
+            URL location = Test.class.getProtectionDomain().getCodeSource().getLocation();
+            return location.getPath();
+        } catch (Exception e) {
+            System.err.println("JUnit jar yolu bulunamadı: " + e.getMessage());
+            return "";
+        }
+    }
+
     private void writeFile(File file, String content) throws IOException {
+        // Test sınıfı için gerekli importları ekle
+        if (file.getName().endsWith("Test.java")) {
+            content = "import java.io.PrintStream;\n" +
+                     "import java.io.OutputStream;\n" +
+                     "import java.io.ByteArrayOutputStream;\n" +
+                     content;
+        }
         try (FileWriter fw = new FileWriter(file)) {
             fw.write(content);
         }
