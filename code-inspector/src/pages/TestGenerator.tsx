@@ -211,6 +211,49 @@ export default function TestGenerator() {
                                                 </Button>
                                             </div>
                                         </div>
+
+                                        {/* Metot Bazlı Kapsama */}
+                                        <div className="space-y-4 mt-6">
+                                            <h3 className="text-lg font-semibold">Method Coverage</h3>
+                                            <div className="grid gap-4">
+                                                {Object.entries(result.methodCoverage).map(([methodName, [covered, total]]) => {
+                                                    const percentage = (covered / total) * 100;
+                                                    return (
+                                                        <div key={methodName} className="rounded-lg border p-4">
+                                                            <div className="flex justify-between items-center mb-2">
+                                                                <code className="text-sm font-mono">{methodName}</code>
+                                                                <span className={cn(
+                                                                    "px-2.5 py-0.5 rounded-full text-xs font-medium",
+                                                                    percentage === 100 
+                                                                        ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                                                        : percentage === 0 
+                                                                            ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                                                                            : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                                                                )}>
+                                                                    {percentage.toFixed(0)}%
+                                                                </span>
+                                                            </div>
+                                                            <div className="w-full bg-secondary rounded-full h-2">
+                                                                <div 
+                                                                    className={cn(
+                                                                        "h-2 rounded-full transition-all",
+                                                                        percentage === 100 
+                                                                            ? "bg-green-500"
+                                                                            : percentage === 0 
+                                                                                ? "bg-red-500"
+                                                                                : "bg-yellow-500"
+                                                                    )}
+                                                                    style={{ width: `${percentage}%` }}
+                                                                />
+                                                            </div>
+                                                            <p className="text-sm text-muted-foreground mt-2">
+                                                                {covered} / {total} lines covered
+                                                            </p>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
                                     </div>
                                 </CardContent>
                             </Card>
