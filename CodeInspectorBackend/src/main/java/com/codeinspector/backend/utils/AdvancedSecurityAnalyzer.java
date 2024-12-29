@@ -23,31 +23,32 @@ public class AdvancedSecurityAnalyzer {
     private static final class SecurityMetrics {
         // CWE bazlı ağırlıklar
         private static final Map<String, Integer> CWE_WEIGHTS = Map.of(
-            "SQL_INJECTION", 89,     // CWE-89
-            "XSS", 79,              // CWE-79
-            "BROKEN_AUTH", 287,     // CWE-287
-            "SENSITIVE_DATA", 200,   // CWE-200
-            "UNSAFE_LOGGING", 532,   // CWE-532
-            "NULL_CHECK", 476       // CWE-476
+                "SQL_INJECTION", 100,     // Kritik
+                "XSS", 80,              // Kritik
+                "BROKEN_AUTH", 75,      // Yüksek
+                "SENSITIVE_DATA", 70,   // Yüksek
+                "UNSAFE_LOGGING", 30,   // Orta
+                "NULL_CHECK", 20        // Düşük
         );
 
         // Severity çarpanları
         private static final Map<RiskLevel, Double> SEVERITY_MULTIPLIERS = Map.of(
-            RiskLevel.CRITICAL, 5.0,
-            RiskLevel.HIGH, 3.0,
+            RiskLevel.CRITICAL, 10.0,
+            RiskLevel.HIGH, 5.0,
             RiskLevel.MEDIUM, 2.0,
             RiskLevel.LOW, 1.0
         );
 
         // Exploitability çarpanları
         private static final Map<String, Double> EXPLOITABILITY_MULTIPLIERS = Map.of(
-            "SQL_INJECTION", 1.0,    // Remote exploit possible
-            "XSS", 0.9,             // Remote exploit possible
-            "BROKEN_AUTH", 0.8,      // Local access needed
-            "SENSITIVE_DATA", 0.7,   // Local access needed
-            "UNSAFE_LOGGING", 0.4,   // Limited impact
-            "NULL_CHECK", 0.3       // Runtime only
+                "SQL_INJECTION", 1.0,    // Kritik (uzaktan erişim mümkün)
+                "XSS", 0.9,             // Kritik (uzaktan erişim mümkün)
+                "BROKEN_AUTH", 0.8,     // Yüksek (yerel erişim gerekebilir)
+                "SENSITIVE_DATA", 0.7,  // Orta (yerel erişim gerekebilir)
+                "UNSAFE_LOGGING", 0.3,  // Düşük (genelde sınırlı etki)
+                "NULL_CHECK", 0.2       // Çok düşük (runtime ile sınırlı)
         );
+
     }
 
     private final Map<String, VulnerabilityPattern> securityPatterns = new HashMap<>();
@@ -383,12 +384,12 @@ public class AdvancedSecurityAnalyzer {
         for (Map.Entry<String, List<SecurityIssue>> entry : vulnerabilities.entrySet()) {
             String issueType = entry.getKey();
             List<SecurityIssue> issues = entry.getValue();
-            
+
             for (SecurityIssue issue : issues) {
                 double severityMultiplier = SecurityMetrics.SEVERITY_MULTIPLIERS.get(issue.riskLevel());
                 double exploitabilityMultiplier = SecurityMetrics.EXPLOITABILITY_MULTIPLIERS.getOrDefault(issueType, 0.5);
                 int cweWeight = SecurityMetrics.CWE_WEIGHTS.getOrDefault(issueType, 100);
-                
+
                 // CVSS benzeri hesaplama
                 double issueImpact = (cweWeight / 100.0) * severityMultiplier * exploitabilityMultiplier;
                 totalImpact += issueImpact;
