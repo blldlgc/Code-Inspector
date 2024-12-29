@@ -19,6 +19,11 @@ export function RainbowButton({
         "bg-gradient-to-r from-purple-600/90 via-blue-500/90 to-purple-600/90",
         "hover:from-purple-500 hover:via-blue-400 hover:to-purple-500",
         
+        // Disabled durumu için stiller
+        "disabled:cursor-default disabled:opacity-90 disabled:hover:scale-100",
+        "disabled:from-purple-600/70 disabled:via-blue-500/70 disabled:to-purple-600/70",
+        "disabled:hover:from-purple-600/70 disabled:hover:via-blue-500/70 disabled:hover:to-purple-600/70",
+        
         // Glow efekti
         "before:absolute before:inset-0 before:rounded-xl before:bg-gradient-to-r before:from-purple-600/20 before:via-transparent before:to-blue-600/20",
         "before:transition-all before:duration-300 before:ease-out before:opacity-0 hover:before:opacity-100",
@@ -29,6 +34,7 @@ export function RainbowButton({
         // Dark mode ayarları
         "dark:from-purple-500/90 dark:via-blue-400/90 dark:to-purple-500/90",
         "dark:hover:from-purple-400 dark:hover:via-blue-300 dark:hover:to-purple-400",
+        "dark:disabled:from-gray-600 dark:disabled:via-gray-600 dark:disabled:to-gray-600",
         
         className
       )}
