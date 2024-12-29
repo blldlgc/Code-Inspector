@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 import { exampleCodes } from '@/constants/exampleCodes';
 import { useNavigate } from "react-router-dom";
 import { RainbowButton } from '@/components/ui/rainbow-button';
+import { Loader2 } from "lucide-react";
 
 interface MethodCoverage {
     [key: string]: [number, number]; // [coveredLines, totalLines]
@@ -24,10 +25,12 @@ export default function CodeCoverage() {
     const [appCode, setAppCode] = useState('');
     const [testCode, setTestCode] = useState('');
     const [coverage, setCoverage] = useState<Coverage | null>(null);
+    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
     const handleSubmit = async () => {
         try {
+            setLoading(true);
             const requestData = {
                 sourceCode: appCode,
                 testCode: testCode
@@ -39,6 +42,8 @@ export default function CodeCoverage() {
             console.log('Coverage Data:', response.data);
         } catch (error) {
             console.error('Error calculating coverage:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -92,9 +97,10 @@ export default function CodeCoverage() {
                             <Button
                                 onClick={handleSubmit}
                                 className="w-full"
-                                disabled={!appCode || !testCode}
+                                disabled={!appCode || !testCode || loading}
                             >
-                                Calculate Coverage
+                                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                {loading ? "Calculating..." : "Calculate Coverage"}
                             </Button>
                         </div>
                     </CardContent>

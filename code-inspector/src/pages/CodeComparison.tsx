@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { PageLayout } from "@/components/PageLayout"
 import { motion, AnimatePresence } from "framer-motion";
 import { exampleCodes } from '@/constants/exampleCodes';
+import { Loader2 } from "lucide-react";
 
 interface ComparisonResult {
   CPDsimilarityPercentage: number;
@@ -96,6 +97,7 @@ const CodeComparison = () => {
                             className="mt-6 w-full"
                             disabled={loading || !code1 || !code2}
                         >
+                            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             {loading ? 'Comparing...' : 'Compare Code'}
                         </Button>
                     </CardContent>
