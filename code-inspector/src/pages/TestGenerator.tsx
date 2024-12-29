@@ -47,6 +47,8 @@ export default function TestGenerator() {
         try {
             setLoading(true);
             setError(null);
+            setResult(null);
+            setGeneratedTestCode(null);
 
             // Gemini API'ye gönderilecek prompt
             const prompt = `
@@ -70,6 +72,7 @@ export default function TestGenerator() {
             // Test kodunu ''' işaretleri arasından çıkar
             const codeMatch = rawResponse.match(/```java([\s\S]*?)```/);
             const testCode = codeMatch ? codeMatch[1].trim() : rawResponse;
+            console.log(testCode);
             
             // Üretilen test kodunu state'e kaydet
             setGeneratedTestCode(testCode);
@@ -90,8 +93,10 @@ export default function TestGenerator() {
                     testCode,
                     numberOfTests
                 });
+                
             } catch (coverageError) {
                 setError('Coverage analysis failed. The tests were generated but could not be analyzed.');
+                setResult(null);
             }
 
         } catch (error) {
@@ -161,32 +166,59 @@ export default function TestGenerator() {
                                 </CardHeader>
                                 <CardContent>
                                     <div className="space-y-6">
-                                        {result && (
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                <div className="p-4 rounded-lg border bg-card">
-                                                    <p className="text-sm text-muted-foreground">Number of Tests</p>
-                                                    <p className="text-2xl font-bold">{result.numberOfTests}</p>
-                                                </div>
-                                                <div className="p-4 rounded-lg border bg-card">
-                                                    <p className="text-sm text-muted-foreground">Coverage</p>
-                                                    <p className="text-2xl font-bold">{result.coveragePercentage.toFixed(2)}%</p>
-                                                </div>
-                                                <div className="p-4 rounded-lg border bg-card">
-                                                    <p className="text-sm text-muted-foreground">Status</p>
-                                                    <p className={`text-2xl font-bold ${result.coveragePercentage > 80 ? 'text-green-500' : 'text-red-500'}`}>
-                                                        {result.coveragePercentage > 80 ? 'Success' : 'Failed'}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        )}
-
                                         {error && (
                                             <Alert variant="destructive" className="mb-4">
                                                 <AlertDescription>{error}</AlertDescription>
                                             </Alert>
                                         )}
 
-                                        <div className="space-y-2">
+                                        {(error || result) && generatedTestCode && (
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium">Generated Test Code</label>
+                                                <div className="relative">
+                                                    <Textarea
+                                                        value={generatedTestCode}
+                                                        readOnly
+                                                        className="min-h-[300px] font-mono text-sm bg-muted"
+                                                    />
+                                                    <Button
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText(generatedTestCode);
+                                                            toast("Code copied to clipboard", {
+                                                                description: "Test code has been copied successfully",
+                                                                duration: 2500,
+                                                                icon: <Copy className="h-4 w-4 text-blue-500" />,
+                                                            });
+                                                        }}
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="absolute top-2 right-6"
+                                                    >
+                                                        Copy Code
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {result && !error && (
+                                            <>
+                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                    <div className="p-4 rounded-lg border bg-card">
+                                                        <p className="text-sm text-muted-foreground">Number of Tests</p>
+                                                        <p className="text-2xl font-bold">{result.numberOfTests}</p>
+                                                    </div>
+                                                    <div className="p-4 rounded-lg border bg-card">
+                                                        <p className="text-sm text-muted-foreground">Coverage</p>
+                                                        <p className="text-2xl font-bold">{result.coveragePercentage.toFixed(2)}%</p>
+                                                    </div>
+                                                    <div className="p-4 rounded-lg border bg-card">
+                                                        <p className="text-sm text-muted-foreground">Status</p>
+                                                        <p className={`text-2xl font-bold ${result.coveragePercentage > 80 ? 'text-green-500' : 'text-red-500'}`}>
+                                                            {result.coveragePercentage > 80 ? 'Success' : 'Failed'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-2">
                                             <label className="text-sm font-medium">Generated Test Code</label>
                                             <div className="relative">
                                                 <Textarea
@@ -211,49 +243,52 @@ export default function TestGenerator() {
                                                 </Button>
                                             </div>
                                         </div>
+                                                {/* Metot Bazlı Kapsama */}
+                                                <div className="space-y-4 mt-6">
+                                                    <h3 className="text-lg font-semibold">Method Coverage</h3>
+                                                    <div className="grid gap-4">
+                                                        {Object.entries(result.methodCoverage).map(([methodName, [covered, total]]) => {
+                                                            const percentage = (covered / total) * 100;
+                                                            return (
+                                                                <div key={methodName} className="rounded-lg border p-4">
+                                                                    <div className="flex justify-between items-center mb-2">
+                                                                        <code className="text-sm font-mono">{methodName}</code>
+                                                                        <span className={cn(
+                                                                            "px-2.5 py-0.5 rounded-full text-xs font-medium",
+                                                                            percentage === 100 
+                                                                                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                                                                : percentage === 0 
+                                                                                    ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                                                                                    : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                                                                        )}>
+                                                                            {percentage.toFixed(0)}%
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="w-full bg-secondary rounded-full h-2">
+                                                                        <div 
+                                                                            className={cn(
+                                                                                "h-2 rounded-full transition-all",
+                                                                                percentage === 100 
+                                                                                    ? "bg-green-500"
+                                                                                    : percentage === 0 
+                                                                                        ? "bg-red-500"
+                                                                                        : "bg-yellow-500"
+                                                                            )}
+                                                                            style={{ width: `${percentage}%` }}
+                                                                        />
+                                                                    </div>
+                                                                    <p className="text-sm text-muted-foreground mt-2">
+                                                                        {covered} / {total} lines covered
+                                                                    </p>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
 
-                                        {/* Metot Bazlı Kapsama */}
-                                        <div className="space-y-4 mt-6">
-                                            <h3 className="text-lg font-semibold">Method Coverage</h3>
-                                            <div className="grid gap-4">
-                                                {Object.entries(result.methodCoverage).map(([methodName, [covered, total]]) => {
-                                                    const percentage = (covered / total) * 100;
-                                                    return (
-                                                        <div key={methodName} className="rounded-lg border p-4">
-                                                            <div className="flex justify-between items-center mb-2">
-                                                                <code className="text-sm font-mono">{methodName}</code>
-                                                                <span className={cn(
-                                                                    "px-2.5 py-0.5 rounded-full text-xs font-medium",
-                                                                    percentage === 100 
-                                                                        ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                                                                        : percentage === 0 
-                                                                            ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                                                                            : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-                                                                )}>
-                                                                    {percentage.toFixed(0)}%
-                                                                </span>
-                                                            </div>
-                                                            <div className="w-full bg-secondary rounded-full h-2">
-                                                                <div 
-                                                                    className={cn(
-                                                                        "h-2 rounded-full transition-all",
-                                                                        percentage === 100 
-                                                                            ? "bg-green-500"
-                                                                            : percentage === 0 
-                                                                                ? "bg-red-500"
-                                                                                : "bg-yellow-500"
-                                                                    )}
-                                                                    style={{ width: `${percentage}%` }}
-                                                                />
-                                                            </div>
-                                                            <p className="text-sm text-muted-foreground mt-2">
-                                                                {covered} / {total} lines covered
-                                                            </p>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
+                                        
                                     </div>
                                 </CardContent>
                             </Card>
