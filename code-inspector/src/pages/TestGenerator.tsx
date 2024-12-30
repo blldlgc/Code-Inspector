@@ -36,6 +36,10 @@ export default function TestGenerator() {
     const [result, setResult] = useState<TestResult | null>(null);
     const [generatedTestCode, setGeneratedTestCode] = useState<string | null>(null);
 
+    // Sıcaklık ve maksimum token değerleri için state'ler
+    const [temperature, setTemperature] = useState(0.5);
+    const [maxOutputTokens, setMaxOutputTokens] = useState(8192);
+
     // Sayfa yüklendiğinde state'ten gelen kodu al
     useEffect(() => {
         if (location.state?.sourceCode) {
@@ -67,7 +71,7 @@ export default function TestGenerator() {
             `;
 
             // Gemini API'den test kodunu al
-            const rawResponse = await generateContent(prompt);
+            const rawResponse = await generateContent(prompt, temperature, maxOutputTokens);
             
             // Test kodunu ''' işaretleri arasından çıkar
             const codeMatch = rawResponse.match(/```java([\s\S]*?)```/);

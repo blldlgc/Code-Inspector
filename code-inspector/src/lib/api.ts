@@ -21,10 +21,14 @@ interface GeminiApiRequest {
             text: string;
         }[];
     }[];
+    generationConfig?: {
+        temperature: number;
+        maxOutputTokens: number;
+    };
 }
 
 
-export const generateContent = async (prompt: string): Promise<string> => {
+export const generateContent = async (prompt: string, temperature: number = 0.5, maxOutputTokens: number = 8192): Promise<string> => {
     if (!API_KEY) {
         throw new Error('API anahtarı tanımlanmamış. .env dosyasını kontrol edin.');
     }
@@ -32,7 +36,11 @@ export const generateContent = async (prompt: string): Promise<string> => {
     const requestData: GeminiApiRequest = {
         contents: [{
             parts: [{ text: prompt }],
-        }]
+        }],
+        generationConfig: {
+            temperature: temperature,
+            maxOutputTokens: maxOutputTokens,
+        },
     };
 
     try {
