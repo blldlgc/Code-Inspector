@@ -1,7 +1,7 @@
 # Code Inspector
 
 <div align="center">
-  <img src="code-inspector/public/logo.png" alt="Code Inspector Logo" width="200"/>
+  <img src="code-inspector/public/black_on_white.png" alt="Code Inspector Logo" width="200"/>
   <br>
   <p><strong>A Modern Code Analysis and Quality Inspection Tool with AI Capabilities</strong></p>
   <p><a href="https://codeinspector.vercel.app" target="_blank">Visit Application</a></p>
