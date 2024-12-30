@@ -1,10 +1,10 @@
-import { ReactNode } from "react"
+import React from 'react';
 import { motion } from "framer-motion"
 
 interface PageLayoutProps {
   title: string
   description?: string
-  children: ReactNode
+  children: React.ReactNode
 }
 
 export function PageLayout({ title, description, children }: PageLayoutProps) {

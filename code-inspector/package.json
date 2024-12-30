@@ -39,6 +39,7 @@
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7",
     "tree-sitter": "^0.21.1",
+    "vitest": "^2.1.8",
     "web-tree-sitter": "^0.24.4",
     "zustand": "^5.0.0"
   },

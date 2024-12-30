@@ -1,9 +1,12 @@
 package com.codeinspector.backend;
-import com.codeinspector.backend.utils.CodeMetricsAnalyzer;
-import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
-
 import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
+
+import com.codeinspector.backend.utils.CodeMetricsAnalyzer;
 
 public class CodeMetricsAnalyzerTest {
 
@@ -40,7 +43,7 @@ public class CodeMetricsAnalyzerTest {
 
         // Method calling another method
         public void process() {
-            increment(); 
+            increment();
         }
     }
     """;
@@ -106,5 +109,59 @@ public class CodeMetricsAnalyzerTest {
         Map<String, String> metrics = analyzer.analyzeMetrics(code);
         assertEquals("5", metrics.get("Empty Lines"), "Empty Lines mismatch");
     }
+
+    @Test
+    public void testHalsteadMetrics() {
+        Map<String, String> metrics = analyzer.analyzeMetrics(code);
+        
+        // Halstead metriklerinin varlığını kontrol et
+        assertNotNull(metrics.get("Halstead Program Length"), "Halstead Program Length eksik");
+        assertNotNull(metrics.get("Halstead Vocabulary"), "Halstead Vocabulary eksik");
+        assertNotNull(metrics.get("Halstead Volume"), "Halstead Volume eksik");
+        assertNotNull(metrics.get("Halstead Difficulty"), "Halstead Difficulty eksik");
+        assertNotNull(metrics.get("Halstead Effort"), "Halstead Effort eksik");
+        assertNotNull(metrics.get("Halstead Time"), "Halstead Time eksik");
+        assertNotNull(metrics.get("Halstead Bugs"), "Halstead Bugs eksik");
+        
+        // Değerlerin sayısal format kontrolü - daha esnek bir regex kullanıyoruz
+        String volumeStr = metrics.get("Halstead Volume").replace(",", ".");
+        String difficultyStr = metrics.get("Halstead Difficulty").replace(",", ".");
+        
+        // Sayısal değer kontrolü
+        assertTrue(isNumeric(volumeStr), "Halstead Volume sayısal değer değil");
+        assertTrue(isNumeric(difficultyStr), "Halstead Difficulty sayısal değer değil");
+    }
+
+    // Yardımcı metod - sayısal değer kontrolü için
+    private boolean isNumeric(String str) {
+        if (str == null) return false;
+        try {
+            Double.parseDouble(str);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    @Test
+    public void testMaintainabilityIndex() {
+        Map<String, String> metrics = analyzer.analyzeMetrics(code);
+        
+        // Maintainability Index kontrolü
+        assertNotNull(metrics.get("Maintainability Index"), "Maintainability Index eksik");
+        
+        // Virgül yerine nokta kullanarak sayıyı parse et
+        String maintainabilityStr = metrics.get("Maintainability Index").replace(",", ".");
+        double maintainabilityIndex = Double.parseDouble(maintainabilityStr);
+        
+        // MI değer aralığı kontrolü (0-100 arası)
+        assertTrue(maintainabilityIndex >= 0 && maintainabilityIndex <= 100, 
+            "Maintainability Index 0-100 aralığında olmalı");
+    }
+
+
+
+
+
 
 }
