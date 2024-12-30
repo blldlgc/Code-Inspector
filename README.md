@@ -3,7 +3,8 @@
 <div align="center">
   <img src="code-inspector/public/logo.png" alt="Code Inspector Logo" width="200"/>
   <br>
-  <p><strong>A Modern Code Analysis and Quality Inspection Tool</strong></p>
+  <p><strong>A Modern Code Analysis and Quality Inspection Tool with AI Capabilities</strong></p>
+  <p><a href="https://codeinspector.vercel.app" target="_blank">Visit Application</a></p>
 </div>
 
 ## 🌟 Overview
@@ -17,6 +18,7 @@ Code Inspector is a sophisticated code analysis tool designed to help developers
 - **AST Visualization**: Interactive visualization of Abstract Syntax Trees
 - **Real-time Analysis**: Instant feedback on code quality
 - **Modern UI**: Built with React and Tailwind CSS for a seamless user experience
+- **AI-Powered Test Generator**: Automated Test Generation with Gemini AI
 
 ## 🛠️ Tech Stack
 
@@ -27,6 +29,7 @@ Code Inspector is a sophisticated code analysis tool designed to help developers
 - Vite
 - React Flow for graph representations
 - Shadcn Components
+- Gemini AI integration
 
 ### Backend
 - Java 21
@@ -35,6 +38,7 @@ Code Inspector is a sophisticated code analysis tool designed to help developers
 - Tree-sitter Java
 - JUnit for testing
 - Maven
+- Jococo for code coverage
 
 ## 🏗️ Architecture
 
@@ -42,6 +46,7 @@ The project follows a modern client-server architecture:
 - **Frontend**: Single Page Application (SPA) built with React
 - **Backend**: RESTful API built with Spring Boot
 - **Analysis Engine**: Combines PMD and custom analysis tools
+**AI Layer**: Integrates Gemini AI for intelligent code analysis
 
 ## 🚦 Getting Started
 
@@ -49,6 +54,7 @@ The project follows a modern client-server architecture:
 - Node.js (v18 or higher)
 - Java 21
 - Maven
+- Gemini API Key (for AI features)
 
 ### Frontend Setup
 ```bash
@@ -83,6 +89,7 @@ mvn test
 The project uses several tools to maintain code quality:
 - SonarQube for continuous code quality
 - PMD for Java code analysis
+- JaCoCo for test coverage analysis
 
 ## 🤝 Contributing
 
@@ -100,6 +107,10 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## 📞 Contact
 
 For any queries or support, please open an issue in the repository.
+
+## 🌐 Application
+
+The full version of Code Inspector is available at [codeinspector.vercel.app](https://codeinspector.vercel.app).
 
 ---
 
