@@ -74,22 +74,25 @@ const CodeComparison = () => {
                     <CardContent>
                         <div className="grid md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">First Code Snippet</label>
+                                <label className="text-sm font-medium">First Code Snippet
                                 <Textarea
                                     value={code1}
                                     onChange={(e) => setCode1(e.target.value)}
                                     placeholder="Paste your first code snippet here..."
                                     className="min-h-[300px] font-mono text-sm"
                                 />
+                                </label>
+                                
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">Second Code Snippet</label>
+                                <label className="text-sm font-medium">Second Code Snippet
                                 <Textarea
                                     value={code2}
                                     onChange={(e) => setCode2(e.target.value)}
                                     placeholder="Paste your second code snippet here..."
                                     className="min-h-[300px] font-mono text-sm"
                                 />
+                                </label>                           
                             </div>
                         </div>
                         <Button

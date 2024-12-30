@@ -69,13 +69,15 @@ export default function MetricsAnalyzer() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Source Code</label>
+              <label className="text-sm font-medium">Source Code
               <Textarea
                 placeholder="Paste your code here for analysis..."
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 className="min-h-[300px] font-mono text-sm"
               />
+              </label>
+              
             </div>
             <Button 
               onClick={analyzeCode} 

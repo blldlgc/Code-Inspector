@@ -133,13 +133,15 @@ export default function TestGenerator() {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Java Source Code</label>
+                            <label className="text-sm font-medium">Java Source Code
                             <Textarea
                                 value={sourceCode}
                                 onChange={(e) => setSourceCode(e.target.value)}
                                 placeholder="Paste your Java code here..."
                                 className="min-h-[300px] font-mono text-sm"
                             />
+                            </label>
+                            
                         </div>
                         <RainbowButton
                             onClick={handleSubmit}
@@ -193,7 +195,7 @@ export default function TestGenerator() {
 
                                         {generatedTestCode && (
                                             <div className="space-y-2">
-                                                <label className="text-sm font-medium">Generated Test Code</label>
+                                                <label className="text-sm font-medium">Generated Test Code
                                                 <div className="relative">
                                                     <Textarea
                                                         value={generatedTestCode}
@@ -216,6 +218,8 @@ export default function TestGenerator() {
                                                         Copy Code
                                                     </Button>
                                                 </div>
+                                                </label>
+                                                
                                             </div>
                                         )}
 

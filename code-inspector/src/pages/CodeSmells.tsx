@@ -81,13 +81,15 @@ const CodeSmells = () => {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Source Code</label>
+                            <label className="text-sm font-medium">Source Code
                             <Textarea
                                 placeholder="Enter your code here"
                                 value={sourceCode}
                                 onChange={(e) => setSourceCode(e.target.value)}
                                 className="min-h-[300px] font-mono text-sm"
                             />
+                            </label>
+                            
                         </div>
                         <Button 
                             onClick={handleAnalyze}

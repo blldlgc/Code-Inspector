@@ -76,22 +76,26 @@ export default function CodeCoverage() {
                     <CardContent>
                         <div className="grid md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">Application Code</label>
+                                <label className="text-sm font-medium">Application Code
                                 <Textarea
                                     value={appCode}
                                     onChange={(e) => setAppCode(e.target.value)}
                                     placeholder="Paste your application code here..."
                                     className="min-h-[300px] font-mono text-sm"
                                 />
+                                </label>
+                                
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">Test Code</label>
+                                <label className="text-sm font-medium">Test Code
                                 <Textarea
                                     value={testCode}
                                     onChange={(e) => setTestCode(e.target.value)}
                                     placeholder="Paste your test code here..."
                                     className="min-h-[300px] font-mono text-sm"
                                 />
+                                </label>
+                                
                             </div>
                         </div>
                         <div className="mt-6">
