@@ -126,7 +126,7 @@ const CodeComparison = () => {
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                     <div className="p-4 rounded-lg border bg-card text-card-foreground shadow-sm">
                                                         <div className="space-y-2">
-                                                            <h3 className="text-sm font-medium text-muted-foreground">CPD Similarity</h3>
+                                                            <h3 className="text-sm font-medium text-muted-foreground">Token-based Similarity (CPD)</h3>
                                                             <div className="flex items-center justify-between">
                                                                 <p className="text-3xl font-bold text-primary">
                                                                     {result.CPDsimilarityPercentage.toFixed(2)}%
@@ -145,7 +145,7 @@ const CodeComparison = () => {
 
                                                     <div className="p-4 rounded-lg border bg-card text-card-foreground shadow-sm">
                                                         <div className="space-y-2">
-                                                            <h3 className="text-sm font-medium text-muted-foreground">Simian Similarity</h3>
+                                                            <h3 className="text-sm font-medium text-muted-foreground">Text-based Similarity (Simian)</h3>
                                                             <div className="flex items-center justify-between">
                                                                 <p className="text-3xl font-bold text-primary">
                                                                     {result.simianSimilarityPercentage.toFixed(2)}%
