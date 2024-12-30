@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
-import { Code2, Shield, BarChart, TestTube2, GitCompare, AlertTriangle, Sparkles } from "lucide-react";
+import { Code2, Shield, BarChart, Radar, GitCompare, AlertTriangle, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const MainPage = () => {
@@ -36,7 +36,7 @@ const MainPage = () => {
         {
             title: "Auto Test Generator",
             description: "Generate automated tests for your Java code",
-            icon: <TestTube2 className="w-6 h-6" />,
+            icon: <Sparkles className="w-6 h-6" />,
             path: "/testgenerator"
         },
         {
@@ -48,7 +48,7 @@ const MainPage = () => {
         {
             title: "Quality & Error Prediction",
             description: "Evaluate code quality and predict potential errors",
-            icon: <Sparkles className="w-6 h-6" />,
+            icon: <Radar className="w-6 h-6" />,
             path: "/quality"
         }
     ];

@@ -14,9 +14,9 @@ import {
   BarChart2,
   GitFork,
   Shield,
-  TestTube2,
   AlertTriangle,
   ExternalLink,
+  Radar,
 } from "lucide-react"
 
 import {
@@ -153,7 +153,7 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
           {
             title: "Auto Test Generator",
             url: "/testgenerator",
-            icon: TestTube2,
+            icon: Sparkles,
             description: "Generate automated tests",
           },
         ],
@@ -164,7 +164,7 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
           {
             title: "Quality & Error Prediction",
             url: "/codesecurity",
-            icon: Sparkles,
+            icon: Radar,
             description: "Evaluate code quality and predict errors",
           },
         ],
