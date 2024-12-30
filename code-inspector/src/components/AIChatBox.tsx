@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,11 +9,29 @@ import { cn } from "@/lib/utils";
 import { RainbowButton } from './ui/rainbow-button';
 
 export function AIChatBox() {
+  const chatBoxRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [userMessage, setUserMessage] = useState('');
   const [response, setResponse] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    // Dışarı tıklamayı dinleyen fonksiyon
+    const handleClickOutside = (event: MouseEvent) => {
+      if (chatBoxRef.current && !chatBoxRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    // Event listener'ı ekle
+    document.addEventListener('mousedown', handleClickOutside);
+
+    // Cleanup fonksiyonu
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +53,7 @@ export function AIChatBox() {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 z-50">
+    <div className="fixed bottom-4 right-4 z-50" ref={chatBoxRef}>
       {/* Chat Trigger Button */}
       <Button
         onClick={() => setIsOpen(!isOpen)}
