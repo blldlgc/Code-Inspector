@@ -3,7 +3,7 @@ import axios, { AxiosResponse } from 'axios';
 const API_KEY: string | undefined = import.meta.env.VITE_APP_GEMINI_API_KEY;
 
 const GEMINI_API_ENDPOINT: string =
-    'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
 interface GeminiApiResponse {
     candidates?: {
