@@ -71,7 +71,7 @@ const handleInputChange = (setter: React.Dispatch<React.SetStateAction<string>>,
             <div className="w-full max-w-[400px] p-4 flex flex-col items-center">
                 <div className="mb-8">
                     <img 
-                        src="/black_on_white.png" 
+                        src="/logo_full.png" 
                         alt="Code Inspector Logo" 
                         className="h-72 w-auto dark:invert rounded-lg " 
                     />

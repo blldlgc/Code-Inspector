@@ -3,7 +3,6 @@
 import {
   BookOpen,
   ChevronsUpDown,
-  CodeXml,
   Frame,
   LifeBuoy,
   LogOut,
@@ -65,6 +64,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { auth } from "@/config/firebase.ts";
 import { ModeToggle } from "./mode-toggle"
 import { AIChatBox } from "@/components/AIChatBox";
+import logo from "/logo.png"
 
 const GITHUB_REPO = "https://github.com/blldlgc/code-inspector";
 const GITHUB_ISSUES = `${GITHUB_REPO}/issues`;
@@ -231,8 +231,9 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
               <SidebarMenuButton size="lg" asChild>
                 <button onClick={() => navigate('/')}
                   className="flex items-center focus:outline-none">
-                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  <CodeXml className="size-5" />
+                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary 
+                  text-sidebar-primary-foreground">
+                    <img src={logo} alt="Code Inspector Logo" className="h-6 w-6 invert dark:invert-0 rounded-md" />
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-semibold">Code Inspector</span>
