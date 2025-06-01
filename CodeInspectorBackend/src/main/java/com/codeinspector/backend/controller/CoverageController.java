@@ -14,7 +14,7 @@ public class CoverageController {
 
     @PostMapping("/coverage")
     public ResponseEntity<CoverageResult> analyze(@RequestBody CoverageRequest request) {
-        // Burada coverage analizini yapalım
+        // Burada coverage analizini yapalmakta
         InMemoryCoverageAnalyzer analyzer = new InMemoryCoverageAnalyzer();
         CoverageResult result = analyzer.analyzeCoverage(
                 request.getSourceCode(),

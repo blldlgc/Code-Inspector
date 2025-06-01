@@ -347,40 +347,41 @@ codesecurity: `public class Test {
             System.out.println(data);
         }
     }
+}`,codeGraph: `// This is a sample Java code for testing
+public class SampleClass {
+
+// Variable declarations
+private int count;
+private String name;
+
+// Constructor
+public SampleClass(String name) {
+    this.name = name;
+    this.count = 0;
+}
+
+// A sample method
+public void increment() {
+    // Increment the count
+    count++;
+}
+
+// Another method with loops and conditions
+public void analyze(int[] numbers) {
+    for (int num : numbers) {
+        if (num % 2 == 0) {
+            System.out.println("Even number: " + num);
+        } else {
+            System.out.println("Odd number: " + num);
+        }
+    }
+}
+
+// Method calling another method
+public void process() {
+    increment(); 
+}
 }`,
-codeGraph: `// This is a sample Java code for testing
-        public class SampleClass {
-
-        // Variable declarations
-        private int count;
-        private String name;
-
-        // Constructor
-        public SampleClass(String name) {
-            this.name = name;
-            this.count = 0;
-        }
-
-        // A sample method
-        public void increment() {
-            // Increment the count
-            count++;
-        }
-
-        // Another method with loops and conditions
-        public void analyze(int[] numbers) {
-            for (int num : numbers) {
-                if (num % 2 == 0) {
-                    System.out.println("Even number: " + num);
-                } else {
-                    System.out.println("Odd number: " + num);
-                }
-            }
-        }
-
-        // Method calling another method
-        public void process() {
-            increment(); 
-        }
-    }`,
-  }; 
+codeGraphComparison: `https://github.com/blldlgc/TomrukDepoSatisSistemi`,
+  codeGraphComparisonModified: `https://github.com/Btlsn/OrmanIsletmeBilgiSistemi`
+}; 

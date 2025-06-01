@@ -38,17 +38,19 @@ public class CodeComparisonController {
         this.codeGraphService = codeGraphService;
     }
 
+    //Clone code analizi için controller sınıfı
     @PostMapping("/compare")
     public CodeComparisonResponse compareCode(@RequestBody CodeComparisonRequest request) {
         return codeComparisonService.compareCode(request.code1(), request.code2());
     }
 
+    //Kod metrik analizi için controller sınıfı
     @PostMapping("/metrics")
     public CodeMetricsResponse analyzeMetrics(@RequestBody CodeMetricsRequest request) {
         return codeComparisonService.analyzeMetrics(request.code());
     }
 
-
+    //Kod graf için controller sınfı
     @PostMapping("/graph")
     public GraphResponse generateGraph(@RequestBody CodeGraphRequest request) {
         return codeGraphService.analyzeCode(request.code());

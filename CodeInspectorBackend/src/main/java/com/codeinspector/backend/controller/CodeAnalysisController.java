@@ -16,6 +16,7 @@ public class CodeAnalysisController {
     
     private final CodeSmellAnalyzer analyzer = new CodeSmellAnalyzer();
 
+    //Code Smell analizi için contorller sınıfı
     @PostMapping("/analyze")
     public CodeAnalysisResult analyzeCode(@RequestBody String sourceCode) {
         return analyzer.analyzeCode(sourceCode);

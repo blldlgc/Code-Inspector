@@ -17,6 +17,8 @@ import CodeSmells from './pages/CodeSmells.tsx'
 import CodeSecurity from './pages/CodeSecurity.tsx'
 import CodeGraph from './pages/CodeGraph.tsx'
 import { Toaster } from './components/ui/sonner.tsx'
+import CodeGraphComparison from "@/pages/CodeGraphComparison";
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const AppRouter = () => {
   const [user, setUser] = useState<any>(null);
@@ -119,6 +121,18 @@ const AppRouter = () => {
     {
       path: "/login",
       element: user ? <Navigate to="/" replace /> : <LoginPage />,
+    },
+    {
+      path: "codegraphcomparison",
+      element: (
+        <ProtectedRoute>
+          <MySidebar>
+            <ErrorBoundary>
+              <CodeGraphComparison />
+            </ErrorBoundary>
+          </MySidebar>
+        </ProtectedRoute>
+      ),
     },
     {
       path: "*",

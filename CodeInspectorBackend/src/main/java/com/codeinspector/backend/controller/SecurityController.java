@@ -14,6 +14,7 @@ public class SecurityController {
 
     private final SecurityService securityService;
 
+    //Kod güvenlik analizinın request-response kontrolü
     @PostMapping("/analyze")
     public SecurityAnalysisResult analyzeCodeSecurity(@RequestBody CodeSmellRequest request) {
         return securityService.analyzeCode(request.getSourceCode());

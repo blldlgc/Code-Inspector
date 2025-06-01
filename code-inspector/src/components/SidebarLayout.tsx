@@ -94,6 +94,7 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
     "/testgenerator": "Auto Test Generator",
     "/codesecurity": "Quality & Error Prediction",
     "/codesmell": "Code Smell Detector",
+    "/codegraphcomparison": "Code Graph Comparison",
     "/": "Home", 
   };
   const currentPath = location.pathname;
@@ -138,6 +139,12 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
             url: "/codegraph",
             icon: GitFork,
             description: "Visualize code structure and dependencies",
+          },
+          {
+            title: "Code Graph Comparison",
+            url: "/codegraphcomparison",
+            icon: GitFork,
+            description: "Compare and analyze two different code graphs",
           },
         ],
       },
