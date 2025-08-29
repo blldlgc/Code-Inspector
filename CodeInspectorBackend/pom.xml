@@ -111,6 +111,23 @@
 			<artifactId>junit</artifactId>
 			<version>4.13.2</version>
 		</dependency>
+		
+		<!-- DJL (Deep Java Library) for CodeBERT -->
+		<dependency>
+			<groupId>ai.djl</groupId>
+			<artifactId>api</artifactId>
+			<version>0.25.0</version>
+		</dependency>
+		<dependency>
+			<groupId>ai.djl.pytorch</groupId>
+			<artifactId>pytorch-engine</artifactId>
+			<version>0.25.0</version>
+		</dependency>
+		<dependency>
+			<groupId>ai.djl.huggingface</groupId>
+			<artifactId>tokenizers</artifactId>
+			<version>0.25.0</version>
+		</dependency>
 	</dependencies>
 
 	<build>

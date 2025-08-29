@@ -7,5 +7,7 @@ public record CodeComparisonResponse(
         Map<String, String> code2Metrics,
         double CPDsimilarityPercentage,
         double simianSimilarityPercentage,
+        double codeBERTSimilarityPercentage,
+        double hybridSimilarityPercentage,
         String matchedLines
 ) {}
