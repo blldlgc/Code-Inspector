@@ -11,12 +11,14 @@ import { Loader2 } from "lucide-react";
 interface ComparisonResult {
   CPDsimilarityPercentage: number;
   simianSimilarityPercentage: number;
+  codeBertSimilarityScore: number;
+  hybridSimilarityPercentage: number;
   matchedLines: string;
   code1Metrics: {
-    [key: string]: number;
+    [key: string]: string;
   };
   code2Metrics: {
-    [key: string]: number;
+    [key: string]: string;
   };
 }
 
@@ -44,6 +46,7 @@ const CodeComparison = () => {
 
             const data = await response.json();
             setResult(data);
+            console.log(data);
         } catch (error) {
             console.error('Error comparing code:', error);
         } finally {
@@ -121,43 +124,98 @@ const CodeComparison = () => {
                                 <CardContent>
                                     <Accordion type="multiple" className="w-full" defaultValue={["similarity"]}>
                                         <AccordionItem value="similarity">
-                                            <AccordionTrigger>Similarity Percentage</AccordionTrigger>
+                                            <AccordionTrigger>Similarity Analysis</AccordionTrigger>
                                             <AccordionContent>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    <div className="p-4 rounded-lg border bg-card text-card-foreground shadow-sm">
-                                                        <div className="space-y-2">
-                                                            <h3 className="text-sm font-medium text-muted-foreground">Token-based Similarity (CPD)</h3>
-                                                            <div className="flex items-center justify-between">
-                                                                <p className="text-3xl font-bold text-primary">
-                                                                    {result.CPDsimilarityPercentage.toFixed(2)}%
-                                                                </p>
-                                                                <div className={`px-3 py-1 rounded-full text-sm ${
-                                                                    result.CPDsimilarityPercentage > 80 ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
-                                                                    result.CPDsimilarityPercentage > 50 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                                                                    'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                                                }`}>
-                                                                    {result.CPDsimilarityPercentage > 80 ? 'High' :
-                                                                     result.CPDsimilarityPercentage > 50 ? 'Medium' : 'Low'}
-                                                                </div>
+                                                <div className="space-y-4">
+                                                    <div className="p-4 rounded-lg border bg-blue-50 dark:bg-blue-950/20">
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100">Hybrid Similarity Score</h3>
+                                                            <div className="text-sm text-blue-700 dark:text-blue-300">
+                                                                (CPD × 0.3) + (Simian × 0.3) + (CodeBERT × 0.4)
                                                             </div>
                                                         </div>
+                                                        <div className="flex items-center justify-between">
+                                                            <p className="text-4xl font-bold text-blue-600 dark:text-blue-400">
+                                                                {result.hybridSimilarityPercentage.toFixed(2)}%
+                                                            </p>
+                                                            <div className={`px-4 py-2 rounded-full text-sm font-medium ${
+                                                                result.hybridSimilarityPercentage > 80 ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                                                                result.hybridSimilarityPercentage > 50 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                                                                'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                                            }`}>
+                                                                {result.hybridSimilarityPercentage > 80 ? 'High Risk' :
+                                                                 result.hybridSimilarityPercentage > 50 ? 'Medium Risk' : 'Low Risk'}
+                                                            </div>
+                                                        </div>
+                                                        <p className="text-sm text-blue-700 dark:text-blue-300 mt-2">
+                                                            This is a weighted combination of all three similarity detection methods for the most accurate assessment.
+                                                        </p>
                                                     </div>
 
-                                                    <div className="p-4 rounded-lg border bg-card text-card-foreground shadow-sm">
-                                                        <div className="space-y-2">
-                                                            <h3 className="text-sm font-medium text-muted-foreground">Text-based Similarity (Simian)</h3>
-                                                            <div className="flex items-center justify-between">
-                                                                <p className="text-3xl font-bold text-primary">
-                                                                    {result.simianSimilarityPercentage.toFixed(2)}%
-                                                                </p>
-                                                                <div className={`px-3 py-1 rounded-full text-sm ${
-                                                                    result.simianSimilarityPercentage > 80 ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
-                                                                    result.simianSimilarityPercentage > 50 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                                                                    'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                                                }`}>
-                                                                    {result.simianSimilarityPercentage > 80 ? 'High' :
-                                                                     result.simianSimilarityPercentage > 50 ? 'Medium' : 'Low'}
+                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                        <div className="p-4 rounded-lg border bg-card text-card-foreground shadow-sm">
+                                                            <div className="space-y-2">
+                                                                <h3 className="text-sm font-medium text-muted-foreground">Token-based Similarity (CPD)</h3>
+                                                                <div className="flex items-center justify-between">
+                                                                    <p className="text-2xl font-bold text-primary">
+                                                                        {result.CPDsimilarityPercentage.toFixed(2)}%
+                                                                    </p>
+                                                                    <div className={`px-2 py-1 rounded-full text-xs ${
+                                                                        result.CPDsimilarityPercentage > 80 ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                                                                        result.CPDsimilarityPercentage > 50 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                                                                        'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                                                    }`}>
+                                                                        {result.CPDsimilarityPercentage > 80 ? 'High' :
+                                                                         result.CPDsimilarityPercentage > 50 ? 'Medium' : 'Low'}
+                                                                    </div>
                                                                 </div>
+                                                                <p className="text-xs text-muted-foreground">
+                                                                    Detects exact code duplication and token-level similarities
+                                                                </p>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="p-4 rounded-lg border bg-card text-card-foreground shadow-sm">
+                                                            <div className="space-y-2">
+                                                                <h3 className="text-sm font-medium text-muted-foreground">Text-based Similarity (Simian)</h3>
+                                                                <div className="flex items-center justify-between">
+                                                                    <p className="text-2xl font-bold text-primary">
+                                                                        {result.simianSimilarityPercentage.toFixed(2)}%
+                                                                    </p>
+                                                                    <div className={`px-2 py-1 rounded-full text-xs ${
+                                                                        result.simianSimilarityPercentage > 80 ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                                                                        result.simianSimilarityPercentage > 50 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                                                                        'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                                                    }`}>
+                                                                        {result.simianSimilarityPercentage > 80 ? 'High' :
+                                                                         result.simianSimilarityPercentage > 50 ? 'Medium' : 'Low'}
+                                                                    </div>
+                                                                </div>
+                                                                <p className="text-xs text-muted-foreground">
+                                                                    Identifies similar text patterns and line-by-line matches
+                                                                </p>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="p-4 rounded-lg border bg-card text-card-foreground shadow-sm">
+                                                            <div className="space-y-2">
+                                                                <h3 className="text-sm font-medium text-muted-foreground">Semantic Similarity (CodeBERT)</h3>
+                                                                <div className="flex items-center justify-between">
+                                                                    <p className="text-2xl font-bold text-primary">
+                                                                        {result.codeBertSimilarityScore.toFixed(2)}%
+                                                                    </p>
+                                                                    <div className={`px-2 py-1 rounded-full text-xs ${
+                                                                        result.codeBertSimilarityScore > 80 ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                                                                        result.codeBertSimilarityScore > 50 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                                                                        'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                                                    }`}>
+                                                                        {result.codeBertSimilarityScore > 80 ? 'High' :
+                                                                         result.codeBertSimilarityScore > 50 ? 'Medium' : 'Low'}
+                                                                    </div>
+                                                                </div>
+                                                                <p className="text-xs text-muted-foreground">
+                                                                    Uses AI to understand code semantics and logic similarity
+                                                                </p>
                                                             </div>
                                                         </div>
                                                     </div>
