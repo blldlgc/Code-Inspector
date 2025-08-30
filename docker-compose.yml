@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./code-inspector
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_BACKEND_URL=http://localhost:8080
+    volumes:
+      - ./code-inspector:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+      - codebert
+    networks:
+      - code-inspector-network
+
+  backend:
+    build:
+      context: ./CodeInspectorBackend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - CODEBERT_SERVICE_URL=http://codebert:8000
+      - PYTHON_SERVICE_URL=http://codebert:8000
+      - CORS_ALLOWED_ORIGINS=http://localhost:5173
+    depends_on:
+      - codebert
+    networks:
+      - code-inspector-network
+
+  codebert:
+    build:
+      context: ./CodeBert
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:8080
+    networks:
+      - code-inspector-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+networks:
+  code-inspector-network:
+    driver: bridge

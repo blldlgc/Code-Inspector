@@ -45,9 +45,16 @@ public class CodeBertService {
                 CodeBertResponse.class
             );
             
+            if (response.getBody() == null) {
+                System.err.println("Python API yanıtı boş geldi");
+                return new CodeBertResponse(0.0);
+            }
+            
             return response.getBody();
         } catch (Exception e) {
-            // Hata durumunda varsayılan bir yanıt döndür
+            // Hata detayını logla
+            System.err.println("Python API'sine istek atarken hata oluştu: " + e.getMessage());
+            e.printStackTrace();
             return new CodeBertResponse(0.0);
         }
     }
