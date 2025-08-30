@@ -288,9 +288,12 @@ public class InMemoryCoverageAnalyzer {
             options.add("-d");
             options.add(tempDir.getAbsolutePath());
             options.add("-classpath");
-            options.add(System.getProperty("java.class.path") + 
+            String classpath = System.getProperty("java.class.path") + 
                        File.pathSeparator + tempDir.getAbsolutePath() + 
-                       File.pathSeparator + junitPath);
+                       File.pathSeparator + "/app/lib/junit-4.13.2.jar" +
+                       File.pathSeparator + "/app/lib/hamcrest-core-1.3.jar";
+            System.out.println("Derleme için classpath: " + classpath);
+            options.add(classpath);
             options.add("-Xlint:none");
             options.add("-proc:none");
 
