@@ -6,7 +6,7 @@ import './index.css'
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import { DialogComponent } from './components/DialogManager';
 import ProtectedRoute from './components/ProtectedRoute.tsx';
-import { auth } from '@/config/firebase';
+import { authService } from '@/lib/auth';
 import MySidebar from './components/SidebarLayout.tsx';
 import CodeComparison from './pages/CodeComparison.tsx'
 import CodeCoverage from './pages/CodeCoverage.tsx'
@@ -25,12 +25,13 @@ const AppRouter = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      setUser(user);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
+    // Auth interceptor'ı başlat
+    authService.setupAxiosInterceptors();
+    
+    // Mevcut kullanıcıyı kontrol et
+    const currentUser = authService.getCurrentUser();
+    setUser(currentUser);
+    setLoading(false);
   }, []);
 
   if (loading) {

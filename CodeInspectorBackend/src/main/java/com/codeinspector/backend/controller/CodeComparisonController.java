@@ -23,7 +23,6 @@ import com.codeinspector.backend.service.CodeGraphService;
 
 @RestController
 @RequestMapping("/api/code")
-@CrossOrigin(origins = "http://localhost:3000")
 public class CodeComparisonController {
 
     private final CodeComparisonService codeComparisonService;

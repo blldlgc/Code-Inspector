@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import axios from 'axios';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from '@/components/ui/textarea';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
@@ -36,15 +37,7 @@ const CodeComparison = () => {
     const handleCompare = async () => {
         try {
             setLoading(true);
-            const response = await fetch('http://localhost:8080/api/code/compare', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ code1, code2 }),
-            });
-
-            const data = await response.json();
+            const { data } = await axios.post('/api/code/compare', { code1, code2 });
             setResult(data);
             console.log(data);
         } catch (error) {
