@@ -12,7 +12,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.http.HttpMethod;
-import java.util.Arrays;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -30,18 +31,17 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .cors(cors -> cors.configurationSource(request -> {
-                var corsConfig = new org.springframework.web.cors.CorsConfiguration();
-                corsConfig.setAllowedOrigins(Arrays.asList("http://localhost:5173"));
-                corsConfig.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-                corsConfig.setAllowedHeaders(Arrays.asList("*"));
-                corsConfig.setAllowCredentials(true);
-                return corsConfig;
-            }))
-            .csrf(csrf -> csrf.disable())
+            .cors(Customizer.withDefaults())
+            .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/api/code/**").permitAll()  // Code analysis endpoints'lerini public yap
+                .requestMatchers("/api/code/**").permitAll()  // Code analysis endpoints
+                .requestMatchers("/api/security/**").permitAll()  // Security analysis endpoints
+                .requestMatchers("/api/coverage/**").permitAll()  // Coverage analysis endpoints
+                .requestMatchers("/api/metrics/**").permitAll()  // Metrics analysis endpoints
+                .requestMatchers("/api/test/**").permitAll()  // Test generation endpoints
+                .requestMatchers("/api/graph/**").permitAll()  // Graph analysis endpoints
+                .requestMatchers("/api/code-analysis/**").permitAll()  // Graph analysis endpoints
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .anyRequest().authenticated()
             )

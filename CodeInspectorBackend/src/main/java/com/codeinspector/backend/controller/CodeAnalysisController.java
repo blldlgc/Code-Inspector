@@ -10,7 +10,6 @@ import com.codeinspector.backend.dto.CodeAnalysisResult;
 import com.codeinspector.backend.utils.CodeSmellAnalyzer;
 
 @RestController
-@CrossOrigin(origins = "http://localhost:3000")
 @RequestMapping("/api/code-analysis")
 public class CodeAnalysisController {
     
