@@ -11,7 +11,8 @@ const LoginPage = () => {
     const [email, setEmail] = useState('');
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
+    const [loginError, setLoginError] = useState('');
+    const [signupError, setSignupError] = useState('');
     
 
     const handleLogin = async (e: React.FormEvent) => {
@@ -20,7 +21,7 @@ const LoginPage = () => {
           await authService.login({ username: email, password });
           window.location.href = '/';
       } catch (error) {
-          setError('Login failed. Please check your credentials.');
+          setLoginError('Login failed. Please check your credentials.');
       }
   };
 
@@ -45,17 +46,30 @@ const LoginPage = () => {
       await authService.register({ username, email, password });
       window.location.href = '/';
     } catch (error: any) {
-        setError(error.response?.data?.message || 'Signup failed. Please try again.');
+        // Backend'den gelen hata mesajını göster
+        const errorMessage = error.response?.data?.message;
+        if (errorMessage) {
+            if (errorMessage.includes('Username is already taken')) {
+                setSignupError('Bu kullanıcı adı zaten kullanılıyor. Lütfen başka bir kullanıcı adı seçin.');
+            } else if (errorMessage.includes('Email is already registered')) {
+                setSignupError('Bu e-posta adresi zaten kayıtlı. Lütfen giriş yapın veya başka bir e-posta adresi kullanın.');
+            } else {
+                setSignupError(errorMessage);
+            }
+        } else {
+            setSignupError('Kayıt işlemi başarısız oldu. Lütfen tekrar deneyin.');
+        }
     }
 };
 
 const handleForgotPassword = async () => {
-  setError('Password reset functionality is not available yet.');
+  setLoginError('Password reset functionality is not available yet.');
 };
 
 const handleInputChange = (setter: React.Dispatch<React.SetStateAction<string>>, value: string) => {
   setter(value);
-  setError('');
+  setLoginError('');
+  setSignupError('');
 };
 
     return (
@@ -100,7 +114,11 @@ const handleInputChange = (setter: React.Dispatch<React.SetStateAction<string>>,
                                             onChange={(e) => handleInputChange(setPassword, e.target.value)}
                                         />
                                     </div>
-                                    {error && <p className="text-red-500 text-sm mt-2 mb-2">{error}</p>}
+                                    {loginError && (
+                                        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3 mt-2 mb-2">
+                                            <p className="text-red-600 dark:text-red-400 text-sm">{loginError}</p>
+                                        </div>
+                                    )}
                                     <Button className="w-full" type="submit">Log in</Button>
                                 </form>
                             </CardContent>
@@ -143,8 +161,12 @@ const handleInputChange = (setter: React.Dispatch<React.SetStateAction<string>>,
                                             onChange={(e) => handleInputChange(setPassword, e.target.value)}
                                         />
                                     </div>
+                                    {signupError && (
+                                        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3 mt-2 mb-2">
+                                            <p className="text-red-600 dark:text-red-400 text-sm">{signupError}</p>
+                                        </div>
+                                    )}
                                     <Button className="w-full" type="submit">Sign up</Button>
-
                                 </form>
                             </CardContent>
                             <CardFooter>
