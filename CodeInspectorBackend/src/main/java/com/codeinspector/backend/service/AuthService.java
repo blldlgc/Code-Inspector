@@ -22,6 +22,29 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
 
     public AuthResponse register(RegisterRequest request) {
+        // Email formatı kontrolü
+        if (!request.getEmail().matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+            throw new IllegalArgumentException("Invalid email format");
+        }
+
+        // Username kontrolü (en az 3 karakter, sadece harf, sayı ve alt çizgi)
+        if (!request.getUsername().matches("^[a-zA-Z0-9_]{3,}$")) {
+            throw new IllegalArgumentException("Username must be at least 3 characters long and can only contain letters, numbers and underscore");
+        }
+
+        // Password kontrolü
+        if (request.getPassword().length() < 6) {
+            throw new IllegalArgumentException("Password must be at least 6 characters long");
+        }
+
+        // Önce username ve email kontrolü
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new IllegalArgumentException("Username is already taken");
+        }
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new IllegalArgumentException("Email is already registered");
+        }
+
         var user = User.builder()
                 .username(request.getUsername())
                 .email(request.getEmail())

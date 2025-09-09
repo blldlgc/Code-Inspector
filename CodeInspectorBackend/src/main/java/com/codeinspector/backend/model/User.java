@@ -1,13 +1,6 @@
 package com.codeinspector.backend.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,12 +13,25 @@ import java.util.Collection;
 import java.util.List;
 
 @Entity
-@Table(name = "users")
+@Table(name = "users", indexes = {
+    @Index(name = "idx_username_unique", columnList = "username", unique = true),
+    @Index(name = "idx_email_unique", columnList = "email", unique = true)
+})
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class User implements UserDetails {
+
+    @Override
+    public String getUsername() {
+        return username;
+    }
+
+    @Override
+    public String getPassword() {
+        return password;
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

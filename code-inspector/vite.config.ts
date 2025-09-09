@@ -3,6 +3,12 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 export default defineConfig({
+  server: {
+    watch: {
+      usePolling: true, // Docker içinde dosya değişikliklerini algılamak için
+    },
+    host: true, // Container dışından erişime izin ver
+  },
   plugins: [react()],
   resolve: {
     alias: {

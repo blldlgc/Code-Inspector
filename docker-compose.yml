@@ -9,8 +9,10 @@ services:
       - "5173:5173"
     environment:
       - VITE_BACKEND_URL=http://localhost:8080
+      - CHOKIDAR_USEPOLLING=true  # Hot reload için dosya değişikliklerini izle
+      - WATCHPACK_POLLING=true    # Webpack için dosya değişikliklerini izle
     volumes:
-      - ./code-inspector:/app
+      - ./code-inspector:/app:delegated
       - /app/node_modules
     depends_on:
       - backend

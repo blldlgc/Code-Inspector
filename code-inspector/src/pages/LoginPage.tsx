@@ -3,22 +3,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { auth } from "@/config/firebase";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, updateProfile } from 'firebase/auth';
+import { authService } from "@/lib/auth";
 import { DialogManager } from "@/components/DialogManager";
 
 
 const LoginPage = () => {
     const [email, setEmail] = useState('');
+    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
-    const [fullName, setFullName] = useState('');
     const [error, setError] = useState('');
     
 
     const handleLogin = async (e: React.FormEvent) => {
       e.preventDefault();
       try {
-          await signInWithEmailAndPassword(auth, email, password);
+          await authService.login({ username: email, password });
+          window.location.href = '/';
       } catch (error) {
           setError('Login failed. Please check your credentials.');
       }
@@ -27,36 +27,30 @@ const LoginPage = () => {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+      if (!username.match(/^[a-zA-Z0-9_]{3,}$/)) {
+        setError('Username must be at least 3 characters long and can only contain letters, numbers and underscore');
+        return;
+      }
 
-      await updateProfile(user, {
-        displayName: fullName
-    });
-    console.log("User registered successfully with full name:", fullName);
-    await signInWithEmailAndPassword(auth, email, password);
-    } catch (error) {
-        setError('Signup failed. Please try again.');
+      if (!email.match(/^[A-Za-z0-9+_.-]+@(.+)$/)) {
+        setError('Invalid email format');
+        return;
+      }
+
+      if (password.length < 6) {
+        setError('Password must be at least 6 characters long');
+        return;
+      }
+
+      await authService.register({ username, email, password });
+      window.location.href = '/';
+    } catch (error: any) {
+        setError(error.response?.data?.message || 'Signup failed. Please try again.');
     }
 };
 
 const handleForgotPassword = async () => {
-  if (!email) {
-      setError('Please enter your email address.');
-      return;
-  }
-  try {
-      await sendPasswordResetEmail(auth, email);
-    DialogManager.show(
-      "Password Reset",
-      "A password reset link has been sent to your email.",
-      < >
-    
-      </>
-      );
-  } catch (error) {
-      setError('Failed to send password reset email. Please try again.');
-  }
+  setError('Password reset functionality is not available yet.');
 };
 
 const handleInputChange = (setter: React.Dispatch<React.SetStateAction<string>>, value: string) => {
@@ -128,9 +122,9 @@ const handleInputChange = (setter: React.Dispatch<React.SetStateAction<string>>,
                                     <div className="mb-4">
                                         <Input
                                             type="text"
-                                            placeholder="Full Name"
-                                            value={fullName}
-                                            onChange={(e) => handleInputChange(setFullName, e.target.value)}
+                                            placeholder="Username"
+                                            value={username}
+                                            onChange={(e) => handleInputChange(setUsername, e.target.value)}
                                         />
                                     </div>
                                     <div className="mb-4">

@@ -59,9 +59,8 @@ import {
 } from "@/components/ui/sidebar"
 import { ReactNode } from 'react';
 
-import { signOut } from 'firebase/auth';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { auth } from "@/config/firebase.ts";
+import { useAuth } from '@/context/AuthContext';
 import { ModeToggle } from "./mode-toggle"
 import { AIChatBox } from "@/components/AIChatBox";
 import logo from "/logo.png"
@@ -70,19 +69,11 @@ const GITHUB_REPO = "https://github.com/blldlgc/code-inspector";
 const GITHUB_ISSUES = `${GITHUB_REPO}/issues`;
 const GITHUB_DISCUSSIONS = `${GITHUB_REPO}/discussions`;
 
-const handleLogout = async () => {
-  try {
-      await signOut(auth); // Firebase'den çıkış işlemi
-  } catch (error) {
-      console.error('Logout failed: ', error);
-  }
-};
-
 export default function SidebarLayout({ children }: { children: ReactNode }) {
-
   const navigate = useNavigate();
+
   const location = useLocation();
-  console.log(auth.currentUser?.email);
+  const { logout, currentUser } = useAuth();
 
   // Path ve başlıkları eşleştirip Breadcrumb'a ekleme
   const pathTitleMap: { [key: string]: string } = {
@@ -102,8 +93,8 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
 
   const data = {
     user: {
-      name: auth.currentUser?.displayName ?? "User",
-      email: auth.currentUser?.email ?? "m@example.com",
+      name: currentUser?.username ?? "User",
+      email: currentUser?.email ?? "m@example.com",
       avatar: "/avatars/shadcn.jpg",
     },
     // Ana menü grupları
@@ -361,8 +352,8 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout}>
-                    <LogOut />
+                  <DropdownMenuItem onClick={() => logout()}>
+                    <LogOut className="mr-2 h-4 w-4" />
                     Log out
                   </DropdownMenuItem>
                 </DropdownMenuContent>

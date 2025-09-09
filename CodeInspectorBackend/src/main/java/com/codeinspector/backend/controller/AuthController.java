@@ -27,4 +27,10 @@ public class AuthController {
     public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest request) {
         return ResponseEntity.ok(authService.login(request));
     }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout() {
+        // Backend'de özel bir işlem yapmaya gerek yok, client tarafında token silinecek
+        return ResponseEntity.ok().build();
+    }
 }
