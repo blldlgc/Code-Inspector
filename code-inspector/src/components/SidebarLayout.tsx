@@ -74,6 +74,12 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
 
   const location = useLocation();
   const { logout, currentUser } = useAuth();
+  console.log('SidebarLayout - Auth context:', {
+    currentUser,
+    hasUser: !!currentUser,
+    userRole: currentUser?.role,
+    userRoleType: typeof currentUser?.role
+  });
 
   // Path ve başlıkları eşleştirip Breadcrumb'a ekleme
   const pathTitleMap: { [key: string]: string } = {
@@ -98,8 +104,29 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
       avatar: "/avatars/shadcn.jpg",
     },
     // Ana menü grupları
-    menuGroups: [
-      {
+    menuGroups: (() => {
+      const isAdmin = currentUser?.role === 'ADMIN';
+      console.log('SidebarLayout - Menu generation:', {
+        currentUser,
+        userRole: currentUser?.role,
+        isAdmin,
+        roleCheck: `${currentUser?.role} === 'ADMIN'`
+      });
+      
+      const adminMenu = isAdmin ? [{
+        title: "Admin Panel",
+        items: [
+          {
+            title: "Yönetim Paneli",
+            url: "/admin",
+            icon: Shield,
+            description: "Sistem yönetimi ve kullanıcı kontrolü",
+          },
+        ],
+      }] : [];
+      console.log('Admin menu items:', adminMenu);
+
+      const standardMenu = [{
         title: "Code Analysis Tools",
         items: [
           {
@@ -166,8 +193,12 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
             description: "Evaluate code quality and predict errors",
           },
         ],
-      },
-    ],
+      }];
+
+      const allMenus = [...adminMenu, ...standardMenu];
+      console.log('Final menu groups:', allMenus);
+      return allMenus;
+    })(),
     navSecondary: [
       {
         title: "Support",

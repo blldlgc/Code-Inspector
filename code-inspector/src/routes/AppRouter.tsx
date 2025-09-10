@@ -10,8 +10,10 @@ import CodeSmells from '@/pages/CodeSmells';
 import CodeSecurity from '@/pages/CodeSecurity';
 import CodeGraph from '@/pages/CodeGraph';
 import CodeGraphComparison from '@/pages/CodeGraphComparison';
+import AdminPanel from '@/pages/AdminPanel';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import AdminRoute from '@/components/AdminRoute';
 import MySidebar from '@/components/SidebarLayout';
 import { Navigate } from 'react-router-dom';
 
@@ -113,6 +115,16 @@ export const AppRouter = () => {
             </ErrorBoundary>
           </MySidebar>
         </ProtectedRoute>
+      ),
+    },
+    {
+      path: "/admin",
+      element: (
+        <AdminRoute>
+          <MySidebar>
+            <AdminPanel />
+          </MySidebar>
+        </AdminRoute>
       ),
     },
     {

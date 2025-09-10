@@ -1,17 +1,31 @@
-import React, { createContext, useContext, ReactNode } from 'react';
-import { authService } from '@/lib/auth';
+import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
+import { authService, User } from '@/lib/auth';
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  currentUser: any;
+  currentUser: User | null;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const isAuthenticated = authService.isAuthenticated();
-  const currentUser = authService.getCurrentUser();
+  const [isAuthenticated, setIsAuthenticated] = useState(authService.isAuthenticated());
+  const [currentUser, setCurrentUser] = useState<User | null>(authService.getCurrentUser());
+
+  useEffect(() => {
+    // LocalStorage değişikliklerini dinle
+    const handleStorageChange = () => {
+      console.log('AuthContext - Storage changed');
+      const user = authService.getCurrentUser();
+      console.log('AuthContext - New user data:', user);
+      setIsAuthenticated(authService.isAuthenticated());
+      setCurrentUser(user);
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   const logout = () => {
     authService.logout();

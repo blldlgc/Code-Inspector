@@ -8,6 +8,7 @@ import com.codeinspector.backend.model.UserRole;
 import com.codeinspector.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -60,26 +61,48 @@ public class AuthService {
                 .token(token)
                 .username(user.getUsername())
                 .email(user.getEmail())
+                .role(user.getRole().name())
                 .build();
     }
 
     public AuthResponse login(AuthRequest request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getUsername(),
-                        request.getPassword()
-                )
-        );
-        
-        var user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new IllegalArgumentException("Invalid username or password."));
-        
-        var token = jwtService.generateToken(user);
-        
-        return AuthResponse.builder()
-                .token(token)
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .build();
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.getUsername(),
+                            request.getPassword()
+                    )
+            );
+            
+            System.out.println("AuthService - Attempting to authenticate user: " + request.getUsername());
+            
+            var user = userRepository.findByUsername(request.getUsername())
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid username or password."));
+            
+            System.out.println("AuthService - Found user: " + user);
+            System.out.println("AuthService - User details:");
+            System.out.println("  - Username: " + user.getUsername());
+            System.out.println("  - Email: " + user.getEmail());
+            System.out.println("  - Role: " + user.getRole());
+            System.out.println("  - Authorities: " + user.getAuthorities());
+            
+            var token = jwtService.generateToken(user);
+            
+            var response = AuthResponse.builder()
+                    .token(token)
+                    .username(user.getUsername())
+                    .email(user.getEmail())
+                    .role(user.getRole().name())
+                    .build();
+            
+            System.out.println("AuthService - Generated response:");
+            System.out.println("  - Username: " + response.getUsername());
+            System.out.println("  - Email: " + response.getEmail());
+            System.out.println("  - Role: " + response.getRole());
+            System.out.println("  - Token exists: " + (response.getToken() != null));
+            return response;
+        } catch (Exception e) {
+            throw new BadCredentialsException("Invalid username or password");
+        }
     }
 }

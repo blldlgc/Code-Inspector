@@ -3,12 +3,14 @@ import axios from 'axios';
 export interface User {
   username: string;
   email: string;
+  role: string; // Backend'den "USER" veya "ADMIN" olarak gelir
 }
 
 export interface AuthResponse {
   token: string;
   username: string;
   email: string;
+  role: string;
 }
 
 export interface LoginRequest {
@@ -29,24 +31,80 @@ axios.defaults.baseURL = API_URL;
 
 export const authService = {
   async login(request: LoginRequest): Promise<AuthResponse> {
-    const response = await axios.post(`${API_URL}/api/auth/login`, request);
-    const { token, username, email } = response.data;
+    const response = await axios.post('/api/auth/login', request);
+    console.log('AuthService - API Response:', {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+      data: response.data
+    });
+
+    const { token, username, email, role } = response.data;
+    
+    // Backend'den gelen role'e ROLE_ prefix'i ekliyoruz
+    const fullRole = role.startsWith('ROLE_') ? role : `ROLE_${role}`;
+    console.log('AuthService - Extracted data:', { 
+      token: token ? 'exists' : 'missing',
+      username,
+      email,
+      role,
+      fullRole,
+      roleType: typeof role,
+      roleCheck: `role === 'ADMIN'? ${role === 'ADMIN'}`
+    });
+    
+    const userData = { username, email, role: fullRole };
+    console.log('User data to store:', userData);
+    
     localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify({ username, email }));
+    localStorage.setItem('user', JSON.stringify(userData));
+    
+    // LocalStorage event'ini manuel olarak tetikle
+    window.dispatchEvent(new Event('storage'));
+    
+    // LocalStorage'a yazıldıktan sonra kontrol
+    const storedUser = localStorage.getItem('user');
+    console.log('Stored user data:', storedUser ? JSON.parse(storedUser) : 'No user data found');
+    const currentUser = this.getCurrentUser();
+    console.log('Current user after login:', currentUser);
     return response.data;
   },
 
   async register(request: RegisterRequest): Promise<AuthResponse> {
-    const response = await axios.post(`${API_URL}/api/auth/register`, request);
-    const { token, username, email } = response.data;
+    const response = await axios.post('/api/auth/register', request);
+    console.log('Raw register response:', response.data);
+    const { token, username, email, role } = response.data;
+    
+    // Backend'den gelen role'e ROLE_ prefix'i ekliyoruz
+    const fullRole = role.startsWith('ROLE_') ? role : `ROLE_${role}`;
+    console.log('Register response after processing:', { 
+      token: token ? 'exists' : 'missing',
+      username,
+      email,
+      role,
+      fullRole
+    });
+    
+    const userData = { username, email, role: fullRole };
+    console.log('User data to store:', userData);
+    
     localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify({ username, email }));
+    localStorage.setItem('user', JSON.stringify(userData));
+    
+    // LocalStorage event'ini manuel olarak tetikle
+    window.dispatchEvent(new Event('storage'));
+    
+    // LocalStorage'a yazıldıktan sonra kontrol
+    const storedUser = localStorage.getItem('user');
+    console.log('Stored user data after register:', storedUser ? JSON.parse(storedUser) : 'No user data found');
     return response.data;
   },
 
   logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    // LocalStorage event'ini manuel olarak tetikle
+    window.dispatchEvent(new Event('storage'));
   },
 
   getToken(): string | null {
@@ -55,6 +113,10 @@ export const authService = {
 
   getCurrentUser(): User | null {
     const userStr = localStorage.getItem('user');
+    console.log('AuthService - getCurrentUser:', {
+      rawUserStr: userStr,
+      parsedUser: userStr ? JSON.parse(userStr) : null
+    });
     if (!userStr) return null;
     return JSON.parse(userStr);
   },

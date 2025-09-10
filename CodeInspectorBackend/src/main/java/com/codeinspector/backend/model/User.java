@@ -47,14 +47,14 @@ public class User implements UserDetails {
     private String password;
     
     @Column(nullable = false)
+    @Builder.Default
     private boolean enabled = true;
     
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
+    @Builder.Default
     private UserRole role = UserRole.USER;
     
-    // Firebase UID'sini geçiş sürecinde tutmak için
-    private String firebaseUid;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

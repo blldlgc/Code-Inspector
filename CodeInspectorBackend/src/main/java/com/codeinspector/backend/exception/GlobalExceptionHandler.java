@@ -1,6 +1,8 @@
 package com.codeinspector.backend.exception;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -33,6 +35,17 @@ public class GlobalExceptionHandler {
         }
         
         return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<Map<String, String>> handleAuthenticationException(AuthenticationException e) {
+        Map<String, String> errorResponse = new HashMap<>();
+        if (e instanceof BadCredentialsException) {
+            errorResponse.put("message", "Invalid username or password");
+        } else {
+            errorResponse.put("message", "Authentication failed");
+        }
+        return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
     }
 
     @ExceptionHandler(Exception.class)
