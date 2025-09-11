@@ -1,5 +1,6 @@
 package com.codeinspector.backend.service;
 
+import com.codeinspector.backend.model.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;

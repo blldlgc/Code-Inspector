@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { User, UserDTO } from '../types/user';
+import { User, UserDTO, CreateUserRequest } from '../types/user';
 import { authService } from '../lib/auth';
 
 // authService'den axios interceptor'ını kuruyoruz
@@ -39,9 +39,28 @@ export const userService = {
 
   async deleteUser(id: number): Promise<void> {
     try {
+      // Önce kullanıcıyı kontrol et
+      const user = await this.getUser(id);
+      
+      // Admin kullanıcısını silmeye çalışıyorsa engelle
+      if (user.role === 'ADMIN') {
+        throw new Error('Admin kullanıcısı silinemez!');
+      }
+
+      // Silme işlemini gerçekleştir
       await axios.delete(`/api/admin/users/${id}`);
     } catch (error) {
       console.error(`Error deleting user ${id}:`, error);
+      throw error;
+    }
+  }
+  ,
+  async createUser(payload: CreateUserRequest): Promise<User> {
+    try {
+      const response = await axios.post('/api/admin/users', payload);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating user:', error);
       throw error;
     }
   }

@@ -4,6 +4,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageLayout } from "@/components/PageLayout";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { useAuth } from '@/context/AuthContext';
 import { Navigate } from 'react-router-dom';
 import {
@@ -25,6 +30,15 @@ export default function AdminPanel() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    username: "",
+    email: "",
+    password: "",
+    role: "USER" as const,
+    enabled: true,
+  });
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -46,7 +60,7 @@ export default function AdminPanel() {
   }, []);
 
   // Admin rolü kontrolü
-  if (currentUser?.role !== 'ADMIN') {
+  if (currentUser?.role !== 'ROLE_ADMIN') {
     return <Navigate to="/" replace />;
   }
 
@@ -96,7 +110,85 @@ export default function AdminPanel() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Kullanıcı Yönetimi</CardTitle>
-                <Button>Yeni Kullanıcı</Button>
+                <Dialog open={open} onOpenChange={setOpen}>
+                  <DialogTrigger asChild>
+                    <Button onClick={() => setOpen(true)}>Yeni Kullanıcı</Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Yeni Kullanıcı</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="username" className="text-right">Kullanıcı Adı</Label>
+                        <Input id="username" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} className="col-span-3" />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="email" className="text-right">E-posta</Label>
+                        <Input id="email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="col-span-3" />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="password" className="text-right">Parola</Label>
+                        <Input id="password" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="col-span-3" />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label className="text-right">Rol</Label>
+                        <Select value={form.role} onValueChange={(value: string) => setForm({ ...form, role: value as typeof form.role })}>
+                          <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="Rol seçin" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="USER">USER</SelectItem>
+                            <SelectItem value="ADMIN">ADMIN</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label className="text-right">Aktif</Label>
+                        <div className="col-span-3 flex items-center space-x-2">
+                          <Switch 
+                            checked={form.enabled} 
+                            onCheckedChange={(checked: boolean) => setForm({ ...form, enabled: checked })}
+                          />
+                          <span className="text-sm text-muted-foreground">
+                            {form.enabled ? 'Aktif' : 'Pasif'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button
+                        disabled={saving || !form.username || !form.email || form.password.length < 6}
+                        onClick={async () => {
+                          try {
+                            setSaving(true);
+                            await userService.createUser({
+                              username: form.username,
+                              email: form.email,
+                              password: form.password,
+                              role: form.role as any,
+                              enabled: form.enabled,
+                            } as any);
+                            setOpen(false);
+                            setForm({ username: "", email: "", password: "", role: "USER", enabled: true });
+                            // Listeyi yenile
+                            setLoading(true);
+                            setError(null);
+                            const data = await userService.getAllUsers();
+                            setUsers(data);
+                          } catch {
+                            alert("Kullanıcı oluşturulamadı. Lütfen bilgileri kontrol edin.");
+                          } finally {
+                            setLoading(false);
+                            setSaving(false);
+                          }
+                        }}
+                      >
+                        Kaydet
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
             </CardHeader>
             <CardContent>
@@ -122,11 +214,7 @@ export default function AdminPanel() {
                   </Button>
                 </div>
               ) : (
-                <DataTable
-                  columns={columns}
-                  data={users}
-                  loading={loading}
-                />
+                <DataTable columns={columns} data={users} />
               )}
             </CardContent>
           </Card>

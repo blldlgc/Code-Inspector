@@ -105,12 +105,12 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
     },
     // Ana menü grupları
     menuGroups: (() => {
-      const isAdmin = currentUser?.role === 'ADMIN';
+      const isAdmin = currentUser?.role === 'ROLE_ADMIN';
       console.log('SidebarLayout - Menu generation:', {
         currentUser,
         userRole: currentUser?.role,
         isAdmin,
-        roleCheck: `${currentUser?.role} === 'ADMIN'`
+        roleCheck: `${currentUser?.role} === 'ROLE_ADMIN'`
       });
       
       const adminMenu = isAdmin ? [{

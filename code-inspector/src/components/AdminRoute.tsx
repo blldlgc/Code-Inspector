@@ -15,8 +15,8 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
     hasUser: !!currentUser,
     userRole: currentUser?.role,
     userRoleType: typeof currentUser?.role,
-    roleCheck: `${currentUser?.role} === 'ADMIN'`,
-    hasAdminRole: currentUser?.role === 'ADMIN'
+    roleCheck: `${currentUser?.role} === 'ROLE_ADMIN'`,
+    hasAdminRole: currentUser?.role === 'ROLE_ADMIN'
   });
 
   if (!isAuthenticated) {
@@ -24,7 +24,7 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (currentUser?.role !== 'ADMIN') {
+  if (currentUser?.role !== 'ROLE_ADMIN') {
     console.log('AdminRoute - Not admin, redirecting to home. Current role:', currentUser?.role);
     return <Navigate to="/" replace />;
   }

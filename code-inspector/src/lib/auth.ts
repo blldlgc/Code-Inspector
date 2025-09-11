@@ -50,7 +50,7 @@ export const authService = {
       role,
       fullRole,
       roleType: typeof role,
-      roleCheck: `role === 'ADMIN'? ${role === 'ADMIN'}`
+      roleCheck: `role === 'ROLE_ADMIN'? ${role === 'ROLE_ADMIN'}`
     });
     
     const userData = { username, email, role: fullRole };

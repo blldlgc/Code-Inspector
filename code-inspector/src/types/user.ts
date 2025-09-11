@@ -15,3 +15,11 @@ export interface UserDTO extends Omit<User, 'id'> {
   id?: number;
   password?: string;
 }
+
+export interface CreateUserRequest {
+  username: string;
+  email: string;
+  password: string;
+  role: UserRole;
+  enabled: boolean;
+}
