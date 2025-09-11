@@ -67,7 +67,7 @@ export default function AdminPanel() {
   return (
     <PageLayout
       title="Admin Panel"
-      description="Sistem yönetimi ve kullanıcı kontrolü"
+      description="System management and user control"
     >
       <Tabs defaultValue="dashboard" className="space-y-4">
         <TabsList>
@@ -77,15 +77,15 @@ export default function AdminPanel() {
           </TabsTrigger>
           <TabsTrigger value="users" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
-            Kullanıcılar
+            Users
           </TabsTrigger>
           <TabsTrigger value="security" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
-            Güvenlik
+            Security
           </TabsTrigger>
           <TabsTrigger value="settings" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
-            Ayarlar
+            Settings
           </TabsTrigger>
         </TabsList>
 
@@ -96,7 +96,7 @@ export default function AdminPanel() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
             <Card className="col-span-4">
               <CardHeader>
-                <CardTitle>Sistem Durumu</CardTitle>
+                <CardTitle>System Status</CardTitle>
               </CardHeader>
               <CardContent>
                 <SystemHealth />
@@ -109,33 +109,33 @@ export default function AdminPanel() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Kullanıcı Yönetimi</CardTitle>
+                <CardTitle>User Management</CardTitle>
                 <Dialog open={open} onOpenChange={setOpen}>
                   <DialogTrigger asChild>
-                    <Button onClick={() => setOpen(true)}>Yeni Kullanıcı</Button>
+                    <Button onClick={() => setOpen(true)}>New User</Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Yeni Kullanıcı</DialogTitle>
+                      <DialogTitle>New User</DialogTitle>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                       <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="username" className="text-right">Kullanıcı Adı</Label>
+                        <Label htmlFor="username" className="text-right">Username</Label>
                         <Input id="username" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} className="col-span-3" />
                       </div>
                       <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="email" className="text-right">E-posta</Label>
+                        <Label htmlFor="email" className="text-right">Email</Label>
                         <Input id="email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="col-span-3" />
                       </div>
                       <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="password" className="text-right">Parola</Label>
+                        <Label htmlFor="password" className="text-right">Password</Label>
                         <Input id="password" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="col-span-3" />
                       </div>
                       <div className="grid grid-cols-4 items-center gap-4">
-                        <Label className="text-right">Rol</Label>
+                        <Label className="text-right">Role</Label>
                         <Select value={form.role} onValueChange={(value: string) => setForm({ ...form, role: value as typeof form.role })}>
                           <SelectTrigger className="col-span-3">
-                            <SelectValue placeholder="Rol seçin" />
+                            <SelectValue placeholder="Select role" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="USER">USER</SelectItem>
@@ -144,14 +144,14 @@ export default function AdminPanel() {
                         </Select>
                       </div>
                       <div className="grid grid-cols-4 items-center gap-4">
-                        <Label className="text-right">Aktif</Label>
+                        <Label className="text-right">Active</Label>
                         <div className="col-span-3 flex items-center space-x-2">
                           <Switch 
                             checked={form.enabled} 
                             onCheckedChange={(checked: boolean) => setForm({ ...form, enabled: checked })}
                           />
                           <span className="text-sm text-muted-foreground">
-                            {form.enabled ? 'Aktif' : 'Pasif'}
+                            {form.enabled ? 'Active' : 'Inactive'}
                           </span>
                         </div>
                       </div>
@@ -177,14 +177,14 @@ export default function AdminPanel() {
                             const data = await userService.getAllUsers();
                             setUsers(data);
                           } catch {
-                            alert("Kullanıcı oluşturulamadı. Lütfen bilgileri kontrol edin.");
+                            alert("Failed to create user. Please check the information.");
                           } finally {
                             setLoading(false);
                             setSaving(false);
                           }
                         }}
                       >
-                        Kaydet
+                        Save
                       </Button>
                     </DialogFooter>
                   </DialogContent>
@@ -205,12 +205,12 @@ export default function AdminPanel() {
                         .then(data => setUsers(data))
                         .catch(err => {
                           console.error('Error retrying fetch:', err);
-                          setError('Kullanıcılar yüklenirken bir hata oluştu.');
+                          setError('Failed to load users. Please try again.');
                         })
                         .finally(() => setLoading(false));
                     }}
                   >
-                    Tekrar Dene
+                    Try Again
                   </Button>
                 </div>
               ) : (
@@ -223,7 +223,7 @@ export default function AdminPanel() {
         <TabsContent value="security">
           <Card>
             <CardHeader>
-              <CardTitle>Güvenlik Logları</CardTitle>
+              <CardTitle>Security Logs</CardTitle>
             </CardHeader>
             <CardContent>
               <SecurityLogs />
@@ -234,7 +234,7 @@ export default function AdminPanel() {
         <TabsContent value="settings">
           <Card>
             <CardHeader>
-              <CardTitle>Sistem Ayarları</CardTitle>
+              <CardTitle>System Settings</CardTitle>
             </CardHeader>
             <CardContent>
               <SystemSettings />

@@ -92,6 +92,7 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
     "/codesecurity": "Quality & Error Prediction",
     "/codesmell": "Code Smell Detector",
     "/codegraphcomparison": "Code Graph Comparison",
+    "/admin": "Admin Panel",
     "/": "Home", 
   };
   const currentPath = location.pathname;
@@ -117,10 +118,10 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
         title: "Admin Panel",
         items: [
           {
-            title: "Yönetim Paneli",
+            title: "Admin Panel",
             url: "/admin",
             icon: Shield,
-            description: "Sistem yönetimi ve kullanıcı kontrolü",
+            description: "System management and user control",
           },
         ],
       }] : [];

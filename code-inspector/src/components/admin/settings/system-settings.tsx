@@ -15,22 +15,22 @@ export function SystemSettings() {
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <h3 className="text-lg font-medium">Genel Ayarlar</h3>
+        <h3 className="text-lg font-medium">General Settings</h3>
         <p className="text-sm text-muted-foreground">
-          Sistem genelinde geçerli olan ayarları buradan yönetebilirsiniz.
+          Manage system-wide settings from here.
         </p>
       </div>
       <Separator />
       <div className="space-y-4">
         <div className="grid gap-2">
-          <Label htmlFor="site-name">Site Adı</Label>
+          <Label htmlFor="site-name">Site Name</Label>
           <Input id="site-name" defaultValue="Code Inspector" />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="language">Varsayılan Dil</Label>
-          <Select defaultValue="tr">
+          <Label htmlFor="language">Default Language</Label>
+          <Select defaultValue="en">
             <SelectTrigger id="language">
-              <SelectValue placeholder="Dil seçin" />
+              <SelectValue placeholder="Select language" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="tr">Türkçe</SelectItem>
@@ -40,18 +40,18 @@ export function SystemSettings() {
         </div>
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">
-            <Label>Bakım Modu</Label>
+            <Label>Maintenance Mode</Label>
             <p className="text-sm text-muted-foreground">
-              Sistemi bakım moduna alır
+              Put the system into maintenance mode
             </p>
           </div>
           <Switch />
         </div>
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">
-            <Label>Debug Modu</Label>
+            <Label>Debug Mode</Label>
             <p className="text-sm text-muted-foreground">
-              Geliştirici hata ayıklama modunu aktif eder
+              Enable developer debugging mode
             </p>
           </div>
           <Switch />
@@ -59,29 +59,29 @@ export function SystemSettings() {
       </div>
       <Separator />
       <div className="space-y-2">
-        <h3 className="text-lg font-medium">Güvenlik Ayarları</h3>
+        <h3 className="text-lg font-medium">Security Settings</h3>
         <p className="text-sm text-muted-foreground">
-          Sistem güvenliği ile ilgili ayarları buradan yapılandırabilirsiniz.
+          Configure security-related settings from here.
         </p>
       </div>
       <div className="space-y-4">
         <div className="grid gap-2">
-          <Label htmlFor="session-timeout">Oturum Zaman Aşımı (dakika)</Label>
+          <Label htmlFor="session-timeout">Session Timeout (minutes)</Label>
           <Input type="number" id="session-timeout" defaultValue="60" />
         </div>
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">
-            <Label>İki Faktörlü Doğrulama</Label>
+            <Label>Two-Factor Authentication</Label>
             <p className="text-sm text-muted-foreground">
-              Tüm kullanıcılar için zorunlu 2FA
+              Mandatory 2FA for all users
             </p>
           </div>
           <Switch />
         </div>
       </div>
       <div className="flex justify-end space-x-2">
-        <Button variant="outline">İptal</Button>
-        <Button>Kaydet</Button>
+        <Button variant="outline">Cancel</Button>
+        <Button>Save</Button>
       </div>
     </div>
   );

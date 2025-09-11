@@ -15,7 +15,7 @@ import { userService } from "@/services/userService"
 export const columns = [
   {
     accessorKey: "username",
-    header: "Kullanıcı Adı",
+    header: "Username",
     cell: ({ row }) => {
       return (
         <div className="flex items-center">
@@ -31,11 +31,11 @@ export const columns = [
   },
   {
     accessorKey: "email",
-    header: "E-posta",
+    header: "Email",
   },
   {
     accessorKey: "role",
-    header: "Rol",
+    header: "Role",
     cell: ({ row }) => {
       const role = row.getValue("role") as string
       return (
@@ -47,34 +47,34 @@ export const columns = [
   },
   {
     accessorKey: "enabled",
-    header: "Durum",
+    header: "Status",
     cell: ({ row }) => {
       const enabled = row.getValue("enabled") as boolean
       return (
         <Badge variant={enabled ? "default" : "destructive"}>
-          {enabled ? "Aktif" : "Pasif"}
+          {enabled ? "Active" : "Inactive"}
         </Badge>
       )
     },
   },
   {
     id: "actions",
-    header: "İşlemler",
+    header: "Actions",
     cell: ({ row }) => {
       const user = row.original
 
       const handleDelete = async () => {
-        if (!confirm("Bu kullanıcıyı silmek istediğinize emin misiniz?")) {
+        if (!confirm("Are you sure you want to delete this user?")) {
           return
         }
 
         try {
           await userService.deleteUser(user.id)
-          // Sayfayı yenile
+          // Refresh page
           window.location.reload()
         } catch (error) {
           console.error("Error deleting user:", error)
-          alert("Kullanıcı silinirken bir hata oluştu.")
+          alert("An error occurred while deleting the user.")
         }
       }
 
@@ -82,20 +82,20 @@ export const columns = [
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Menüyü aç</span>
+              <span className="sr-only">Open menu</span>
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>İşlemler</DropdownMenuLabel>
-            <DropdownMenuItem>Profili Görüntüle</DropdownMenuItem>
-            <DropdownMenuItem>Rolü Değiştir</DropdownMenuItem>
+            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuItem>View Profile</DropdownMenuItem>
+            <DropdownMenuItem>Change Role</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem 
               onClick={handleDelete}
               className="text-red-600"
             >
-              Hesabı Sil
+              Delete Account
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -5,7 +5,7 @@ export function SystemHealth() {
     <div className="space-y-4">
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <div className="text-sm font-medium">CPU Kullanımı</div>
+          <div className="text-sm font-medium">CPU Usage</div>
           <div className="text-sm text-muted-foreground">45%</div>
         </div>
         <Progress value={45} />
@@ -13,7 +13,7 @@ export function SystemHealth() {
 
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <div className="text-sm font-medium">Bellek Kullanımı</div>
+          <div className="text-sm font-medium">Memory Usage</div>
           <div className="text-sm text-muted-foreground">62%</div>
         </div>
         <Progress value={62} />
@@ -21,7 +21,7 @@ export function SystemHealth() {
 
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <div className="text-sm font-medium">Disk Kullanımı</div>
+          <div className="text-sm font-medium">Disk Usage</div>
           <div className="text-sm text-muted-foreground">28%</div>
         </div>
         <Progress value={28} />
@@ -29,7 +29,7 @@ export function SystemHealth() {
 
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <div className="text-sm font-medium">API Yanıt Süresi</div>
+          <div className="text-sm font-medium">API Response Time</div>
           <div className="text-sm text-muted-foreground">120ms</div>
         </div>
         <Progress value={20} />
