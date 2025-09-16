@@ -130,7 +130,35 @@ export const authService = {
     axios.interceptors.request.use(
       (config) => {
         const token = this.getToken();
-        if (token) {
+
+        // Genel erişime açık endpointler
+        const publicPathPatterns = [
+          /^\/api\/auth\//,
+          /^\/api\/code\//,
+          /^\/api\/security\//,
+          /^\/api\/coverage\//,
+          /^\/api\/metrics\//,
+          /^\/api\/test\//,
+          /^\/api\/graph\//,
+          /^\/api\/code-analysis\//,
+        ];
+
+        // İstek URL'inden path'i çıkar
+        const rawUrl = config.url || '';
+        let path = rawUrl;
+        try {
+          // mutlak URL ise pathname'i al
+          if (/^https?:\/\//i.test(rawUrl)) {
+            path = new URL(rawUrl).pathname;
+          }
+        } catch (_) {
+          // URL parse edilemezse olduğu gibi bırak
+        }
+
+        const isPublic = publicPathPatterns.some((re) => re.test(path));
+
+        // Sadece korumalı endpointlere Authorization ekle
+        if (!isPublic && token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
         return config;
