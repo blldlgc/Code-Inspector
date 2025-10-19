@@ -76,7 +76,12 @@ public class AuthService {
             
             System.out.println("AuthService - Attempting to authenticate user: " + request.getUsername());
             
-            var user = userRepository.findByUsername(request.getUsername())
+            // Kullanıcıyı önce username ile, bulunamazsa email ile bul
+            var identifier = request.getUsername();
+            var user = userRepository.findByUsername(identifier)
+                    .or(() -> identifier != null && identifier.contains("@")
+                            ? userRepository.findByEmail(identifier)
+                            : java.util.Optional.empty())
                     .orElseThrow(() -> new IllegalArgumentException("Invalid username or password."));
             
             System.out.println("AuthService - Found user: " + user);
