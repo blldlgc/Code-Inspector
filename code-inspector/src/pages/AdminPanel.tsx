@@ -214,7 +214,25 @@ export default function AdminPanel() {
                   </Button>
                 </div>
               ) : (
-                <DataTable columns={columns} data={users} />
+                <DataTable 
+                  columns={columns} 
+                  data={users} 
+                  meta={{
+                    refreshData: async () => {
+                      try {
+                        setLoading(true);
+                        setError(null);
+                        const data = await userService.getAllUsers();
+                        setUsers(data);
+                      } catch (error) {
+                        console.error('Error refreshing users:', error);
+                        setError('Kullanıcılar yüklenirken bir hata oluştu.');
+                      } finally {
+                        setLoading(false);
+                      }
+                    }
+                  }}
+                />
               )}
             </CardContent>
           </Card>

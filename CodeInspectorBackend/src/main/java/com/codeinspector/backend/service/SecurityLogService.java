@@ -1,0 +1,147 @@
+package com.codeinspector.backend.service;
+
+import com.codeinspector.backend.model.SecurityLog;
+import com.codeinspector.backend.repository.SecurityLogRepository;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@Service
+@RequiredArgsConstructor
+public class SecurityLogService {
+
+    private final SecurityLogRepository securityLogRepository;
+
+    // Yorum: Genel log kaydetme metodu
+    @Transactional
+    public void logEvent(String eventType, Long userId, String username, HttpServletRequest request, Map<String, Object> details) {
+        try {
+            SecurityLog log = SecurityLog.builder()
+                    .eventType(eventType)
+                    .userId(userId)
+                    .username(username)
+                    .ipAddress(getClientIpAddress(request))
+                    .userAgent(request != null ? request.getHeader("User-Agent") : null)
+                    .details(details != null ? details : new HashMap<>())
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
+            securityLogRepository.save(log);
+        } catch (Exception e) {
+            // Yorum: Log kaydetme hatası ana işlemi etkilememeli
+            System.err.println("Security log kaydetme hatası: " + e.getMessage());
+        }
+    }
+
+    // Yorum: Başarılı giriş logu
+    public void logLoginSuccess(Long userId, String username, HttpServletRequest request) {
+        Map<String, Object> details = new HashMap<>();
+        details.put("message", "Kullanıcı başarıyla giriş yaptı");
+        logEvent("LOGIN_SUCCESS", userId, username, request, details);
+    }
+
+    // Yorum: Başarısız giriş logu
+    public void logLoginFailed(String username, HttpServletRequest request, String reason) {
+        Map<String, Object> details = new HashMap<>();
+        details.put("message", "Başarısız giriş denemesi");
+        details.put("reason", reason);
+        logEvent("LOGIN_FAILED", null, username, request, details);
+    }
+
+    // Yorum: Yeni kullanıcı kaydı logu
+    public void logUserCreated(Long userId, String username, HttpServletRequest request) {
+        Map<String, Object> details = new HashMap<>();
+        details.put("message", "Yeni kullanıcı kaydı oluşturuldu");
+        logEvent("USER_CREATED", userId, username, request, details);
+    }
+
+    // Yorum: Kullanıcı rolü değişikliği logu
+    public void logRoleChanged(Long userId, String username, String oldRole, String newRole, HttpServletRequest request) {
+        Map<String, Object> details = new HashMap<>();
+        details.put("message", "Kullanıcı rolü değiştirildi");
+        details.put("oldRole", oldRole);
+        details.put("newRole", newRole);
+        logEvent("ROLE_CHANGED", userId, username, request, details);
+    }
+
+    // Yorum: Kullanıcı silme logu
+    public void logUserDeleted(Long userId, String username, HttpServletRequest request) {
+        Map<String, Object> details = new HashMap<>();
+        details.put("message", "Kullanıcı silindi");
+        logEvent("USER_DELETED", userId, username, request, details);
+    }
+
+    // Yorum: Kullanıcı durumu değişikliği logu
+    public void logUserStatusChanged(Long userId, String username, boolean oldStatus, boolean newStatus, HttpServletRequest request) {
+        Map<String, Object> details = new HashMap<>();
+        details.put("message", "Kullanıcı durumu değiştirildi");
+        details.put("oldStatus", oldStatus ? "Active" : "Inactive");
+        details.put("newStatus", newStatus ? "Active" : "Inactive");
+        logEvent("USER_STATUS_CHANGED", userId, username, request, details);
+    }
+
+    // Yorum: Admin işlemi logu
+    public void logAdminAction(Long adminUserId, String adminUsername, String action, HttpServletRequest request) {
+        Map<String, Object> details = new HashMap<>();
+        details.put("message", "Admin işlemi gerçekleştirildi");
+        details.put("action", action);
+        logEvent("ADMIN_ACTION", adminUserId, adminUsername, request, details);
+    }
+
+    // Yorum: Log listesi getir
+    public Page<SecurityLog> getLogs(Pageable pageable) {
+        return securityLogRepository.findAllByOrderByCreatedAtDesc(pageable);
+    }
+
+    // Yorum: Event type'a göre filtrele
+    public Page<SecurityLog> getLogsByEventType(String eventType, Pageable pageable) {
+        return securityLogRepository.findByEventTypeOrderByCreatedAtDesc(eventType, pageable);
+    }
+
+    // Yorum: Kullanıcıya göre filtrele
+    public Page<SecurityLog> getLogsByUser(Long userId, Pageable pageable) {
+        return securityLogRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
+    }
+
+    // Yorum: Son 24 saatteki loglar
+    public List<SecurityLog> getRecentLogs() {
+        return securityLogRepository.findByCreatedAtGreaterThanEqualOrderByCreatedAtDesc(LocalDateTime.now().minusHours(24));
+    }
+
+    // Yorum: İstatistikler
+    public Map<String, Object> getLogStats() {
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalLogs", securityLogRepository.count());
+        stats.put("failedLogins24h", securityLogRepository.countByEventTypeAndCreatedAtGreaterThanEqual("LOGIN_FAILED", LocalDateTime.now().minusHours(24)));
+        stats.put("loginSuccessCount", securityLogRepository.countByEventType("LOGIN_SUCCESS"));
+        stats.put("loginFailedCount", securityLogRepository.countByEventType("LOGIN_FAILED"));
+        stats.put("userCreatedCount", securityLogRepository.countByEventType("USER_CREATED"));
+        stats.put("roleChangedCount", securityLogRepository.countByEventType("ROLE_CHANGED"));
+        return stats;
+    }
+
+    // Yorum: Client IP adresini al
+    private String getClientIpAddress(HttpServletRequest request) {
+        if (request == null) return "unknown";
+        
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        if (xForwardedFor != null && !xForwardedFor.isEmpty() && !"unknown".equalsIgnoreCase(xForwardedFor)) {
+            return xForwardedFor.split(",")[0].trim();
+        }
+        
+        String xRealIp = request.getHeader("X-Real-IP");
+        if (xRealIp != null && !xRealIp.isEmpty() && !"unknown".equalsIgnoreCase(xRealIp)) {
+            return xRealIp;
+        }
+        
+        return request.getRemoteAddr();
+    }
+}

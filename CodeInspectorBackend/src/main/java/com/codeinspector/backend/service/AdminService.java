@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
@@ -23,6 +24,7 @@ public class AdminService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final SecurityLogService securityLogService;
 
     public List<UserDTO> getAllUsers() {
         return userRepository.findByDeletedAtIsNull().stream()
@@ -37,23 +39,61 @@ public class AdminService {
     }
 
     @Transactional
-    public UserDTO updateUser(Long id, UserDTO userDTO) {
+    public UserDTO updateUser(Long id, UserDTO userDTO, HttpServletRequest request) {
+        System.out.println("AdminService.updateUser - ID: " + id);
+        System.out.println("AdminService.updateUser - UserDTO: " + userDTO);
+        
         User user = userRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + id));
 
+        System.out.println("AdminService.updateUser - Found user: " + user.getUsername() + ", Role: " + user.getRole());
+
+        // Yorum: Değişiklikleri takip etmek için eski değerleri sakla
+        UserRole oldRole = user.getRole();
+        boolean oldStatus = user.isEnabled();
+
         // Admin kullanıcısının rolünü değiştirmeye izin verme
         if (user.getRole() == UserRole.ADMIN && userDTO.getRole() != UserRole.ADMIN) {
+            System.out.println("AdminService.updateUser - Attempting to change admin role, blocking");
             throw new IllegalStateException("Admin kullanıcısının rolü değiştirilemez");
         }
 
-        user.setUsername(userDTO.getUsername());
-        user.setEmail(userDTO.getEmail());
+        // Yorum: Username ve email değişikliklerini kontrol et
+        if (userDTO.getUsername() != null && !userDTO.getUsername().equals(user.getUsername())) {
+            if (userRepository.existsByUsername(userDTO.getUsername())) {
+                System.out.println("AdminService.updateUser - Username already exists: " + userDTO.getUsername());
+                throw new IllegalArgumentException("Username is already taken");
+            }
+            user.setUsername(userDTO.getUsername());
+        }
+
+        if (userDTO.getEmail() != null && !userDTO.getEmail().equals(user.getEmail())) {
+            if (userRepository.existsByEmail(userDTO.getEmail())) {
+                System.out.println("AdminService.updateUser - Email already exists: " + userDTO.getEmail());
+                throw new IllegalArgumentException("Email is already registered");
+            }
+            user.setEmail(userDTO.getEmail());
+        }
+
         user.setEnabled(userDTO.isEnabled());
         if (userDTO.getRole() != null) {
             user.setRole(userDTO.getRole());
         }
 
-        return convertToDTO(userRepository.save(user));
+        System.out.println("AdminService.updateUser - Saving user with role: " + user.getRole() + ", enabled: " + user.isEnabled());
+        
+        User savedUser = userRepository.save(user);
+        
+        // Yorum: Değişiklikleri logla
+        if (oldRole != user.getRole()) {
+            securityLogService.logRoleChanged(user.getId(), user.getUsername(), oldRole.name(), user.getRole().name(), request);
+        }
+        
+        if (oldStatus != user.isEnabled()) {
+            securityLogService.logUserStatusChanged(user.getId(), user.getUsername(), oldStatus, user.isEnabled(), request);
+        }
+        
+        return convertToDTO(savedUser);
     }
 
     @Transactional

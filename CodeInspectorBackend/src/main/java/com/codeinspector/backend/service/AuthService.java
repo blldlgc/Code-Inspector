@@ -12,6 +12,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import jakarta.servlet.http.HttpServletRequest;
 
 @Service
 @RequiredArgsConstructor
@@ -21,8 +22,9 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final SecurityLogService securityLogService;
 
-    public AuthResponse register(RegisterRequest request) {
+    public AuthResponse register(RegisterRequest request, HttpServletRequest httpRequest) {
         // Email formatı kontrolü
         if (!request.getEmail().matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
             throw new IllegalArgumentException("Invalid email format");
@@ -57,6 +59,9 @@ public class AuthService {
         userRepository.save(user);
         var token = jwtService.generateToken(user);
         
+        // Yorum: Yeni kullanıcı kaydı logu
+        securityLogService.logUserCreated(user.getId(), user.getUsername(), httpRequest);
+        
         return AuthResponse.builder()
                 .token(token)
                 .username(user.getUsername())
@@ -65,7 +70,7 @@ public class AuthService {
                 .build();
     }
 
-    public AuthResponse login(AuthRequest request) {
+    public AuthResponse login(AuthRequest request, HttpServletRequest httpRequest) {
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
@@ -105,8 +110,14 @@ public class AuthService {
             System.out.println("  - Email: " + response.getEmail());
             System.out.println("  - Role: " + response.getRole());
             System.out.println("  - Token exists: " + (response.getToken() != null));
+            
+            // Yorum: Başarılı giriş logu
+            securityLogService.logLoginSuccess(user.getId(), user.getUsername(), httpRequest);
+            
             return response;
         } catch (Exception e) {
+            // Yorum: Başarısız giriş logu
+            securityLogService.logLoginFailed(request.getUsername(), httpRequest, "Invalid credentials");
             throw new BadCredentialsException("Invalid username or password");
         }
     }
