@@ -13,14 +13,14 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/security-logs")
+@RequestMapping("/api/admin")
 @RequiredArgsConstructor
 public class SecurityLogController {
 
     private final SecurityLogService securityLogService;
 
     // Yorum: Tüm security logları getir (pagination ile)
-    @GetMapping("")
+    @GetMapping("/security-logs")
     public ResponseEntity<Page<SecurityLog>> getSecurityLogs(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
@@ -30,7 +30,7 @@ public class SecurityLogController {
     }
 
     // Yorum: Event type'a göre filtrele
-    @GetMapping("/event-type/{eventType}")
+    @GetMapping("/security-logs/event-type/{eventType}")
     public ResponseEntity<Page<SecurityLog>> getLogsByEventType(
             @PathVariable String eventType,
             @RequestParam(defaultValue = "0") int page,
@@ -41,7 +41,7 @@ public class SecurityLogController {
     }
 
     // Yorum: Kullanıcıya göre filtrele
-    @GetMapping("/user/{userId}")
+    @GetMapping("/security-logs/user/{userId}")
     public ResponseEntity<Page<SecurityLog>> getLogsByUser(
             @PathVariable Long userId,
             @RequestParam(defaultValue = "0") int page,
@@ -52,14 +52,14 @@ public class SecurityLogController {
     }
 
     // Yorum: Son 24 saatteki loglar
-    @GetMapping("/recent")
+    @GetMapping("/security-logs/recent")
     public ResponseEntity<List<SecurityLog>> getRecentLogs() {
         List<SecurityLog> logs = securityLogService.getRecentLogs();
         return ResponseEntity.ok(logs);
     }
 
     // Yorum: Log istatistikleri
-    @GetMapping("/stats")
+    @GetMapping("/security-logs/stats")
     public ResponseEntity<Map<String, Object>> getLogStats() {
         Map<String, Object> stats = securityLogService.getLogStats();
         return ResponseEntity.ok(stats);

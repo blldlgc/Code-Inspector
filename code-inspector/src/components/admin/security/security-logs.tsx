@@ -35,7 +35,7 @@ export function SecurityLogs() {
     try {
       setLoading(true)
       setError(null)
-      const { data } = await axios.get("/api/security-logs/recent")
+      const { data } = await axios.get("/api/admin/security-logs/recent")
       setLogs(data)
     } catch (err) {
       console.error("Error fetching security logs:", err)
@@ -47,7 +47,7 @@ export function SecurityLogs() {
 
   const fetchStats = async () => {
     try {
-      const { data } = await axios.get("/api/security-logs/stats")
+      const { data } = await axios.get("/api/admin/security-logs/stats")
       setStats(data)
     } catch (err) {
       console.error("Error fetching log stats:", err)

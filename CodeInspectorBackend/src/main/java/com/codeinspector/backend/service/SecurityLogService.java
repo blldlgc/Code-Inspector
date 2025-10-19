@@ -118,14 +118,61 @@ public class SecurityLogService {
 
     // Yorum: İstatistikler
     public Map<String, Object> getLogStats() {
-        Map<String, Object> stats = new HashMap<>();
-        stats.put("totalLogs", securityLogRepository.count());
-        stats.put("failedLogins24h", securityLogRepository.countByEventTypeAndCreatedAtGreaterThanEqual("LOGIN_FAILED", LocalDateTime.now().minusHours(24)));
-        stats.put("loginSuccessCount", securityLogRepository.countByEventType("LOGIN_SUCCESS"));
-        stats.put("loginFailedCount", securityLogRepository.countByEventType("LOGIN_FAILED"));
-        stats.put("userCreatedCount", securityLogRepository.countByEventType("USER_CREATED"));
-        stats.put("roleChangedCount", securityLogRepository.countByEventType("ROLE_CHANGED"));
-        return stats;
+        try {
+            System.out.println("SecurityLogService.getLogStats - Starting stats calculation");
+            Map<String, Object> stats = new HashMap<>();
+            
+            // Yorum: Basit sayım için tüm logları alıp manuel sayım yapacağız
+            List<SecurityLog> allLogs = securityLogRepository.findAll();
+            System.out.println("SecurityLogService.getLogStats - Total logs found: " + allLogs.size());
+            
+            long totalLogs = allLogs.size();
+            stats.put("totalLogs", totalLogs);
+            
+            // Yorum: Son 24 saatteki başarısız girişler
+            LocalDateTime twentyFourHoursAgo = LocalDateTime.now().minusHours(24);
+            long failedLogins24h = allLogs.stream()
+                .filter(log -> "LOGIN_FAILED".equals(log.getEventType()) && 
+                              log.getCreatedAt().isAfter(twentyFourHoursAgo))
+                .count();
+            System.out.println("SecurityLogService.getLogStats - Failed logins 24h: " + failedLogins24h);
+            stats.put("failedLogins24h", failedLogins24h);
+            
+            // Yorum: Başarılı girişler
+            long loginSuccessCount = allLogs.stream()
+                .filter(log -> "LOGIN_SUCCESS".equals(log.getEventType()))
+                .count();
+            System.out.println("SecurityLogService.getLogStats - Login success count: " + loginSuccessCount);
+            stats.put("loginSuccessCount", loginSuccessCount);
+            
+            // Yorum: Başarısız girişler
+            long loginFailedCount = allLogs.stream()
+                .filter(log -> "LOGIN_FAILED".equals(log.getEventType()))
+                .count();
+            System.out.println("SecurityLogService.getLogStats - Login failed count: " + loginFailedCount);
+            stats.put("loginFailedCount", loginFailedCount);
+            
+            // Yorum: Kullanıcı oluşturma
+            long userCreatedCount = allLogs.stream()
+                .filter(log -> "USER_CREATED".equals(log.getEventType()))
+                .count();
+            System.out.println("SecurityLogService.getLogStats - User created count: " + userCreatedCount);
+            stats.put("userCreatedCount", userCreatedCount);
+            
+            // Yorum: Rol değişiklikleri
+            long roleChangedCount = allLogs.stream()
+                .filter(log -> "ROLE_CHANGED".equals(log.getEventType()))
+                .count();
+            System.out.println("SecurityLogService.getLogStats - Role changed count: " + roleChangedCount);
+            stats.put("roleChangedCount", roleChangedCount);
+            
+            System.out.println("SecurityLogService.getLogStats - Stats calculated successfully: " + stats);
+            return stats;
+        } catch (Exception e) {
+            System.err.println("SecurityLogService.getLogStats - Error: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     // Yorum: Client IP adresini al

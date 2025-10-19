@@ -62,8 +62,4 @@ public class AdminController {
         return ResponseEntity.ok(adminService.getSystemHealth());
     }
 
-    @GetMapping("/security-logs")
-    public ResponseEntity<List<Map<String, Object>>> getSecurityLogs() {
-        return ResponseEntity.ok(adminService.getSecurityLogs());
-    }
 }
