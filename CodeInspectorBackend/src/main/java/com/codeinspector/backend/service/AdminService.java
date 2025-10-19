@@ -88,21 +88,28 @@ public class AdminService {
         return stats;
     }
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.codeinspector.backend.filter.ApiLatencyFilter apiLatencyFilter;
+
     public Map<String, Object> getSystemHealth() {
         Map<String, Object> health = new HashMap<>();
         
-        OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
-        MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
+        // Yorum: Cgroup tabanlı gerçek metrikler (container içinde)
+        double cpuUsage = com.codeinspector.backend.utils.CgroupMetrics.getCpuUsagePercent();
+        double memoryUsage = com.codeinspector.backend.utils.CgroupMetrics.getMemoryUsagePercent();
+        double diskUsage = com.codeinspector.backend.utils.CgroupMetrics.getDiskUsagePercent();
 
-        double cpuLoad = osBean.getSystemLoadAverage();
-        long usedMemory = memoryBean.getHeapMemoryUsage().getUsed();
-        long maxMemory = memoryBean.getHeapMemoryUsage().getMax();
-        double memoryUsage = (double) usedMemory / maxMemory * 100;
+        // Yorum: İlk ölçümde CPU -1 dönebilir; bu durumda geçici bir tahmin kullanılır
+        if (cpuUsage < 0) {
+            double load = ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage();
+            int cores = Runtime.getRuntime().availableProcessors();
+            cpuUsage = (load >= 0 && cores > 0) ? Math.min(100.0, (load * 100.0) / cores) : 0.0;
+        }
 
-        health.put("cpuUsage", cpuLoad >= 0 ? cpuLoad * 100 : 45);
+        health.put("cpuUsage", Math.round(cpuUsage));
         health.put("memoryUsage", Math.round(memoryUsage));
-        health.put("diskUsage", 28);
-        health.put("apiResponseTime", 120);
+        health.put("diskUsage", Math.round(diskUsage));
+        health.put("apiResponseTime", apiLatencyFilter.getAverageMs());
 
         return health;
     }
