@@ -102,6 +102,9 @@ export const projectsApi = {
     if (zip) {
       await projectsApi.uploadZip(payload.slug, zip);
     }
+    if (payload.vcsUrl) {
+      await projectsApi.importGit(payload.slug, payload.vcsUrl);
+    }
     return proj;
   },
   shareWithUser: async (slug: string, username: string) => {

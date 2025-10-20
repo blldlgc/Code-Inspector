@@ -57,13 +57,14 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { ModeToggle } from "./mode-toggle"
 import { AIChatBox } from "@/components/AIChatBox";
 import logo from "/logo.png"
+import { projectsApi } from '@/lib/api';
 
 const GITHUB_REPO = "https://github.com/blldlgc/code-inspector";
 const GITHUB_ISSUES = `${GITHUB_REPO}/issues`;
@@ -71,9 +72,48 @@ const GITHUB_DISCUSSIONS = `${GITHUB_REPO}/discussions`;
 
 export default function SidebarLayout({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
-
+  const params = useParams();
   const location = useLocation();
   const { logout, currentUser } = useAuth();
+  const [projectTitle, setProjectTitle] = useState<string | null>(null);
+  const [isProjectPage, setIsProjectPage] = useState<boolean>(false);
+  const [isLoadingProject, setIsLoadingProject] = useState<boolean>(false);
+
+  // Proje detay sayfasındaysak proje adını çek
+  useEffect(() => {
+    const fetchProjectTitle = async () => {
+      // URL'den proje slug'ını al
+      const projectSlug = params.slug;
+      const isProjectDetailPage = !!projectSlug && location.pathname.startsWith('/projects/') && location.pathname !== '/projects/';
+      
+      setIsProjectPage(isProjectDetailPage);
+      
+      if (isProjectDetailPage) {
+        setIsLoadingProject(true);
+        try {
+          const projects = await projectsApi.list();
+          const project = projects.find(p => p.slug === projectSlug);
+          if (project) {
+            setProjectTitle(project.name);
+          } else {
+            // Proje bulunamadıysa
+            setProjectTitle("Project Not Found");
+          }
+        } catch (error) {
+          console.error('Error fetching project details:', error);
+          setProjectTitle("Error Loading Project");
+        } finally {
+          setIsLoadingProject(false);
+        }
+      } else {
+        setProjectTitle(null);
+        setIsLoadingProject(false);
+      }
+    };
+
+    fetchProjectTitle();
+  }, [location.pathname, params.slug]);
+
   console.log('SidebarLayout - Auth context:', {
     currentUser,
     hasUser: !!currentUser,
@@ -98,7 +138,24 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
     "/": "Home", 
   };
   const currentPath = location.pathname;
-  const currentTitle = pathTitleMap[currentPath] || "Unknown Page";
+  
+  // Proje detay sayfası için özel başlık oluştur
+  let currentTitle = pathTitleMap[currentPath];
+  
+  // Eğer proje detay sayfasındaysak
+  if (isProjectPage) {
+    if (projectTitle && !isLoadingProject) {
+      // Proje adı yüklendiyse onu kullan
+      currentTitle = projectTitle;
+    } else {
+      // Yükleme sırasında veya proje adı yoksa "Projects" göster
+      // Bu değer kullanılmayacak çünkü yükleme sırasında proje adı breadcrumb'da gösterilmeyecek
+      currentTitle = "Projects";
+    }
+  } else if (!currentTitle) {
+    // Diğer sayfalar için
+    currentTitle = pathTitleMap["/projects"] || "Unknown Page";
+  }
 
   const data = {
     user: {
@@ -414,13 +471,28 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
               <Separator orientation="vertical" className="mr-2 h-4" />
               <Breadcrumb>
                 <BreadcrumbList>
+                  {/* Ana sayfa linki her zaman göster */}
                   <BreadcrumbItem className="hidden md:block">
                     <BreadcrumbLink onClick={() => navigate("/")}>Code Inspector</BreadcrumbLink>
                   </BreadcrumbItem>
                   <BreadcrumbSeparator className="hidden md:block" />
-                  <BreadcrumbItem>
-                    <BreadcrumbPage>{currentTitle}</BreadcrumbPage>
-                  </BreadcrumbItem>
+                  
+                  {/* Proje detay sayfasındaysak Projects linki göster */}
+                  {isProjectPage && (
+                    <>
+                      <BreadcrumbItem className="hidden md:block">
+                        <BreadcrumbLink onClick={() => navigate("/projects")}>Projects</BreadcrumbLink>
+                      </BreadcrumbItem>
+                      <BreadcrumbSeparator className="hidden md:block" />
+                    </>
+                  )}
+                  
+                  {/* Mevcut sayfa başlığı - proje detay sayfasında sadece proje adı yüklendiyse göster */}
+                  {!(isProjectPage && isLoadingProject) && (
+                    <BreadcrumbItem>
+                      <BreadcrumbPage>{currentTitle}</BreadcrumbPage>
+                    </BreadcrumbItem>
+                  )}
                 </BreadcrumbList>
               </Breadcrumb>
             </div>

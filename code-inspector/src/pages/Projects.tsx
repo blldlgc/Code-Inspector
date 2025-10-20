@@ -17,6 +17,7 @@ export default function Projects() {
   const [repoUrl, setRepoUrl] = useState('');
   const [zipFile, setZipFile] = useState<File | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
 
   const refresh = async () => {
     try {
@@ -32,9 +33,19 @@ export default function Projects() {
   useEffect(() => { refresh(); }, []);
 
   const createProject = async () => {
-    await projectsApi.createWithZip({ name, slug, description, vcsUrl: repoUrl || undefined }, zipFile || undefined);
-    setName(''); setSlug(''); setDescription(''); setRepoUrl('');
-    await refresh();
+    try {
+      setIsCreating(true);
+      await projectsApi.createWithZip({ name, slug, description, vcsUrl: repoUrl || undefined }, zipFile || undefined);
+      setName(''); setSlug(''); setDescription(''); setRepoUrl(''); setZipFile(null);
+      await refresh();
+      return true;
+    } catch (error) {
+      console.error('Error creating project:', error);
+      alert('Failed to create project');
+      return false;
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const uploadZip = async (p: Project) => {
@@ -78,14 +89,52 @@ export default function Projects() {
             <DialogHeader>
               <DialogTitle>Create Project</DialogTitle>
             </DialogHeader>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 py-2">
-              <Input placeholder="Name" value={name} onChange={e => { setName(e.target.value); if (!slug) setSlug(e.target.value.toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')); }} />
-              <Input placeholder="Slug" value={slug} onChange={e => setSlug(e.target.value)} />
-              <Input placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} />
-              <Input placeholder="GitHub Repo URL (optional)" value={repoUrl} onChange={e => setRepoUrl(e.target.value)} />
+            <div className="grid grid-cols-1 gap-4 py-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <Input placeholder="Name" value={name} onChange={e => { setName(e.target.value); if (!slug) setSlug(e.target.value.toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')); }} />
+                <div>
+                  <Input placeholder="URL Path (no spaces)" value={slug} onChange={e => setSlug(e.target.value)} />
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Used in project URL: /projects/<span className="font-mono">{slug || 'example-path'}</span>
+                  </div>
+                </div>
+                <Input placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} />
+                <Input placeholder="GitHub Repo URL (optional)" value={repoUrl} onChange={e => setRepoUrl(e.target.value)} />
+              </div>
+              
+              <div className="border rounded p-2">
+                <div className="text-sm font-medium mb-2">Project Files</div>
+                <div className="flex items-center gap-2">
+                  <Input type="file" onChange={e => setZipFile(e.target.files?.[0] || null)} />
+                  <span className="text-sm opacity-70">Upload ZIP (optional)</span>
+                </div>
+                {repoUrl && (
+                  <div className="text-xs text-muted-foreground mt-2">
+                    <span className="text-green-600">✓</span> Project will be imported from GitHub after creation
+                  </div>
+                )}
+                {isCreating && repoUrl && (
+                  <div className="text-xs text-blue-500 mt-2 animate-pulse">
+                    Importing files from GitHub...
+                  </div>
+                )}
+                {isCreating && zipFile && (
+                  <div className="text-xs text-blue-500 mt-2 animate-pulse">
+                    Uploading ZIP file...
+                  </div>
+                )}
+              </div>
             </div>
             <DialogFooter>
-              <Button onClick={async () => { await createProject(); setOpenDialog(false); }}>Create</Button>
+              <Button 
+                onClick={async () => { 
+                  const success = await createProject(); 
+                  if (success) setOpenDialog(false); 
+                }}
+                disabled={isCreating}
+              >
+                {isCreating ? 'Creating...' : 'Create'}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -93,21 +142,15 @@ export default function Projects() {
 
       <Card className="p-4 space-y-4">
         <div className="font-semibold">Projects</div>
-        <div className="flex items-center gap-2">
-          <Input type="file" onChange={e => setZipFile(e.target.files?.[0] || null)} />
-          <span className="text-sm opacity-70">ZIP for upload endpoints</span>
-        </div>
         <div className="grid gap-2">
           {items.map(p => (
             <div key={p.id} className="flex items-center justify-between border rounded p-2">
               <div>
-                <div className="font-medium">{p.name} <span className="opacity-60">({p.slug})</span></div>
+                <div className="font-medium">{p.name} <span className="opacity-60">(URL: {p.slug})</span></div>
                 <div className="text-sm opacity-70">{p.description}</div>
               </div>
               <div className="flex gap-2">
                 <Button onClick={() => navigate(`/projects/${p.slug}`)}>Open</Button>
-                <Button variant="secondary" onClick={() => uploadZip(p)}>Upload ZIP</Button>
-                <Button variant="secondary" onClick={() => importGit(p)}>Import Git</Button>
                 <Button variant="destructive" onClick={() => remove(p)}>Delete</Button>
               </div>
             </div>

@@ -23,6 +23,12 @@ export default function ProjectDetail() {
   const [editDesc, setEditDesc] = useState('');
   const [editVcs, setEditVcs] = useState('');
   const [editVis, setEditVis] = useState<'private'|'team'|'public'>('private');
+  const [zipFile, setZipFile] = useState<File | null>(null);
+  const [importUrl, setImportUrl] = useState('');
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   const loadProject = async () => {
     const list = await projectsApi.list();
@@ -49,6 +55,38 @@ export default function ProjectDetail() {
   };
 
   useEffect(() => { loadProject(); loadDir(''); }, [slug]);
+  
+  const uploadZip = async () => {
+    if (!zipFile) return;
+    try {
+      setIsUploading(true);
+      await projectsApi.uploadZip(slug!, zipFile);
+      setUploadOpen(false);
+      setZipFile(null);
+      await loadDir(cwd); // Refresh current directory
+    } catch (error) {
+      console.error('Error uploading ZIP:', error);
+      alert('Failed to upload ZIP file');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+  
+  const importFromGit = async () => {
+    if (!importUrl) return;
+    try {
+      setIsImporting(true);
+      await projectsApi.importGit(slug!, importUrl);
+      setImportOpen(false);
+      setImportUrl('');
+      await loadDir(cwd); // Refresh current directory
+    } catch (error) {
+      console.error('Error importing from Git:', error);
+      alert('Failed to import from Git repository');
+    } finally {
+      setIsImporting(false);
+    }
+  };
   useEffect(() => {
     if (project) {
       setEditName(project.name || '');
@@ -68,9 +106,64 @@ export default function ProjectDetail() {
     <div className="p-4 space-y-4">
       <div className="flex items-center gap-2">
         <Button variant="secondary" onClick={() => navigate('/projects')}>Back</Button>
-        <div className="font-semibold">{project?.name} <span className="opacity-60">({slug})</span></div>
+        <div className="font-semibold">{project?.name} <span className="opacity-60">(URL Path: {slug})</span></div>
         <div className="ml-auto flex gap-2">
+          <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">Upload ZIP</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Upload ZIP to Project</DialogTitle>
+              </DialogHeader>
+              <div className="py-4">
+                <div className="mb-2 text-sm">Select a ZIP file to upload to this project</div>
+                <Input type="file" onChange={e => setZipFile(e.target.files?.[0] || null)} />
+              </div>
+              <DialogFooter>
+                <Button onClick={uploadZip} disabled={!zipFile || isUploading}>
+                  {isUploading ? 'Uploading...' : 'Upload'}
+                </Button>
+              </DialogFooter>
+              {isUploading && (
+                <div className="text-xs text-blue-500 text-center mt-2 animate-pulse">
+                  Uploading and extracting ZIP file...
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+          
+          <Dialog open={importOpen} onOpenChange={setImportOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">Import Git</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Import from Git</DialogTitle>
+              </DialogHeader>
+              <div className="py-4">
+                <div className="mb-2 text-sm">Enter GitHub repository URL</div>
+                <Input 
+                  placeholder="https://github.com/username/repository" 
+                  value={importUrl} 
+                  onChange={e => setImportUrl(e.target.value)} 
+                />
+              </div>
+              <DialogFooter>
+                <Button onClick={importFromGit} disabled={!importUrl || isImporting}>
+                  {isImporting ? 'Importing...' : 'Import'}
+                </Button>
+              </DialogFooter>
+              {isImporting && (
+                <div className="text-xs text-blue-500 text-center mt-2 animate-pulse">
+                  Cloning repository from GitHub...
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+          
           <ShareProjectDialog slug={slug!} onShared={loadProject} />
+          
           <Dialog open={editOpen} onOpenChange={setEditOpen}>
             <DialogTrigger asChild>
               <Button>Edit</Button>
