@@ -130,7 +130,7 @@ export function UsersList() {
           </DialogContent>
         </Dialog>
       </div>
-      <DataTable columns={columns} data={users} />
+      <DataTable columns={columns} data={users} meta={{ refreshData: fetchUsers }} />
     </div>
   )
 }

@@ -165,7 +165,7 @@ export const columns = [
   {
     accessorKey: "username",
     header: "Username",
-    cell: ({ row }) => {
+    cell: ({ row }: { row: { getValue: (key: string) => any; original: UserType } }) => {
       return (
         <div className="flex items-center">
           {row.original.role === "ADMIN" ? (
@@ -185,7 +185,7 @@ export const columns = [
   {
     accessorKey: "role",
     header: "Role",
-    cell: ({ row }) => {
+    cell: ({ row }: { row: { getValue: (key: string) => any; original: UserType } }) => {
       const role = row.getValue("role") as string
       return (
         <Badge variant={role === "ADMIN" ? "default" : "secondary"}>
@@ -197,7 +197,7 @@ export const columns = [
   {
     accessorKey: "enabled",
     header: "Status",
-    cell: ({ row }) => {
+    cell: ({ row }: { row: { getValue: (key: string) => any; original: UserType } }) => {
       const enabled = row.getValue("enabled") as boolean
       return (
         <Badge variant={enabled ? "default" : "destructive"}>
@@ -209,7 +209,7 @@ export const columns = [
   {
     id: "actions",
     header: "Actions",
-    cell: ({ row, table }) => {
+    cell: ({ row, table }: { row: any; table?: any }) => {
       const user = row.original
       const refreshData = () => {
         // Yorum: Tabloyu yenilemek için parent component'ten gelen refresh fonksiyonunu çağır

@@ -10,7 +10,8 @@
   ],
   "compilerOptions": {
     "esModuleInterop": true,
-    "jsx": "react",
+    "jsx": "react-jsx",
+    "types": ["react", "react-dom"],
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
