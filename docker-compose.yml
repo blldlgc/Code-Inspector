@@ -39,6 +39,8 @@ services:
       - postgres-db
     networks:
       - code-inspector-network
+    volumes:
+      - project-storage:/data/projects
 
   codebert:
     build:
@@ -78,3 +80,4 @@ networks:
 
 volumes:
   postgres-data:
+  project-storage:

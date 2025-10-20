@@ -45,6 +45,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/graph/**").permitAll()  // Graph analysis endpoints
                 .requestMatchers("/api/code-analysis/**").permitAll()  // Graph analysis endpoints
                 .requestMatchers("/api/tree-sitter/**").permitAll()  // TreeSitter analysis endpoint
+                .requestMatchers("/api/projects/**").authenticated()  // Project endpoints require auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .anyRequest().authenticated()
             )

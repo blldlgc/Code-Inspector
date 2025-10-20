@@ -128,6 +128,17 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
       console.log('Admin menu items:', adminMenu);
 
       const standardMenu = [{
+        title: "Projects",
+        items: [
+          {
+            title: "Projects",
+            url: "/projects",
+            icon: GitFork,
+            description: "Visualize code structure and dependencies",
+          }
+        ],
+      },
+      {
         title: "Code Analysis Tools",
         items: [
           {

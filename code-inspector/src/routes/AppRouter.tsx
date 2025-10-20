@@ -11,6 +11,8 @@ import CodeSecurity from '@/pages/CodeSecurity';
 import CodeGraph from '@/pages/CodeGraph';
 import CodeGraphComparison from '@/pages/CodeGraphComparison';
 import AdminPanel from '@/pages/AdminPanel';
+import Projects from '@/pages/Projects';
+import ProjectDetail from '@/pages/ProjectDetail';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AdminRoute from '@/components/AdminRoute';
@@ -30,6 +32,26 @@ export const AppRouter = () => {
           </MySidebar>
         </ProtectedRoute>
       ),
+    },
+    {
+      path: "/projects",
+      element: (
+        <ProtectedRoute>
+          <MySidebar>
+            <Projects />
+          </MySidebar>
+        </ProtectedRoute>
+      )
+    },
+    {
+      path: "/projects/:slug",
+      element: (
+        <ProtectedRoute>
+          <MySidebar>
+            <ProjectDetail />
+          </MySidebar>
+        </ProtectedRoute>
+      )
     },
     {
       path: "/clonedetector",
