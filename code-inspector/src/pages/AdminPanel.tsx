@@ -16,12 +16,14 @@ import {
   Users,
   Settings,
   Shield,
+  UsersRound,
 } from "lucide-react";
 import { columns } from "@/components/admin/users/columns";
 import { UserStats } from "@/components/admin/dashboard/user-stats";
 import { SystemHealth } from "@/components/admin/dashboard/system-health";
 import { SecurityLogs } from "@/components/admin/security/security-logs";
 import { SystemSettings } from "@/components/admin/settings/system-settings";
+import { TeamsList } from "@/components/admin/teams/TeamsList";
 import { userService } from "@/services/userService";
 import { User } from "@/types/user";
 
@@ -78,6 +80,10 @@ export default function AdminPanel() {
           <TabsTrigger value="users" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             Users
+          </TabsTrigger>
+          <TabsTrigger value="teams" className="flex items-center gap-2">
+            <UsersRound className="h-4 w-4" />
+            Teams
           </TabsTrigger>
           <TabsTrigger value="security" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
@@ -245,6 +251,17 @@ export default function AdminPanel() {
             </CardHeader>
             <CardContent>
               <SecurityLogs />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="teams">
+          <Card>
+            <CardHeader>
+              <CardTitle>Team Management</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TeamsList />
             </CardContent>
           </Card>
         </TabsContent>

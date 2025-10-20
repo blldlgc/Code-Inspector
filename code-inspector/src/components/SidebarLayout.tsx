@@ -93,6 +93,8 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
     "/codesmell": "Code Smell Detector",
     "/codegraphcomparison": "Code Graph Comparison",
     "/admin": "Admin Panel",
+    "/projects": "Projects",
+    "/projects/*": "Project Detail",
     "/": "Home", 
   };
   const currentPath = location.pathname;

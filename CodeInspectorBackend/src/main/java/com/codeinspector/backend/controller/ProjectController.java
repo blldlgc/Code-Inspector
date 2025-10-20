@@ -56,6 +56,35 @@ public class ProjectController {
         Project updated = projectService.updateMeta(slug, req.name(), req.description(), req.vcsUrl(), req.visibility());
         return ResponseEntity.ok(updated);
     }
+    
+    // Project sharing endpoints
+    public record ShareRequest(String username) {}
+    
+    @PostMapping(path = "/{slug}/share/user")
+    public ResponseEntity<Project> shareWithUser(@PathVariable String slug, @RequestBody ShareRequest req) {
+        Project updated = projectService.shareWithUser(slug, req.username());
+        return ResponseEntity.ok(updated);
+    }
+    
+    @DeleteMapping(path = "/{slug}/share/user")
+    public ResponseEntity<Project> unshareWithUser(@PathVariable String slug, @RequestBody ShareRequest req) {
+        Project updated = projectService.unshareWithUser(slug, req.username());
+        return ResponseEntity.ok(updated);
+    }
+    
+    public record TeamShareRequest(Long teamId) {}
+    
+    @PostMapping(path = "/{slug}/share/team")
+    public ResponseEntity<Project> shareWithTeam(@PathVariable String slug, @RequestBody TeamShareRequest req) {
+        Project updated = projectService.shareWithTeam(slug, req.teamId());
+        return ResponseEntity.ok(updated);
+    }
+    
+    @DeleteMapping(path = "/{slug}/share/team")
+    public ResponseEntity<Project> unshareWithTeam(@PathVariable String slug, @RequestBody TeamShareRequest req) {
+        Project updated = projectService.unshareWithTeam(slug, req.teamId());
+        return ResponseEntity.ok(updated);
+    }
 
     @PostMapping(path = "/{slug}/upload", consumes = {"multipart/form-data"})
     public ResponseEntity<Void> uploadZip(@PathVariable String slug, @RequestParam("file") org.springframework.web.multipart.MultipartFile file) throws Exception {
@@ -100,5 +129,3 @@ public class ProjectController {
         return ResponseEntity.ok().headers(headers).body(content);
     }
 }
-
-

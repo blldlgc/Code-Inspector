@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { ShareProjectDialog } from '@/components/ShareProjectDialog';
 
 type FileInfo = { name: string; path: string; directory: boolean; size: number };
 type Project = { id: number; name: string; slug: string; description?: string };
@@ -68,29 +69,32 @@ export default function ProjectDetail() {
       <div className="flex items-center gap-2">
         <Button variant="secondary" onClick={() => navigate('/projects')}>Back</Button>
         <div className="font-semibold">{project?.name} <span className="opacity-60">({slug})</span></div>
-        <Dialog open={editOpen} onOpenChange={setEditOpen}>
-          <DialogTrigger asChild>
-            <Button className="ml-auto">Edit</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Edit Project</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-2 py-2">
-              <Input placeholder="Name" value={editName} onChange={e => setEditName(e.target.value)} />
-              <Input placeholder="Description" value={editDesc} onChange={e => setEditDesc(e.target.value)} />
-              <Input placeholder="GitHub Repo URL" value={editVcs} onChange={e => setEditVcs(e.target.value)} />
-              <select className="border rounded p-2" value={editVis} onChange={e => setEditVis(e.target.value as any)}>
-                <option value="private">private</option>
-                <option value="team">team</option>
-                <option value="public">public</option>
-              </select>
-            </div>
-            <DialogFooter>
-              <Button onClick={async () => { await projectsApi.update(slug!, { name: editName, description: editDesc, vcsUrl: editVcs, visibility: editVis }); await loadProject(); setEditOpen(false); }}>Save</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <div className="ml-auto flex gap-2">
+          <ShareProjectDialog slug={slug!} onShared={loadProject} />
+          <Dialog open={editOpen} onOpenChange={setEditOpen}>
+            <DialogTrigger asChild>
+              <Button>Edit</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Edit Project</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-2 py-2">
+                <Input placeholder="Name" value={editName} onChange={e => setEditName(e.target.value)} />
+                <Input placeholder="Description" value={editDesc} onChange={e => setEditDesc(e.target.value)} />
+                <Input placeholder="GitHub Repo URL" value={editVcs} onChange={e => setEditVcs(e.target.value)} />
+                <select className="border rounded p-2" value={editVis} onChange={e => setEditVis(e.target.value as any)}>
+                  <option value="private">private</option>
+                  <option value="team">team</option>
+                  <option value="public">public</option>
+                </select>
+              </div>
+              <DialogFooter>
+                <Button onClick={async () => { await projectsApi.update(slug!, { name: editName, description: editDesc, vcsUrl: editVcs, visibility: editVis }); await loadProject(); setEditOpen(false); }}>Save</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
       <Card className="p-3">
         <div className="flex items-center gap-2 mb-2">
