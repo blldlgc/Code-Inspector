@@ -3,11 +3,13 @@ package com.codeinspector.backend.service;
 import com.codeinspector.backend.model.Project;
 import com.codeinspector.backend.model.User;
 import com.codeinspector.backend.model.Team;
+import com.codeinspector.backend.model.UserRole;
 import com.codeinspector.backend.repository.ProjectRepository;
 import com.codeinspector.backend.repository.UserRepository;
 import com.codeinspector.backend.repository.TeamRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,7 +18,10 @@ import java.nio.file.Path;
 import java.nio.file.Files;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class ProjectService {
@@ -50,41 +55,43 @@ public class ProjectService {
                 return List.of();
             }
             
-            // Get projects from all possible access paths
-            List<Project> accessibleProjects = new ArrayList<>();
+            // Check if user is admin
+            boolean isAdmin = auth.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(role -> role.equals("ROLE_ADMIN"));
             
-            try {
-                // 1. User's own projects
-                accessibleProjects.addAll(projectRepository.findByOwnerUsername(username));
+            if (isAdmin) {
+                // Admin görüyor, tüm silinmemiş projeleri getir
+                System.out.println("Admin user, returning all non-deleted projects");
+                return projectRepository.findAllForAdmin();
+            } else {
+                // Normal kullanıcı, sadece kendi ve paylaşılan projeleri getir
+                System.out.println("Regular user, returning user-specific projects");
                 
-                // Temporarily disabled advanced filtering
-                // Return all projects for now
-                List<Project> allProjects = projectRepository.findAll();
-                addNonDuplicates(accessibleProjects, allProjects);
-            } catch (Exception e) {
-                System.out.println("Specific query failed: " + e.getMessage());
-                // Fallback to all projects
-                return projectRepository.findAll();
+                // Use Set to avoid duplicates
+                Set<Project> accessibleProjects = new HashSet<>();
+                
+                // 1. Kullanıcının kendi projeleri
+                accessibleProjects.addAll(projectRepository.findByOwnerUsernameNotDeleted(username));
+                
+                // 2. Kullanıcıyla doğrudan paylaşılan projeler
+                accessibleProjects.addAll(projectRepository.findSharedWithUserNotDeleted(username));
+                
+                // 3. Kullanıcının takımlarıyla paylaşılan projeler
+                accessibleProjects.addAll(projectRepository.findSharedWithTeamsByUserNotDeleted(username));
+                
+                // 4. Public projeler
+                accessibleProjects.addAll(projectRepository.findPublicNotDeleted());
+                
+                System.out.println("Found " + accessibleProjects.size() + " accessible projects for user " + username);
+                
+                // Convert Set to List
+                return new ArrayList<>(accessibleProjects);
             }
-            
-            return accessibleProjects;
         } catch (Exception e) {
             e.printStackTrace();
             System.out.println("Error in project listing: " + e.getMessage());
-            try {
-                // Last resort fallback
-                return projectRepository.findAll();
-            } catch (Exception ex) {
-                return List.of(); // Return empty list if all else fails
-            }
-        }
-    }
-    
-    private void addNonDuplicates(List<Project> target, List<Project> source) {
-        for (Project p : source) {
-            if (p.getId() != null && target.stream().noneMatch(tp -> p.getId().equals(tp.getId()))) {
-                target.add(p);
-            }
+            return List.of(); // Hata durumunda boş liste döndür
         }
     }
 
@@ -182,12 +189,12 @@ public class ProjectService {
     public void deleteBySlug(String slug) throws IOException {
         Project p = projectRepository.findBySlug(slug).orElse(null);
         if (p == null) return;
-        // delete files recursively
-        Path dir = storageService.getProjectDirectory(slug);
-        if (Files.exists(dir)) {
-            deleteRecursively(dir);
-        }
-        projectRepository.delete(p);
+        
+        // Soft delete: mark as "deleted" instead of physically removing
+        System.out.println("Marking project as deleted: " + slug);
+        p.setVisibility("deleted");
+        projectRepository.save(p);
+        System.out.println("Project marked as deleted: " + slug);
     }
 
     private void deleteRecursively(Path path) throws IOException {

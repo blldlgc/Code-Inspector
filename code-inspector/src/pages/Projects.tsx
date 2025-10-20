@@ -19,8 +19,14 @@ export default function Projects() {
   const [openDialog, setOpenDialog] = useState(false);
 
   const refresh = async () => {
-    const data = await projectsApi.list();
-    setItems(data);
+    try {
+      console.log("Fetching projects list...");
+      const data = await projectsApi.list();
+      console.log("Projects received:", data);
+      setItems(data);
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+    }
   };
 
   useEffect(() => { refresh(); }, []);
@@ -42,8 +48,23 @@ export default function Projects() {
   };
 
   const remove = async (p: Project) => {
-    await projectsApi.delete(p.slug);
-    await refresh();
+    try {
+      console.log(`Deleting project with slug: ${p.slug}`);
+      await projectsApi.delete(p.slug);
+      console.log(`Project deleted, removing from UI: ${p.id}`);
+      
+      // Silinen projeyi hemen UI'dan kaldır
+      setItems(prevItems => prevItems.filter(item => item.id !== p.id));
+      
+      // Silme işlemi tamamlandıktan sonra biraz bekleyip backend'den tekrar yükleyelim
+      setTimeout(async () => {
+        console.log("Refreshing projects list after delete");
+        await refresh();
+      }, 1000);
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      alert('Failed to delete project');
+    }
   };
 
   return (
