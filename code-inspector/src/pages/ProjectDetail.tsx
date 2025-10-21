@@ -140,7 +140,8 @@ export default function ProjectDetail() {
         <div className="md:col-span-1">
           <ProjectVersions 
             projectSlug={slug!} 
-            onVersionSelect={handleVersionSelect} 
+            onVersionSelect={handleVersionSelect}
+            projectVcsUrl={project?.vcsUrl}
           />
         </div>
         

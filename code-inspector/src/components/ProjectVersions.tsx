@@ -12,9 +12,10 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 interface ProjectVersionsProps {
   projectSlug: string;
   onVersionSelect: (version: ProjectVersion) => void;
+  projectVcsUrl?: string;
 }
 
-export function ProjectVersions({ projectSlug, onVersionSelect }: ProjectVersionsProps) {
+export function ProjectVersions({ projectSlug, onVersionSelect, projectVcsUrl }: ProjectVersionsProps) {
   const [versions, setVersions] = useState<ProjectVersion[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,6 +28,14 @@ export function ProjectVersions({ projectSlug, onVersionSelect }: ProjectVersion
   const [isImporting, setIsImporting] = useState(false);
   const [zipDialogOpen, setZipDialogOpen] = useState(false);
   const [githubDialogOpen, setGithubDialogOpen] = useState(false);
+  
+  // GitHub dialog açıldığında projenin GitHub URL'sini doldur
+  const handleGithubDialogOpen = (open: boolean) => {
+    setGithubDialogOpen(open);
+    if (open && projectVcsUrl) {
+      setGithubUrl(projectVcsUrl);
+    }
+  };
   const [commitHistory, setCommitHistory] = useState<any[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
@@ -159,7 +168,7 @@ export function ProjectVersions({ projectSlug, onVersionSelect }: ProjectVersion
             </DialogContent>
           </Dialog>
           
-          <Dialog open={githubDialogOpen} onOpenChange={setGithubDialogOpen}>
+          <Dialog open={githubDialogOpen} onOpenChange={handleGithubDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm" className="flex-grow sm:flex-grow-0">
                 <GitBranch className="h-4 w-4 mr-2" />
@@ -284,8 +293,14 @@ export function ProjectVersions({ projectSlug, onVersionSelect }: ProjectVersion
                 No commit history available. Click the History button to load.
               </div>
             ) : (
-              <div className="space-y-2">
-                {commitHistory.map((commit, index) => (
+              <div>
+                {commitHistory.length > 5 && (
+                  <div className="text-xs text-muted-foreground mb-2 px-1">
+                    Showing {commitHistory.length} commits (scrollable)
+                  </div>
+                )}
+                <div className={`space-y-2 ${commitHistory.length > 5 ? 'max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent' : ''}`}>
+                  {commitHistory.map((commit, index) => (
                   <div key={index} className="border rounded p-3">
                     <div className="font-mono text-xs text-muted-foreground">{commit.hash.substring(0, 8)}</div>
                     <div className="font-medium truncate">{commit.message}</div>
@@ -293,7 +308,8 @@ export function ProjectVersions({ projectSlug, onVersionSelect }: ProjectVersion
                       {commit.author} - {new Date(commit.date).toLocaleString()}
                     </div>
                   </div>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
           </TabsContent>
