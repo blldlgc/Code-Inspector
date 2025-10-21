@@ -71,10 +71,44 @@ export const generateContent = async (prompt: string, temperature: number = 0.5,
     }
 };
 
+// Proje versiyonları için tipler
+export interface ProjectVersion {
+  id: number;
+  versionName: string;
+  commitHash: string;
+  commitMessage: string;
+  githubUrl?: string;
+  createdAt: string;
+}
+
+export interface AnalysisResult {
+  id: number;
+  analysisType: string;
+  resultData: string;
+  createdAt: string;
+}
+
+export interface FileDiff {
+  path: string;
+  changeType: string;
+  diff: string;
+}
+
+export interface CommitInfo {
+  hash: string;
+  message: string;
+  author: string;
+  date: string;
+}
+
 export const projectsApi = {
   list: async () => {
     const res = await axios.get(`${BACKEND_BASE_URL}/api/projects`);
     return res.data as { id: number; name: string; slug: string; description?: string; vcsUrl?: string }[];
+  },
+  get: async (slug: string) => {
+    const res = await axios.get(`${BACKEND_BASE_URL}/api/projects/${slug}`);
+    return res.data;
   },
   create: async (payload: { name: string; slug: string; description?: string; vcsUrl?: string; }) => {
     const res = await axios.post(`${BACKEND_BASE_URL}/api/projects`, payload);
@@ -126,6 +160,82 @@ export const projectsApi = {
       data: { teamId } 
     });
     return res.data;
+  },
+  
+  // Versiyon metotları
+  listVersions: async (slug: string): Promise<ProjectVersion[]> => {
+    const response = await axios.get(`${BACKEND_BASE_URL}/api/projects/${slug}/versions`);
+    return response.data;
+  },
+  
+  getVersion: async (slug: string, versionId: number): Promise<ProjectVersion> => {
+    const response = await axios.get(`${BACKEND_BASE_URL}/api/projects/${slug}/versions/${versionId}`);
+    return response.data;
+  },
+  
+  createVersionFromZip: async (slug: string, file: File, message?: string): Promise<ProjectVersion> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (message) formData.append('message', message);
+    
+    const response = await axios.post(
+      `${BACKEND_BASE_URL}/api/projects/${slug}/versions/zip`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    );
+    return response.data;
+  },
+  
+  createVersionFromGitHub: async (slug: string, repoUrl: string, message?: string): Promise<ProjectVersion> => {
+    const response = await axios.post(`${BACKEND_BASE_URL}/api/projects/${slug}/versions/github`, {
+      repoUrl,
+      message
+    });
+    return response.data;
+  },
+  
+  checkoutVersion: async (slug: string, versionId: number): Promise<void> => {
+    await axios.post(`${BACKEND_BASE_URL}/api/projects/${slug}/versions/${versionId}/checkout`);
+  },
+  
+  getDiff: async (slug: string, oldVersionId: number, newVersionId: number): Promise<FileDiff[]> => {
+    const response = await axios.get(`${BACKEND_BASE_URL}/api/projects/${slug}/versions/diff`, {
+      params: { oldVersionId, newVersionId }
+    });
+    return response.data;
+  },
+  
+  getCommitHistory: async (slug: string): Promise<CommitInfo[]> => {
+    const response = await axios.get(`${BACKEND_BASE_URL}/api/projects/${slug}/versions/history`);
+    return response.data;
+  },
+  
+  // Analiz metotları
+  getAnalysisResults: async (slug: string, versionId: number): Promise<AnalysisResult[]> => {
+    const response = await axios.get(
+      `${BACKEND_BASE_URL}/api/projects/${slug}/versions/${versionId}/analysis`
+    );
+    return response.data;
+  },
+  
+  analyzeVersion: async (slug: string, versionId: number, analysisType: string): Promise<AnalysisResult> => {
+    const response = await axios.post(
+      `${BACKEND_BASE_URL}/api/projects/${slug}/versions/${versionId}/analysis`,
+      null,
+      { params: { analysisType } }
+    );
+    return response.data;
+  },
+  
+  getAnalysisResult: async (slug: string, versionId: number, analysisType: string): Promise<AnalysisResult> => {
+    const response = await axios.get(
+      `${BACKEND_BASE_URL}/api/projects/${slug}/versions/${versionId}/analysis/${analysisType}`
+    );
+    return response.data;
   }
 };
 
