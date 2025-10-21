@@ -39,6 +39,9 @@ public class ProjectVersion {
     @Column(name = "github_url")
     private String githubUrl; // Bu versiyon GitHub'dan mı geldi?
     
+    @Column(name = "branch_name")
+    private String branchName; // Hangi branch'den geldiği
+    
     @Column(nullable = false, updatable = false)
     @Builder.Default
     private Instant createdAt = Instant.now();

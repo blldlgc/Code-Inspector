@@ -78,6 +78,7 @@ export interface ProjectVersion {
   commitHash: string;
   commitMessage: string;
   githubUrl?: string;
+  branchName?: string;
   createdAt: string;
 }
 

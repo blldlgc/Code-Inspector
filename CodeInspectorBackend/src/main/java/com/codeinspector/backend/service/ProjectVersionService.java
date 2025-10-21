@@ -128,8 +128,9 @@ public class ProjectVersionService {
             version.setProject(project);
             version.setVersionName(versionName);
             version.setCommitHash(commitHash);
-            version.setCommitMessage(message + " (from branch: " + branchName + ")");
+            version.setCommitMessage(message);
             version.setGithubUrl(githubUrl);
+            version.setBranchName(branchName);
             
             // Proje VCS URL'ini güncelle
             project.setVcsUrl(githubUrl);
