@@ -165,7 +165,21 @@ public class GitService {
                 pullResult = git.pull().setRemote("origin").setRemoteBranchName("master").call();
             }
             
-            String commitHash = pullResult.getMergeResult().getNewHead().getName();
+            String commitHash;
+            
+            // MergeResult veya RebaseResult kontrol et
+            if (pullResult.getMergeResult() != null && pullResult.getMergeResult().getNewHead() != null) {
+                commitHash = pullResult.getMergeResult().getNewHead().getName();
+            } else if (pullResult.getRebaseResult() != null) {
+                // Rebase sonucundan commit hash'i al
+                commitHash = git.getRepository().resolve("HEAD").getName();
+            } else {
+                // Son commit'i al
+                Iterable<RevCommit> commits = git.log().setMaxCount(1).call();
+                RevCommit lastCommit = commits.iterator().next();
+                commitHash = lastCommit.getName();
+            }
+            
             git.close();
             
             return commitHash;
@@ -176,45 +190,84 @@ public class GitService {
      * İki commit arasındaki farkları döndürür
      */
     public List<FileDiff> getDiffBetweenCommits(String projectPath, String oldCommit, String newCommit) throws Exception {
-        Git git = Git.open(new File(projectPath));
-        ObjectReader reader = git.getRepository().newObjectReader();
+        logger.info("Getting diff between commits: {} and {} in project path: {}", oldCommit, newCommit, projectPath);
         
-        // Eski commit tree'sini hazırla
-        CanonicalTreeParser oldTreeIter = new CanonicalTreeParser();
-        ObjectId oldTree = git.getRepository().resolve(oldCommit + "^{tree}");
-        oldTreeIter.reset(reader, oldTree);
-        
-        // Yeni commit tree'sini hazırla
-        CanonicalTreeParser newTreeIter = new CanonicalTreeParser();
-        ObjectId newTree = git.getRepository().resolve(newCommit + "^{tree}");
-        newTreeIter.reset(reader, newTree);
-        
-        // Diff'leri al
-        List<DiffEntry> diffs = git.diff()
-                .setNewTree(newTreeIter)
-                .setOldTree(oldTreeIter)
-                .call();
-        
-        // Diff'leri formatla
-        List<FileDiff> fileDiffs = new ArrayList<>();
-        DiffFormatter formatter = new DiffFormatter(DisabledOutputStream.INSTANCE);
-        formatter.setRepository(git.getRepository());
-        
-        for (DiffEntry entry : diffs) {
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            formatter.format(entry);
-            String diffText = out.toString(StandardCharsets.UTF_8);
-            
-            FileDiff fileDiff = new FileDiff();
-            fileDiff.setPath(entry.getNewPath().equals("/dev/null") ? entry.getOldPath() : entry.getNewPath());
-            fileDiff.setChangeType(entry.getChangeType().name());
-            fileDiff.setDiff(diffText);
-            
-            fileDiffs.add(fileDiff);
+        if (oldCommit == null || newCommit == null) {
+            logger.error("Commit hash cannot be null. oldCommit: {}, newCommit: {}", oldCommit, newCommit);
+            throw new IllegalArgumentException("Commit hash cannot be null");
         }
         
-        git.close();
-        return fileDiffs;
+        Git git = null;
+        try {
+            git = Git.open(new File(projectPath));
+            ObjectReader reader = git.getRepository().newObjectReader();
+            
+            // Eski commit tree'sini hazırla
+            ObjectId oldObjectId = git.getRepository().resolve(oldCommit);
+            if (oldObjectId == null) {
+                logger.error("Could not resolve old commit: {}", oldCommit);
+                throw new IllegalArgumentException("Could not resolve old commit: " + oldCommit);
+            }
+            
+            CanonicalTreeParser oldTreeIter = new CanonicalTreeParser();
+            ObjectId oldTree = git.getRepository().resolve(oldCommit + "^{tree}");
+            if (oldTree == null) {
+                logger.error("Could not resolve old commit tree: {}", oldCommit);
+                throw new IllegalArgumentException("Could not resolve old commit tree: " + oldCommit);
+            }
+            oldTreeIter.reset(reader, oldTree);
+            
+            // Yeni commit tree'sini hazırla
+            ObjectId newObjectId = git.getRepository().resolve(newCommit);
+            if (newObjectId == null) {
+                logger.error("Could not resolve new commit: {}", newCommit);
+                throw new IllegalArgumentException("Could not resolve new commit: " + newCommit);
+            }
+            
+            CanonicalTreeParser newTreeIter = new CanonicalTreeParser();
+            ObjectId newTree = git.getRepository().resolve(newCommit + "^{tree}");
+            if (newTree == null) {
+                logger.error("Could not resolve new commit tree: {}", newCommit);
+                throw new IllegalArgumentException("Could not resolve new commit tree: " + newCommit);
+            }
+            newTreeIter.reset(reader, newTree);
+            
+            // Diff'leri al
+            List<DiffEntry> diffs = git.diff()
+                    .setNewTree(newTreeIter)
+                    .setOldTree(oldTreeIter)
+                    .call();
+            
+            // Diff'leri formatla
+            List<FileDiff> fileDiffs = new ArrayList<>();
+            DiffFormatter formatter = new DiffFormatter(DisabledOutputStream.INSTANCE);
+            formatter.setRepository(git.getRepository());
+            
+            for (DiffEntry entry : diffs) {
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                DiffFormatter entryFormatter = new DiffFormatter(out);
+                entryFormatter.setRepository(git.getRepository());
+                entryFormatter.format(entry);
+                String diffText = out.toString(StandardCharsets.UTF_8);
+                
+                FileDiff fileDiff = new FileDiff();
+                fileDiff.setPath(entry.getNewPath().equals("/dev/null") ? entry.getOldPath() : entry.getNewPath());
+                fileDiff.setChangeType(entry.getChangeType().name());
+                fileDiff.setDiff(diffText);
+                
+                fileDiffs.add(fileDiff);
+            }
+            
+            logger.info("Found {} differences between commits", fileDiffs.size());
+            return fileDiffs;
+        } catch (Exception e) {
+            logger.error("Error getting diff between commits: {} and {}", oldCommit, newCommit, e);
+            throw e;
+        } finally {
+            if (git != null) {
+                git.close();
+            }
+        }
     }
 
     /**
