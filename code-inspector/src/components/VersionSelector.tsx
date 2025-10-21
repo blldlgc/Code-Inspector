@@ -34,11 +34,22 @@ export function VersionSelector({
         const response = await projectsApi.listVersions(projectSlug);
         setVersions(response);
         
-        // Eğer default versiyon ID'si belirtilmişse onu seç, yoksa en son versiyonu seç
+        // Eğer default versiyon ID'si belirtilmişse onu seç
         if (response.length > 0) {
-          const versionToSelect = defaultVersionId 
-            ? response.find(v => v.id === defaultVersionId) 
-            : response[0];
+          let versionToSelect: ProjectVersion | undefined;
+          
+          if (defaultVersionId) {
+            versionToSelect = response.find(v => v.id === defaultVersionId);
+          } else {
+            // Default ID yoksa, label'a göre farklı seçim yap
+            if (label === "Old Version" && response.length > 1) {
+              // Old Version için sondan bir önceki versiyonu seç
+              versionToSelect = response[1]; // response en yeniden eskiye sıralı olduğundan, 1. indeks sondan bir önceki
+            } else {
+              // New Version veya diğer durumlar için en son versiyonu seç
+              versionToSelect = response[0];
+            }
+          }
             
           if (versionToSelect) {
             setSelectedVersionId(String(versionToSelect.id));

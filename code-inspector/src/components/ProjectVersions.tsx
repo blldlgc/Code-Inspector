@@ -117,12 +117,12 @@ export function ProjectVersions({ projectSlug, onVersionSelect }: ProjectVersion
   
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <CardTitle>Project Versions</CardTitle>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
           <Dialog open={zipDialogOpen} onOpenChange={setZipDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="flex-grow sm:flex-grow-0">
                 <Upload className="h-4 w-4 mr-2" />
                 Upload ZIP
               </Button>
@@ -158,7 +158,7 @@ export function ProjectVersions({ projectSlug, onVersionSelect }: ProjectVersion
           
           <Dialog open={githubDialogOpen} onOpenChange={setGithubDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="flex-grow sm:flex-grow-0">
                 <GitBranch className="h-4 w-4 mr-2" />
                 Import GitHub
               </Button>
@@ -192,7 +192,7 @@ export function ProjectVersions({ projectSlug, onVersionSelect }: ProjectVersion
             </DialogContent>
           </Dialog>
           
-          <Button variant="outline" size="sm" onClick={fetchCommitHistory}>
+          <Button variant="outline" size="sm" onClick={fetchCommitHistory} className="flex-grow sm:flex-grow-0">
             <History className="h-4 w-4 mr-2" />
             History
           </Button>
@@ -228,24 +228,27 @@ export function ProjectVersions({ projectSlug, onVersionSelect }: ProjectVersion
                 {versions.map(version => (
                   <div 
                     key={version.id} 
-                    className="flex items-center justify-between border rounded p-3 hover:bg-muted/50 cursor-pointer"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between border rounded p-3 hover:bg-muted/50 cursor-pointer gap-2"
                     onClick={() => onVersionSelect(version)}
                   >
-                    <div>
-                      <div className="font-medium flex items-center">
-                        {version.versionName}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium flex items-center flex-wrap gap-2">
+                        <span className="truncate">{version.versionName}</span>
                         {version.githubUrl && (
-                          <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded">
+                          <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded">
                             GitHub
                           </span>
                         )}
                       </div>
-                      <div className="text-sm text-muted-foreground">{version.commitMessage}</div>
+                      <div className="text-sm text-muted-foreground truncate">{version.commitMessage}</div>
                       <div className="text-xs text-muted-foreground">
                         {new Date(version.createdAt).toLocaleString()}
                       </div>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => onVersionSelect(version)}>
+                    <Button variant="ghost" size="sm" className="self-end sm:self-center" onClick={(e) => {
+                      e.stopPropagation();
+                      onVersionSelect(version);
+                    }}>
                       Select
                     </Button>
                   </div>
@@ -277,8 +280,8 @@ export function ProjectVersions({ projectSlug, onVersionSelect }: ProjectVersion
                 {commitHistory.map((commit, index) => (
                   <div key={index} className="border rounded p-3">
                     <div className="font-mono text-xs text-muted-foreground">{commit.hash.substring(0, 8)}</div>
-                    <div className="font-medium">{commit.message}</div>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="font-medium truncate">{commit.message}</div>
+                    <div className="text-xs text-muted-foreground truncate">
                       {commit.author} - {new Date(commit.date).toLocaleString()}
                     </div>
                   </div>
