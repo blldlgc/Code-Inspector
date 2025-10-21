@@ -95,6 +95,13 @@ public class GitService {
      * GitHub'dan projeyi klonlar veya günceller
      */
     public String importFromGitHub(String projectPath, String githubUrl, String message) throws Exception {
+        return importFromGitHub(projectPath, githubUrl, message, "main");
+    }
+
+    /**
+     * GitHub'dan belirli bir branch'den projeyi klonlar veya günceller
+     */
+    public String importFromGitHub(String projectPath, String githubUrl, String message, String branchName) throws Exception {
         File projectDir = new File(projectPath);
         File gitDir = new File(projectPath, ".git");
         
@@ -111,6 +118,7 @@ public class GitService {
                 Git.cloneRepository()
                    .setURI(githubUrl)
                    .setDirectory(tempDir.toFile())
+                   .setBranch("refs/heads/" + branchName)
                    .call()
                    .close();
                 
@@ -157,13 +165,18 @@ public class GitService {
                 }
             }
             
-            // Pull yap
-            PullResult pullResult = git.pull().setRemote("origin").setRemoteBranchName("main").call();
-            
-            // Eğer pull başarısızsa, master branch'i dene
-            if (!pullResult.isSuccessful()) {
-                pullResult = git.pull().setRemote("origin").setRemoteBranchName("master").call();
-            }
+                // Pull yap
+                PullResult pullResult = git.pull().setRemote("origin").setRemoteBranchName(branchName).call();
+                
+                // Eğer pull başarısızsa, main branch'i dene
+                if (!pullResult.isSuccessful() && !branchName.equals("main")) {
+                    pullResult = git.pull().setRemote("origin").setRemoteBranchName("main").call();
+                }
+                
+                // Eğer hala başarısızsa, master branch'i dene
+                if (!pullResult.isSuccessful() && !branchName.equals("master")) {
+                    pullResult = git.pull().setRemote("origin").setRemoteBranchName("master").call();
+                }
             
             String commitHash;
             

@@ -110,7 +110,7 @@ export const projectsApi = {
     const res = await axios.get(`${BACKEND_BASE_URL}/api/projects/${slug}`);
     return res.data;
   },
-  create: async (payload: { name: string; slug: string; description?: string; vcsUrl?: string; }) => {
+  create: async (payload: { name: string; slug: string; description?: string; vcsUrl?: string; branchName?: string; }) => {
     const res = await axios.post(`${BACKEND_BASE_URL}/api/projects`, payload);
     return res.data;
   },
@@ -121,8 +121,8 @@ export const projectsApi = {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
   },
-  importGit: async (slug: string, repoUrl: string) => {
-    await axios.post(`${BACKEND_BASE_URL}/api/projects/${slug}/import-git`, { repoUrl });
+  importGit: async (slug: string, repoUrl: string, branchName?: string) => {
+    await axios.post(`${BACKEND_BASE_URL}/api/projects/${slug}/import-git`, { repoUrl, branchName });
   },
   delete: async (slug: string) => {
     await axios.delete(`${BACKEND_BASE_URL}/api/projects/${slug}`);
@@ -131,13 +131,13 @@ export const projectsApi = {
     const res = await axios.put(`${BACKEND_BASE_URL}/api/projects/${slug}`, payload);
     return res.data;
   },
-  createWithZip: async (payload: { name: string; slug: string; description?: string; vcsUrl?: string; }, zip?: File) => {
+  createWithZip: async (payload: { name: string; slug: string; description?: string; vcsUrl?: string; branchName?: string; }, zip?: File) => {
     const proj = await projectsApi.create(payload);
     if (zip) {
       await projectsApi.uploadZip(payload.slug, zip);
     }
     if (payload.vcsUrl) {
-      await projectsApi.importGit(payload.slug, payload.vcsUrl);
+      await projectsApi.importGit(payload.slug, payload.vcsUrl, payload.branchName);
     }
     return proj;
   },
@@ -190,10 +190,11 @@ export const projectsApi = {
     return response.data;
   },
   
-  createVersionFromGitHub: async (slug: string, repoUrl: string, message?: string): Promise<ProjectVersion> => {
+  createVersionFromGitHub: async (slug: string, repoUrl: string, message?: string, branchName?: string): Promise<ProjectVersion> => {
     const response = await axios.post(`${BACKEND_BASE_URL}/api/projects/${slug}/versions/github`, {
       repoUrl,
-      message
+      message,
+      branchName
     });
     return response.data;
   },

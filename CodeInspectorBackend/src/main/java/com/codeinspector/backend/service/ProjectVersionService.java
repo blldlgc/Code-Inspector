@@ -108,9 +108,17 @@ public class ProjectVersionService {
      */
     @Transactional
     public ProjectVersion createVersionFromGitHub(Project project, String githubUrl, String message) throws Exception {
+        return createVersionFromGitHub(project, githubUrl, message, "main");
+    }
+
+    /**
+     * GitHub'dan belirli bir branch'den yeni versiyon oluşturur
+     */
+    @Transactional
+    public ProjectVersion createVersionFromGitHub(Project project, String githubUrl, String message, String branchName) throws Exception {
         try {
             // GitHub'dan içe aktar ve commit oluştur
-            String commitHash = gitService.importFromGitHub(project.getStoragePath(), githubUrl, message);
+            String commitHash = gitService.importFromGitHub(project.getStoragePath(), githubUrl, message, branchName);
             
             // Versiyon numarası oluştur (v1, v2, ...)
             String versionName = generateVersionName(project.getId());
@@ -120,7 +128,7 @@ public class ProjectVersionService {
             version.setProject(project);
             version.setVersionName(versionName);
             version.setCommitHash(commitHash);
-            version.setCommitMessage(message);
+            version.setCommitMessage(message + " (from branch: " + branchName + ")");
             version.setGithubUrl(githubUrl);
             
             // Proje VCS URL'ini güncelle

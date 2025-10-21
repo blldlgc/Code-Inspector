@@ -15,6 +15,7 @@ export default function Projects() {
   const [slug, setSlug] = useState('');
   const [description, setDescription] = useState('');
   const [repoUrl, setRepoUrl] = useState('');
+  const [branchName, setBranchName] = useState('main');
   const [zipFile, setZipFile] = useState<File | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -35,8 +36,14 @@ export default function Projects() {
   const createProject = async () => {
     try {
       setIsCreating(true);
-      await projectsApi.createWithZip({ name, slug, description, vcsUrl: repoUrl || undefined }, zipFile || undefined);
-      setName(''); setSlug(''); setDescription(''); setRepoUrl(''); setZipFile(null);
+      await projectsApi.createWithZip({ 
+        name, 
+        slug, 
+        description, 
+        vcsUrl: repoUrl || undefined,
+        branchName: branchName
+      }, zipFile || undefined);
+      setName(''); setSlug(''); setDescription(''); setRepoUrl(''); setBranchName('main'); setZipFile(null);
       await refresh();
       return true;
     } catch (error) {
@@ -55,7 +62,7 @@ export default function Projects() {
 
   const importGit = async (p: Project) => {
     if (!repoUrl) return;
-    await projectsApi.importGit(p.slug, repoUrl);
+    await projectsApi.importGit(p.slug, repoUrl, branchName);
   };
 
   const remove = async (p: Project) => {
@@ -100,6 +107,13 @@ export default function Projects() {
                 </div>
                 <Input placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} />
                 <Input placeholder="GitHub Repo URL (optional)" value={repoUrl} onChange={e => setRepoUrl(e.target.value)} />
+                {repoUrl && (
+                  <Input 
+                    placeholder="Branch name (default: main)" 
+                    value={branchName} 
+                    onChange={e => setBranchName(e.target.value)} 
+                  />
+                )}
               </div>
               
               <div className="border rounded p-2">

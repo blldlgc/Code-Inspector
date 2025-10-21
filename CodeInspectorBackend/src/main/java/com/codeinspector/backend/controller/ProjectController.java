@@ -54,7 +54,7 @@ public class ProjectController {
         return ResponseEntity.ok(p);
     }
 
-    public record CreateProjectRequest(String name, String slug, String description, String vcsUrl) {}
+    public record CreateProjectRequest(String name, String slug, String description, String vcsUrl, String branchName) {}
 
     @PostMapping
     public ResponseEntity<Project> create(@RequestBody CreateProjectRequest req) throws Exception {
@@ -105,11 +105,14 @@ public class ProjectController {
         return ResponseEntity.ok().build();
     }
 
-    public record ImportGitRequest(String repoUrl) {}
+    public record ImportGitRequest(String repoUrl, String branchName) {}
 
     @PostMapping(path = "/{slug}/import-git")
     public ResponseEntity<Void> importGit(@PathVariable String slug, @RequestBody ImportGitRequest req) throws Exception {
-        importService.importFromGit(slug, req.repoUrl());
+        String branchName = req.branchName() != null && !req.branchName().isBlank()
+                ? req.branchName()
+                : "main";
+        importService.importFromGit(slug, req.repoUrl(), branchName);
         return ResponseEntity.ok().build();
     }
 
@@ -217,7 +220,7 @@ public class ProjectController {
     /**
      * GitHub'dan yeni versiyon oluşturur
      */
-    public record GitImportRequest(String repoUrl, String message) {}
+    public record GitImportRequest(String repoUrl, String message, String branchName) {}
 
     @PostMapping("/{slug}/versions/github")
     public ResponseEntity<ProjectVersion> createVersionFromGitHub(
@@ -235,7 +238,11 @@ public class ProjectController {
                     ? request.message() 
                     : "New version from GitHub: " + request.repoUrl();
             
-            ProjectVersion version = versionService.createVersionFromGitHub(project, request.repoUrl(), message);
+            String branchName = request.branchName() != null && !request.branchName().isBlank()
+                    ? request.branchName()
+                    : "main";
+            
+            ProjectVersion version = versionService.createVersionFromGitHub(project, request.repoUrl(), message, branchName);
             return ResponseEntity.created(URI.create("/api/projects/" + slug + "/versions/" + version.getId()))
                     .body(version);
         } catch (Exception e) {

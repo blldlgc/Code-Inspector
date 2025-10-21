@@ -22,6 +22,7 @@ export function ProjectVersions({ projectSlug, onVersionSelect }: ProjectVersion
   const [zipMessage, setZipMessage] = useState('');
   const [githubUrl, setGithubUrl] = useState('');
   const [githubMessage, setGithubMessage] = useState('');
+  const [githubBranch, setGithubBranch] = useState('main');
   const [isUploading, setIsUploading] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [zipDialogOpen, setZipDialogOpen] = useState(false);
@@ -101,10 +102,12 @@ export function ProjectVersions({ projectSlug, onVersionSelect }: ProjectVersion
       await projectsApi.createVersionFromGitHub(
         projectSlug, 
         githubUrl, 
-        githubMessage || `New version from GitHub: ${githubUrl}`
+        githubMessage || `New version from GitHub: ${githubUrl}`,
+        githubBranch
       );
       setGithubUrl('');
       setGithubMessage('');
+      setGithubBranch('main');
       setGithubDialogOpen(false);
       await fetchVersions();
     } catch (error: any) {
@@ -173,6 +176,11 @@ export function ProjectVersions({ projectSlug, onVersionSelect }: ProjectVersion
                     placeholder="GitHub Repository URL" 
                     value={githubUrl} 
                     onChange={(e) => setGithubUrl(e.target.value)} 
+                  />
+                  <Input 
+                    placeholder="Branch name (default: main)" 
+                    value={githubBranch} 
+                    onChange={(e) => setGithubBranch(e.target.value)} 
                   />
                   <Input 
                     placeholder="Version message (optional)" 

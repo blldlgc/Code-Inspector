@@ -54,6 +54,10 @@ public class ProjectImportService {
     }
 
     public void importFromGit(String slug, String repoUrl) throws Exception {
+        importFromGit(slug, repoUrl, "main");
+    }
+
+    public void importFromGit(String slug, String repoUrl, String branchName) throws Exception {
         try {
             // Projeyi getir
             Project project = projectService.getBySlug(slug);
@@ -63,15 +67,15 @@ public class ProjectImportService {
             }
             
             // Versiyon oluştur (bu aynı zamanda Git klonlamasını da yapacak)
-            String commitMessage = "Initial import from GitHub: " + repoUrl;
-            versionService.createVersionFromGitHub(project, repoUrl, commitMessage);
+            String commitMessage = "Initial import from GitHub: " + repoUrl + " (branch: " + branchName + ")";
+            versionService.createVersionFromGitHub(project, repoUrl, commitMessage, branchName);
             
             // VCS URL'i güncelle
             projectService.updateMeta(slug, project.getName(), project.getDescription(), repoUrl, project.getVisibility());
             
-            logger.info("Successfully imported project from Git: {}", repoUrl);
+            logger.info("Successfully imported project from Git: {} (branch: {})", repoUrl, branchName);
         } catch (Exception e) {
-            logger.error("Error importing from Git: {}", repoUrl, e);
+            logger.error("Error importing from Git: {} (branch: {})", repoUrl, branchName, e);
             throw e;
         }
     }
