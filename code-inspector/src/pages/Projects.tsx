@@ -5,12 +5,25 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 
-type Project = { id: number; name: string; slug: string; description?: string; vcsUrl?: string };
+type Project = { 
+  id: number; 
+  name: string; 
+  slug: string; 
+  description?: string; 
+  vcsUrl?: string; 
+  visibility?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
 
 export default function Projects() {
   const navigate = useNavigate();
   const [items, setItems] = useState<Project[]>([]);
+  const [sortedItems, setSortedItems] = useState<Project[]>([]);
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'alphabetical' | 'lastUpdated'>('newest');
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [description, setDescription] = useState('');
@@ -34,7 +47,47 @@ export default function Projects() {
     }
   };
 
+  // Sıralama fonksiyonu
+  const sortProjects = (projects: Project[], sortType: typeof sortBy) => {
+    const sorted = [...projects].sort((a, b) => {
+      switch (sortType) {
+        case 'newest':
+          return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+        case 'oldest':
+          return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+        case 'alphabetical':
+          return a.name.localeCompare(b.name);
+        case 'lastUpdated':
+          // updatedAt alanı artık en son versiyon tarihini içeriyor
+          return new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime();
+        default:
+          return 0;
+      }
+    });
+    return sorted;
+  };
+
   useEffect(() => { refresh(); }, []);
+
+  // Sıralama değiştiğinde sortedItems'ı güncelle
+  useEffect(() => {
+    setSortedItems(sortProjects(items, sortBy));
+  }, [items, sortBy]);
+
+  // Tarih formatı için yardımcı fonksiyon
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'Bilinmiyor';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    });
+  };
 
   const createProject = async () => {
     try {
@@ -196,13 +249,47 @@ export default function Projects() {
       </div>
 
       <Card className="p-4 space-y-4">
-        <div className="font-semibold">Projects</div>
+        <div className="flex items-center justify-between">
+          <div className="font-semibold">Projects</div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Sort by:</span>
+            <Select value={sortBy} onValueChange={(value: typeof sortBy) => setSortBy(value)}>
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Newest</SelectItem>
+                <SelectItem value="oldest">Oldest</SelectItem>
+                <SelectItem value="alphabetical">Alphabetical</SelectItem>
+                <SelectItem value="lastUpdated">Last Updated</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
         <div className="grid gap-2">
-          {items.map(p => (
-            <div key={p.id} className="flex items-center justify-between border rounded p-2">
-              <div>
-                <div className="font-medium">{p.name} <span className="opacity-60">(URL: {p.slug})</span></div>
-                <div className="text-sm opacity-70">{p.description}</div>
+          {sortedItems.map(p => (
+            <div key={p.id} className="flex items-center justify-between border rounded p-3">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="font-medium">{p.name}</div>
+                  <Badge variant="secondary" className="text-xs">
+                    {p.slug}
+                  </Badge>
+                  {p.vcsUrl && (
+                    <Badge variant="outline" className="text-xs">
+                      GitHub
+                    </Badge>
+                  )}
+                  {p.visibility && (
+                    <Badge variant={p.visibility === 'public' ? 'default' : 'secondary'} className="text-xs">
+                      {p.visibility === 'public' ? 'Public' : p.visibility === 'team' ? 'Team' : 'Private'}
+                    </Badge>
+                  )}
+                </div>
+                <div className="text-sm text-muted-foreground mb-1">{p.description}</div>
+                <div className="text-xs text-muted-foreground">
+                  Last updated: {formatDate(p.updatedAt)}
+                </div>
               </div>
               <div className="flex gap-2">
                 <Button onClick={() => navigate(`/projects/${p.slug}`)}>Open</Button>

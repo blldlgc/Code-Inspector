@@ -4,9 +4,11 @@ import com.codeinspector.backend.model.Project;
 import com.codeinspector.backend.model.User;
 import com.codeinspector.backend.model.Team;
 import com.codeinspector.backend.model.UserRole;
+import com.codeinspector.backend.model.ProjectVersion;
 import com.codeinspector.backend.repository.ProjectRepository;
 import com.codeinspector.backend.repository.UserRepository;
 import com.codeinspector.backend.repository.TeamRepository;
+import com.codeinspector.backend.repository.ProjectVersionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -27,13 +29,15 @@ import java.util.stream.Collectors;
 public class ProjectService {
     private final ProjectRepository projectRepository;
     private final ProjectStorageService storageService;
+    private final ProjectVersionRepository projectVersionRepository;
     private UserRepository userRepository;
     private TeamRepository teamRepository;
 
     @Autowired
-    public ProjectService(ProjectRepository projectRepository, ProjectStorageService storageService) {
+    public ProjectService(ProjectRepository projectRepository, ProjectStorageService storageService, ProjectVersionRepository projectVersionRepository) {
         this.projectRepository = projectRepository;
         this.storageService = storageService;
+        this.projectVersionRepository = projectVersionRepository;
         // userRepository ve teamRepository null olabilir
     }
 
@@ -60,10 +64,11 @@ public class ProjectService {
                 .map(GrantedAuthority::getAuthority)
                 .anyMatch(role -> role.equals("ROLE_ADMIN"));
             
+            List<Project> projects;
             if (isAdmin) {
                 // Admin görüyor, tüm silinmemiş projeleri getir
                 System.out.println("Admin user, returning all non-deleted projects");
-                return projectRepository.findAllForAdmin();
+                projects = projectRepository.findAllForAdmin();
             } else {
                 // Normal kullanıcı, sadece kendi ve paylaşılan projeleri getir
                 System.out.println("Regular user, returning user-specific projects");
@@ -86,8 +91,15 @@ public class ProjectService {
                 System.out.println("Found " + accessibleProjects.size() + " accessible projects for user " + username);
                 
                 // Convert Set to List
-                return new ArrayList<>(accessibleProjects);
+                projects = new ArrayList<>(accessibleProjects);
             }
+            
+            // Her proje için en son versiyon tarihini güncelle
+            for (Project project : projects) {
+                updateProjectWithLatestVersionDate(project);
+            }
+            
+            return projects;
         } catch (Exception e) {
             e.printStackTrace();
             System.out.println("Error in project listing: " + e.getMessage());
@@ -206,5 +218,25 @@ public class ProjectService {
             }
         }
         Files.deleteIfExists(path);
+    }
+    
+    /**
+     * Projenin en son versiyon tarihini alıp updatedAt alanını günceller
+     */
+    private void updateProjectWithLatestVersionDate(Project project) {
+        try {
+            // Projenin en son versiyonunu al
+            List<ProjectVersion> versions = projectVersionRepository.findByProjectIdOrderByCreatedAtDesc(project.getId());
+            
+            if (!versions.isEmpty()) {
+                // En son versiyonun tarihini al
+                ProjectVersion latestVersion = versions.get(0);
+                project.setUpdatedAt(latestVersion.getCreatedAt());
+            }
+            // Eğer versiyon yoksa, projenin kendi updatedAt'ini kullan (değişiklik yapma)
+        } catch (Exception e) {
+            System.err.println("Error updating project with latest version date: " + e.getMessage());
+            // Hata durumunda projenin mevcut updatedAt'ini kullan
+        }
     }
 }
