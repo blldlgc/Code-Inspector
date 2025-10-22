@@ -201,9 +201,9 @@ export default function Projects() {
                 )}
                 {repoUrl && repoAccess === 'private' && (
                   <div className="text-xs text-muted-foreground mt-1 space-y-1">
-                    <div><span className="text-blue-600">ℹ</span> How to create a token: GitHub → Settings → Developer settings → Personal access tokens (classic) → Generate new token</div>
+                    <div><span className="text-blue-600">ℹ</span> How to create a token: <a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">GitHub → Settings → Developer settings → Personal access tokens (classic) → Generate new token</a></div>
                     <div><span className="text-blue-600">ℹ</span> Required scopes: <span className="font-mono">repo</span> (and <span className="font-mono">read:org</span> if org repo)</div>
-                    <div><span className="text-blue-600">ℹ</span> If org repo: open the token and click “Enable SSO” to authorize for your org</div>
+                    <div><span className="text-blue-600">ℹ</span> If org repo: open the token and click "Enable SSO" to authorize for your org</div>
                   </div>
                 )}
               </div>

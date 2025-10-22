@@ -220,20 +220,16 @@ export function ProjectVersions({ projectSlug, onVersionSelect, projectVcsUrl }:
                   />)}
                   {githubAccess === 'private' && (
                   <div className="text-xs text-muted-foreground mt-1 space-y-1">
-                    <div><span className="text-blue-600">ℹ</span> How to create a token: GitHub → Settings → Developer settings → Personal access tokens (classic) → Generate new token</div>
+                    <div><span className="text-blue-600">ℹ</span> How to create a token: <a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">GitHub → Settings → Developer settings → Personal access tokens (classic) → Generate new token</a></div>
                     <div><span className="text-blue-600">ℹ</span> Required scopes: <span className="font-mono">repo</span> (and <span className="font-mono">read:org</span> if org repo)</div>
-                    <div><span className="text-blue-600">ℹ</span> If org repo: open the token and click “Enable SSO” to authorize for your org</div>
+                    <div><span className="text-blue-600">ℹ</span> If org repo: open the token and click "Enable SSO" to authorize for your org</div>
                   </div>)}
                   <Input 
                     placeholder="Version message (optional)" 
                     value={githubMessage} 
                     onChange={(e) => setGithubMessage(e.target.value)} 
                   />
-                  <div className="text-xs text-muted-foreground">
-                    <p>• Public repositories: Token is optional</p>
-                    <p>• Private repositories: Token is required</p>
-                    <p>• Create token at: <a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">github.com/settings/tokens</a></p>
-                  </div>
+                  
                 </div>
               </div>
               <DialogFooter>
@@ -254,7 +250,11 @@ export function ProjectVersions({ projectSlug, onVersionSelect, projectVcsUrl }:
         </div>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="versions">
+        <Tabs defaultValue="versions" onValueChange={(value) => {
+          if (value === 'history' && commitHistory.length === 0 && !historyLoading) {
+            fetchCommitHistory();
+          }
+        }}>
           <TabsList className="mb-4">
             <TabsTrigger value="versions">Versions</TabsTrigger>
             <TabsTrigger value="history">Git History</TabsTrigger>
@@ -355,7 +355,9 @@ export function ProjectVersions({ projectSlug, onVersionSelect, projectVcsUrl }:
               </div>
             ) : commitHistory.length === 0 ? (
               <div className="text-center p-4 text-muted-foreground">
-                No commit history available. Click the History button to load.
+                <div>No commit history available.</div>
+                <div className="text-xs mt-1">History loads automatically when you switch to this tab.</div>
+                <div className="text-xs mt-1">You can also click the History button to reload.</div>
               </div>
             ) : (
               <div>
