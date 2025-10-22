@@ -1,6 +1,9 @@
 package com.codeinspector.backend.service;
 
+import com.codeinspector.backend.model.Project;
 import org.eclipse.jgit.api.Git;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -13,11 +16,19 @@ import java.util.zip.ZipInputStream;
 
 @Service
 public class ProjectImportService {
+    private static final Logger logger = LoggerFactory.getLogger(ProjectImportService.class);
 
     private final ProjectStorageService storageService;
+    private final ProjectService projectService;
+    private final ProjectVersionService versionService;
 
-    public ProjectImportService(ProjectStorageService storageService) {
+    public ProjectImportService(
+            ProjectStorageService storageService,
+            ProjectService projectService,
+            ProjectVersionService versionService) {
         this.storageService = storageService;
+        this.projectService = projectService;
+        this.versionService = versionService;
     }
 
     public void importZip(String slug, MultipartFile file) throws IOException {
@@ -43,15 +54,34 @@ public class ProjectImportService {
     }
 
     public void importFromGit(String slug, String repoUrl) throws Exception {
-        Path destDir = storageService.ensureProjectDirectory(slug);
-        if (Files.exists(destDir.resolve(".git"))) {
-            return; // already cloned
+        importFromGit(slug, repoUrl, "main", null);
+    }
+
+    public void importFromGit(String slug, String repoUrl, String branchName) throws Exception {
+        importFromGit(slug, repoUrl, branchName, null);
+    }
+    
+    public void importFromGit(String slug, String repoUrl, String branchName, String githubToken) throws Exception {
+        try {
+            // Projeyi getir
+            Project project = projectService.getBySlug(slug);
+            if (project == null) {
+                logger.error("Project not found with slug: {}", slug);
+                throw new IllegalArgumentException("Project not found with slug: " + slug);
+            }
+            
+            // Versiyon oluştur (bu aynı zamanda Git klonlamasını da yapacak)
+            String commitMessage = "Initial import from GitHub: " + repoUrl + " (branch: " + branchName + ")";
+            versionService.createVersionFromGitHub(project, repoUrl, commitMessage, branchName, null, githubToken);
+            
+            // VCS URL'i güncelle
+            projectService.updateMeta(slug, project.getName(), project.getDescription(), repoUrl, project.getVisibility());
+            
+            logger.info("Successfully imported project from Git: {} (branch: {})", repoUrl, branchName);
+        } catch (Exception e) {
+            logger.error("Error importing from Git: {} (branch: {})", repoUrl, branchName, e);
+            throw e;
         }
-        Git.cloneRepository()
-            .setURI(repoUrl)
-            .setDirectory(destDir.toFile())
-            .call()
-            .close();
     }
 }
 

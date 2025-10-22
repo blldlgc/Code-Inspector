@@ -17,6 +17,7 @@ import {
   AlertTriangle,
   ExternalLink,
   Radar,
+  Folder,
 } from "lucide-react"
 
 import {
@@ -192,7 +193,7 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
           {
             title: "Projects",
             url: "/projects",
-            icon: GitFork,
+            icon: Folder,
             description: "Visualize code structure and dependencies",
           }
         ],

@@ -15,6 +15,10 @@ export default function Projects() {
   const [slug, setSlug] = useState('');
   const [description, setDescription] = useState('');
   const [repoUrl, setRepoUrl] = useState('');
+  const [repoAccess, setRepoAccess] = useState<'public' | 'private'>('public');
+  const [branchName, setBranchName] = useState('main');
+  const [githubUsername, setGithubUsername] = useState('');
+  const [githubToken, setGithubToken] = useState('');
   const [zipFile, setZipFile] = useState<File | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -35,8 +39,16 @@ export default function Projects() {
   const createProject = async () => {
     try {
       setIsCreating(true);
-      await projectsApi.createWithZip({ name, slug, description, vcsUrl: repoUrl || undefined }, zipFile || undefined);
-      setName(''); setSlug(''); setDescription(''); setRepoUrl(''); setZipFile(null);
+      await projectsApi.createWithZip({ 
+        name, 
+        slug, 
+        description, 
+        vcsUrl: repoUrl || undefined,
+        branchName: branchName,
+        githubUsername: repoAccess === 'private' ? (githubUsername || undefined) : undefined,
+        githubToken: repoAccess === 'private' ? (githubToken || undefined) : undefined
+      }, zipFile || undefined);
+      setName(''); setSlug(''); setDescription(''); setRepoUrl(''); setRepoAccess('public'); setBranchName('main'); setGithubUsername(''); setGithubToken(''); setZipFile(null);
       await refresh();
       return true;
     } catch (error) {
@@ -55,7 +67,13 @@ export default function Projects() {
 
   const importGit = async (p: Project) => {
     if (!repoUrl) return;
-    await projectsApi.importGit(p.slug, repoUrl);
+    await projectsApi.importGit(
+      p.slug,
+      repoUrl,
+      branchName,
+      repoAccess === 'private' ? githubUsername : undefined,
+      repoAccess === 'private' ? githubToken : undefined
+    );
   };
 
   const remove = async (p: Project) => {
@@ -100,6 +118,41 @@ export default function Projects() {
                 </div>
                 <Input placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} />
                 <Input placeholder="GitHub Repo URL (optional)" value={repoUrl} onChange={e => setRepoUrl(e.target.value)} />
+                {repoUrl && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <button type="button" className={`px-2 py-1 rounded border ${repoAccess==='public'?'bg-primary text-primary-foreground':''}`} onClick={() => setRepoAccess('public')}>Public</button>
+                    <button type="button" className={`px-2 py-1 rounded border ${repoAccess==='private'?'bg-primary text-primary-foreground':''}`} onClick={() => setRepoAccess('private')}>Private</button>
+                  </div>
+                )}
+                {repoUrl && (
+                  <Input 
+                    placeholder="Branch name (default: main)" 
+                    value={branchName} 
+                    onChange={e => setBranchName(e.target.value)} 
+                  />
+                )}
+                {repoUrl && repoAccess === 'private' && (
+                  <Input 
+                    placeholder="GitHub Username (for private repos)" 
+                    value={githubUsername} 
+                    onChange={e => setGithubUsername(e.target.value)} 
+                  />
+                )}
+                {repoUrl && repoAccess === 'private' && (
+                  <Input 
+                    type="password"
+                    placeholder="GitHub Personal Access Token (for private repos)" 
+                    value={githubToken} 
+                    onChange={e => setGithubToken(e.target.value)} 
+                  />
+                )}
+                {repoUrl && repoAccess === 'private' && (
+                  <div className="text-xs text-muted-foreground mt-1 space-y-1">
+                    <div><span className="text-blue-600">ℹ</span> How to create a token: GitHub → Settings → Developer settings → Personal access tokens (classic) → Generate new token</div>
+                    <div><span className="text-blue-600">ℹ</span> Required scopes: <span className="font-mono">repo</span> (and <span className="font-mono">read:org</span> if org repo)</div>
+                    <div><span className="text-blue-600">ℹ</span> If org repo: open the token and click “Enable SSO” to authorize for your org</div>
+                  </div>
+                )}
               </div>
               
               <div className="border rounded p-2">
@@ -111,6 +164,8 @@ export default function Projects() {
                 {repoUrl && (
                   <div className="text-xs text-muted-foreground mt-2">
                     <span className="text-green-600">✓</span> Project will be imported from GitHub after creation
+                    <br />
+                    <span className="text-blue-600">ℹ</span> For private repositories, GitHub token is required
                   </div>
                 )}
                 {isCreating && repoUrl && (
