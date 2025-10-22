@@ -4,11 +4,14 @@ import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.PullResult;
 import org.eclipse.jgit.api.RemoteSetUrlCommand;
+import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffFormatter;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectReader;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.util.io.DisabledOutputStream;
@@ -99,14 +102,115 @@ public class GitService {
     }
 
     /**
+     * Git repository'sinin durumunu temizler (rebase, merge, cherry-pick vb. durumları)
+     */
+    private void cleanupGitState(File projectDir) throws Exception {
+        File gitDir = new File(projectDir, ".git");
+        if (!gitDir.exists()) {
+            return;
+        }
+        
+        try (Git git = Git.open(projectDir)) {
+            Repository repository = git.getRepository();
+            
+            // Repository durumunu kontrol et
+            RepositoryState state = repository.getRepositoryState();
+            logger.info("Repository state: {}", state);
+            
+            switch (state) {
+                case REBASING_MERGE:
+                case REBASING_REBASING:
+                case REBASING_INTERACTIVE:
+                    logger.info("Aborting rebase operation");
+                    try {
+                        git.rebase().setOperation(org.eclipse.jgit.api.RebaseCommand.Operation.ABORT).call();
+                    } catch (Exception e) {
+                        logger.warn("Could not abort rebase: {}", e.getMessage());
+                    }
+                    break;
+                case MERGING:
+                case MERGING_RESOLVED:
+                    logger.info("Aborting merge operation");
+                    try {
+                        // Merge abort için reset kullan
+                        git.reset().setMode(ResetCommand.ResetType.HARD).call();
+                    } catch (Exception e) {
+                        logger.warn("Could not abort merge: {}", e.getMessage());
+                    }
+                    break;
+                case CHERRY_PICKING:
+                case CHERRY_PICKING_RESOLVED:
+                    logger.info("Aborting cherry-pick operation");
+                    try {
+                        // Cherry-pick abort için reset kullan
+                        git.reset().setMode(ResetCommand.ResetType.HARD).call();
+                    } catch (Exception e) {
+                        logger.warn("Could not abort cherry-pick: {}", e.getMessage());
+                    }
+                    break;
+                case REVERTING:
+                case REVERTING_RESOLVED:
+                    logger.info("Aborting revert operation");
+                    try {
+                        // Revert abort için reset kullan
+                        git.reset().setMode(ResetCommand.ResetType.HARD).call();
+                    } catch (Exception e) {
+                        logger.warn("Could not abort revert: {}", e.getMessage());
+                    }
+                    break;
+                case BISECTING:
+                    logger.info("Aborting bisect operation");
+                    try {
+                        // Bisect abort için reset kullan
+                        git.reset().setMode(ResetCommand.ResetType.HARD).call();
+                    } catch (Exception e) {
+                        logger.warn("Could not abort bisect: {}", e.getMessage());
+                    }
+                    break;
+                default:
+                    // Normal durum, temizlik gerekmez
+                    break;
+            }
+            
+            // Working directory'yi temizle
+            try {
+                git.clean().setCleanDirectories(true).setForce(true).call();
+                git.reset().setMode(ResetCommand.ResetType.HARD).call();
+            } catch (Exception e) {
+                logger.warn("Could not clean working directory: {}", e.getMessage());
+            }
+            
+        } catch (Exception e) {
+            logger.warn("Error during git state cleanup: {}", e.getMessage());
+            // Temizlik başarısız olsa bile devam et
+        }
+    }
+
+    /**
      * GitHub'dan belirli bir branch'den projeyi klonlar veya günceller
      */
     public String importFromGitHub(String projectPath, String githubUrl, String message, String branchName) throws Exception {
         File projectDir = new File(projectPath);
         File gitDir = new File(projectPath, ".git");
         
-        // Eğer .git klasörü yoksa, GitHub'dan klonla
-        if (!gitDir.exists()) {
+        // Eğer .git klasörü yoksa veya farklı bir branch'den import yapılıyorsa, yeniden klonla
+        boolean shouldReclone = !gitDir.exists();
+        
+        if (gitDir.exists()) {
+            try (Git git = Git.open(projectDir)) {
+                // Mevcut branch'i kontrol et
+                String currentBranch = git.getRepository().getBranch();
+                if (!branchName.equals(currentBranch)) {
+                    logger.info("Different branch requested ({} vs {}), will reclone", branchName, currentBranch);
+                    shouldReclone = true;
+                }
+            } catch (Exception e) {
+                logger.warn("Error checking current branch, will reclone: {}", e.getMessage());
+                shouldReclone = true;
+            }
+        }
+        
+        if (shouldReclone) {
             // Önce mevcut klasörü temizle
             if (projectDir.exists()) {
                 cleanProjectFiles(projectPath);
@@ -138,64 +242,83 @@ public class GitService {
                 FileUtils.deleteDirectory(tempDir.toFile());
             }
         } 
-        // .git klasörü varsa, pull yap
+        // Aynı branch'den import yapılıyorsa, pull yap
         else {
+            // Önce repository durumunu temizle
+            cleanupGitState(projectDir);
+            
             Git git = Git.open(projectDir);
             
-            // Remote kontrolü
-            boolean hasOrigin = false;
-            for (org.eclipse.jgit.transport.RemoteConfig remote : git.remoteList().call()) {
-                if (remote.getName().equals("origin")) {
-                    hasOrigin = true;
-                    break;
+            try {
+                // Remote kontrolü
+                boolean hasOrigin = false;
+                for (org.eclipse.jgit.transport.RemoteConfig remote : git.remoteList().call()) {
+                    if (remote.getName().equals("origin")) {
+                        hasOrigin = true;
+                        break;
+                    }
                 }
-            }
-            
-            // Remote yoksa veya farklı bir URL ise, yeni remote ekle
-            if (!hasOrigin) {
-                git.remoteAdd().setName("origin").setUri(new org.eclipse.jgit.transport.URIish(githubUrl)).call();
-            } else {
-                // Mevcut remote URL'i kontrol et ve gerekirse güncelle
-                String existingUrl = git.getRepository().getConfig().getString("remote", "origin", "url");
-                if (!githubUrl.equals(existingUrl)) {
-                    RemoteSetUrlCommand remoteSetUrlCommand = git.remoteSetUrl();
-                    remoteSetUrlCommand.setName("origin");
-                    remoteSetUrlCommand.setUri(new org.eclipse.jgit.transport.URIish(githubUrl));
-                    remoteSetUrlCommand.call();
+                
+                // Remote yoksa veya farklı bir URL ise, yeni remote ekle
+                if (!hasOrigin) {
+                    git.remoteAdd().setName("origin").setUri(new org.eclipse.jgit.transport.URIish(githubUrl)).call();
+                } else {
+                    // Mevcut remote URL'i kontrol et ve gerekirse güncelle
+                    String existingUrl = git.getRepository().getConfig().getString("remote", "origin", "url");
+                    if (!githubUrl.equals(existingUrl)) {
+                        RemoteSetUrlCommand remoteSetUrlCommand = git.remoteSetUrl();
+                        remoteSetUrlCommand.setName("origin");
+                        remoteSetUrlCommand.setUri(new org.eclipse.jgit.transport.URIish(githubUrl));
+                        remoteSetUrlCommand.call();
+                    }
                 }
-            }
-            
+                
                 // Pull yap
                 PullResult pullResult = git.pull().setRemote("origin").setRemoteBranchName(branchName).call();
                 
                 // Eğer pull başarısızsa, main branch'i dene
                 if (!pullResult.isSuccessful() && !branchName.equals("main")) {
+                    logger.info("Pull failed for branch {}, trying main branch", branchName);
                     pullResult = git.pull().setRemote("origin").setRemoteBranchName("main").call();
                 }
                 
                 // Eğer hala başarısızsa, master branch'i dene
                 if (!pullResult.isSuccessful() && !branchName.equals("master")) {
+                    logger.info("Pull failed for main branch, trying master branch");
                     pullResult = git.pull().setRemote("origin").setRemoteBranchName("master").call();
                 }
+                
+                if (!pullResult.isSuccessful()) {
+                    throw new Exception("Failed to pull from any branch (tried: " + branchName + ", main, master)");
+                }
             
-            String commitHash;
-            
-            // MergeResult veya RebaseResult kontrol et
-            if (pullResult.getMergeResult() != null && pullResult.getMergeResult().getNewHead() != null) {
-                commitHash = pullResult.getMergeResult().getNewHead().getName();
-            } else if (pullResult.getRebaseResult() != null) {
-                // Rebase sonucundan commit hash'i al
-                commitHash = git.getRepository().resolve("HEAD").getName();
-            } else {
-                // Son commit'i al
-                Iterable<RevCommit> commits = git.log().setMaxCount(1).call();
-                RevCommit lastCommit = commits.iterator().next();
-                commitHash = lastCommit.getName();
+                String commitHash;
+                
+                // MergeResult veya RebaseResult kontrol et
+                if (pullResult.getMergeResult() != null && pullResult.getMergeResult().getNewHead() != null) {
+                    commitHash = pullResult.getMergeResult().getNewHead().getName();
+                } else if (pullResult.getRebaseResult() != null) {
+                    // Rebase sonucundan commit hash'i al
+                    commitHash = git.getRepository().resolve("HEAD").getName();
+                } else {
+                    // Son commit'i al
+                    Iterable<RevCommit> commits = git.log().setMaxCount(1).call();
+                    RevCommit lastCommit = commits.iterator().next();
+                    commitHash = lastCommit.getName();
+                }
+                
+                return commitHash;
+                
+            } catch (Exception e) {
+                logger.error("Error during pull operation, will try to reclone: {}", e.getMessage());
+                git.close();
+                
+                // Pull başarısız olursa, repository'yi temizle ve yeniden klonla
+                cleanProjectFiles(projectPath);
+                return importFromGitHub(projectPath, githubUrl, message, branchName);
+            } finally {
+                git.close();
             }
-            
-            git.close();
-            
-            return commitHash;
         }
     }
 
