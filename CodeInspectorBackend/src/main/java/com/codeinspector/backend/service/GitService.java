@@ -15,6 +15,8 @@ import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.util.io.DisabledOutputStream;
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
+import org.eclipse.jgit.transport.CredentialsProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -98,7 +100,21 @@ public class GitService {
      * GitHub'dan projeyi klonlar veya günceller
      */
     public String importFromGitHub(String projectPath, String githubUrl, String message) throws Exception {
-        return importFromGitHub(projectPath, githubUrl, message, "main");
+        return importFromGitHub(projectPath, githubUrl, message, "main", null, null);
+    }
+    
+    /**
+     * GitHub'dan projeyi klonlar veya günceller (token ile)
+     */
+    public String importFromGitHub(String projectPath, String githubUrl, String message, String githubToken) throws Exception {
+        return importFromGitHub(projectPath, githubUrl, message, "main", null, githubToken);
+    }
+    
+    /**
+     * GitHub'dan projeyi klonlar veya günceller (branch ve token ile)
+     */
+    public String importFromGitHub(String projectPath, String githubUrl, String message, String branchName, String githubToken) throws Exception {
+        return importFromGitHub(projectPath, githubUrl, message, branchName, null, githubToken);
     }
 
     /**
@@ -187,9 +203,9 @@ public class GitService {
     }
 
     /**
-     * GitHub'dan belirli bir branch'den projeyi klonlar veya günceller
+     * GitHub'dan belirli bir branch'den projeyi klonlar veya günceller (token ile)
      */
-    public String importFromGitHub(String projectPath, String githubUrl, String message, String branchName) throws Exception {
+    public String importFromGitHub(String projectPath, String githubUrl, String message, String branchName, String githubUsername, String githubToken) throws Exception {
         File projectDir = new File(projectPath);
         File gitDir = new File(projectPath, ".git");
         
@@ -219,10 +235,18 @@ public class GitService {
             // Geçici bir klasöre klonla
             Path tempDir = Files.createTempDirectory("github-import-");
             try {
+                // GitHub token varsa authentication ekle
+                CredentialsProvider credentialsProvider = createCredentialsProvider(githubUsername, githubToken);
+                
+                // Alternatif olarak authenticated URL kullan
+                String authenticatedUrl = createAuthenticatedUrl(githubUrl, githubToken);
+                logger.info("Attempting to clone with URL: {}", authenticatedUrl.replace(githubToken != null ? githubToken : "", "***"));
+                
                 Git.cloneRepository()
-                   .setURI(githubUrl)
+                   .setURI(authenticatedUrl)
                    .setDirectory(tempDir.toFile())
                    .setBranch("refs/heads/" + branchName)
+                   .setCredentialsProvider(credentialsProvider)
                    .call()
                    .close();
                 
@@ -259,33 +283,51 @@ public class GitService {
                     }
                 }
                 
+                // Authenticated URL kullan
+                String authenticatedUrl = createAuthenticatedUrl(githubUrl, githubToken);
+                
                 // Remote yoksa veya farklı bir URL ise, yeni remote ekle
                 if (!hasOrigin) {
-                    git.remoteAdd().setName("origin").setUri(new org.eclipse.jgit.transport.URIish(githubUrl)).call();
+                    git.remoteAdd().setName("origin").setUri(new org.eclipse.jgit.transport.URIish(authenticatedUrl)).call();
                 } else {
                     // Mevcut remote URL'i kontrol et ve gerekirse güncelle
                     String existingUrl = git.getRepository().getConfig().getString("remote", "origin", "url");
-                    if (!githubUrl.equals(existingUrl)) {
+                    if (!authenticatedUrl.equals(existingUrl)) {
                         RemoteSetUrlCommand remoteSetUrlCommand = git.remoteSetUrl();
                         remoteSetUrlCommand.setName("origin");
-                        remoteSetUrlCommand.setUri(new org.eclipse.jgit.transport.URIish(githubUrl));
+                        remoteSetUrlCommand.setUri(new org.eclipse.jgit.transport.URIish(authenticatedUrl));
                         remoteSetUrlCommand.call();
                     }
                 }
                 
+                // GitHub token varsa authentication ekle
+                CredentialsProvider credentialsProvider = createCredentialsProvider(githubUsername, githubToken);
+                
                 // Pull yap
-                PullResult pullResult = git.pull().setRemote("origin").setRemoteBranchName(branchName).call();
+                PullResult pullResult = git.pull()
+                    .setRemote("origin")
+                    .setRemoteBranchName(branchName)
+                    .setCredentialsProvider(credentialsProvider)
+                    .call();
                 
                 // Eğer pull başarısızsa, main branch'i dene
                 if (!pullResult.isSuccessful() && !branchName.equals("main")) {
                     logger.info("Pull failed for branch {}, trying main branch", branchName);
-                    pullResult = git.pull().setRemote("origin").setRemoteBranchName("main").call();
+                    pullResult = git.pull()
+                        .setRemote("origin")
+                        .setRemoteBranchName("main")
+                        .setCredentialsProvider(credentialsProvider)
+                        .call();
                 }
                 
                 // Eğer hala başarısızsa, master branch'i dene
                 if (!pullResult.isSuccessful() && !branchName.equals("master")) {
                     logger.info("Pull failed for main branch, trying master branch");
-                    pullResult = git.pull().setRemote("origin").setRemoteBranchName("master").call();
+                    pullResult = git.pull()
+                        .setRemote("origin")
+                        .setRemoteBranchName("master")
+                        .setCredentialsProvider(credentialsProvider)
+                        .call();
                 }
                 
                 if (!pullResult.isSuccessful()) {
@@ -315,11 +357,42 @@ public class GitService {
                 
                 // Pull başarısız olursa, repository'yi temizle ve yeniden klonla
                 cleanProjectFiles(projectPath);
-                return importFromGitHub(projectPath, githubUrl, message, branchName);
+                return importFromGitHub(projectPath, githubUrl, message, branchName, githubUsername, githubToken);
             } finally {
                 git.close();
             }
         }
+    }
+
+    /**
+     * GitHub token'ından CredentialsProvider oluşturur
+     */
+    private CredentialsProvider createCredentialsProvider(String githubUsername, String githubToken) {
+        String masked = githubToken != null ? "***" + githubToken.substring(Math.max(0, githubToken.length() - 4)) : "null";
+        logger.info("Creating credentials provider - username: {}, token: {}", githubUsername, masked);
+        
+        if (githubToken != null && !githubToken.trim().isEmpty()) {
+            // JGit için: username + PAT (password) gerekir
+            String user = (githubUsername != null && !githubUsername.isBlank()) ? githubUsername : "git";
+            logger.info("Using UsernamePasswordCredentialsProvider with user: {}", user);
+            return new UsernamePasswordCredentialsProvider(user, githubToken);
+        }
+        
+        logger.info("No token provided, using anonymous access (public repository)");
+        return null;
+    }
+    
+    /**
+     * GitHub URL'ini token ile birlikte oluşturur (alternatif authentication yöntemi)
+     */
+    private String createAuthenticatedUrl(String githubUrl, String githubToken) {
+        if (githubToken != null && !githubToken.trim().isEmpty()) {
+            // URL'yi token ile birlikte oluştur: https://token@github.com/user/repo.git
+            String authenticatedUrl = githubUrl.replace("https://", "https://" + githubToken + "@");
+            logger.info("Created authenticated URL: {}", authenticatedUrl.replace(githubToken, "***" + githubToken.substring(Math.max(0, githubToken.length() - 4))));
+            return authenticatedUrl;
+        }
+        return githubUrl;
     }
 
     /**

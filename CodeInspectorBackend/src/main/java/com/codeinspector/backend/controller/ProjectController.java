@@ -105,14 +105,14 @@ public class ProjectController {
         return ResponseEntity.ok().build();
     }
 
-    public record ImportGitRequest(String repoUrl, String branchName) {}
+    public record ImportGitRequest(String repoUrl, String branchName, String githubToken) {}
 
     @PostMapping(path = "/{slug}/import-git")
     public ResponseEntity<Void> importGit(@PathVariable String slug, @RequestBody ImportGitRequest req) throws Exception {
         String branchName = req.branchName() != null && !req.branchName().isBlank()
                 ? req.branchName()
                 : "main";
-        importService.importFromGit(slug, req.repoUrl(), branchName);
+        importService.importFromGit(slug, req.repoUrl(), branchName, req.githubToken());
         return ResponseEntity.ok().build();
     }
 
@@ -220,7 +220,7 @@ public class ProjectController {
     /**
      * GitHub'dan yeni versiyon oluşturur
      */
-    public record GitImportRequest(String repoUrl, String message, String branchName) {}
+    public record GitImportRequest(String repoUrl, String message, String branchName, String githubUsername, String githubToken) {}
 
     @PostMapping("/{slug}/versions/github")
     public ResponseEntity<ProjectVersion> createVersionFromGitHub(
@@ -242,7 +242,19 @@ public class ProjectController {
                     ? request.branchName()
                     : "main";
             
-            ProjectVersion version = versionService.createVersionFromGitHub(project, request.repoUrl(), message, branchName);
+            logger.info("GitHub import request - URL: {}, Branch: {}, Username: {}, Token: {}", 
+                request.repoUrl(), branchName,
+                request.githubUsername(),
+                request.githubToken() != null ? "***" + request.githubToken().substring(Math.max(0, request.githubToken().length() - 4)) : "null");
+            
+            ProjectVersion version = versionService.createVersionFromGitHub(
+                project,
+                request.repoUrl(),
+                message,
+                branchName,
+                request.githubUsername(),
+                request.githubToken()
+            );
             return ResponseEntity.created(URI.create("/api/projects/" + slug + "/versions/" + version.getId()))
                     .body(version);
         } catch (Exception e) {

@@ -24,8 +24,11 @@ export function ProjectVersions({ projectSlug, onVersionSelect, projectVcsUrl }:
   const [zipFile, setZipFile] = useState<File | null>(null);
   const [zipMessage, setZipMessage] = useState('');
   const [githubUrl, setGithubUrl] = useState('');
+  const [githubAccess, setGithubAccess] = useState<'public' | 'private'>('public');
   const [githubMessage, setGithubMessage] = useState('');
   const [githubBranch, setGithubBranch] = useState('main');
+  const [githubUsername, setGithubUsername] = useState('');
+  const [githubToken, setGithubToken] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [zipDialogOpen, setZipDialogOpen] = useState(false);
@@ -114,11 +117,16 @@ export function ProjectVersions({ projectSlug, onVersionSelect, projectVcsUrl }:
         projectSlug, 
         githubUrl, 
         githubMessage || `New version from GitHub: ${githubUrl}`,
-        githubBranch
+        githubBranch,
+        githubAccess === 'private' ? githubUsername : undefined,
+        githubAccess === 'private' ? githubToken : undefined
       );
       setGithubUrl('');
       setGithubMessage('');
       setGithubBranch('main');
+      setGithubAccess('public');
+      setGithubUsername('');
+      setGithubToken('');
       setGithubDialogOpen(false);
       await fetchVersions();
     } catch (error: any) {
@@ -188,16 +196,44 @@ export function ProjectVersions({ projectSlug, onVersionSelect, projectVcsUrl }:
                     value={githubUrl} 
                     onChange={(e) => setGithubUrl(e.target.value)} 
                   />
+                  <div className="flex items-center gap-2 text-sm">
+                    <button type="button" className={`px-2 py-1 rounded border ${githubAccess==='public'?'bg-primary text-primary-foreground':''}`} onClick={() => setGithubAccess('public')}>Public</button>
+                    <button type="button" className={`px-2 py-1 rounded border ${githubAccess==='private'?'bg-primary text-primary-foreground':''}`} onClick={() => setGithubAccess('private')}>Private</button>
+                  </div>
                   <Input 
                     placeholder="Branch name (default: main)" 
                     value={githubBranch} 
                     onChange={(e) => setGithubBranch(e.target.value)} 
                   />
+                  {githubAccess === 'private' && (
+                  <Input 
+                    placeholder="GitHub Username (for private repos)" 
+                    value={githubUsername} 
+                    onChange={(e) => setGithubUsername(e.target.value)} 
+                  />)}
+                  {githubAccess === 'private' && (
+                  <Input 
+                    type="password"
+                    placeholder="GitHub Personal Access Token (for private repos)" 
+                    value={githubToken} 
+                    onChange={(e) => setGithubToken(e.target.value)} 
+                  />)}
+                  {githubAccess === 'private' && (
+                  <div className="text-xs text-muted-foreground mt-1 space-y-1">
+                    <div><span className="text-blue-600">ℹ</span> How to create a token: GitHub → Settings → Developer settings → Personal access tokens (classic) → Generate new token</div>
+                    <div><span className="text-blue-600">ℹ</span> Required scopes: <span className="font-mono">repo</span> (and <span className="font-mono">read:org</span> if org repo)</div>
+                    <div><span className="text-blue-600">ℹ</span> If org repo: open the token and click “Enable SSO” to authorize for your org</div>
+                  </div>)}
                   <Input 
                     placeholder="Version message (optional)" 
                     value={githubMessage} 
                     onChange={(e) => setGithubMessage(e.target.value)} 
                   />
+                  <div className="text-xs text-muted-foreground">
+                    <p>• Public repositories: Token is optional</p>
+                    <p>• Private repositories: Token is required</p>
+                    <p>• Create token at: <a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">github.com/settings/tokens</a></p>
+                  </div>
                 </div>
               </div>
               <DialogFooter>

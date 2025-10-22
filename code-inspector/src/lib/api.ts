@@ -122,8 +122,8 @@ export const projectsApi = {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
   },
-  importGit: async (slug: string, repoUrl: string, branchName?: string) => {
-    await axios.post(`${BACKEND_BASE_URL}/api/projects/${slug}/import-git`, { repoUrl, branchName });
+  importGit: async (slug: string, repoUrl: string, branchName?: string, githubUsername?: string, githubToken?: string) => {
+    await axios.post(`${BACKEND_BASE_URL}/api/projects/${slug}/import-git`, { repoUrl, branchName, githubUsername, githubToken });
   },
   delete: async (slug: string) => {
     await axios.delete(`${BACKEND_BASE_URL}/api/projects/${slug}`);
@@ -132,13 +132,13 @@ export const projectsApi = {
     const res = await axios.put(`${BACKEND_BASE_URL}/api/projects/${slug}`, payload);
     return res.data;
   },
-  createWithZip: async (payload: { name: string; slug: string; description?: string; vcsUrl?: string; branchName?: string; }, zip?: File) => {
+  createWithZip: async (payload: { name: string; slug: string; description?: string; vcsUrl?: string; branchName?: string; githubUsername?: string; githubToken?: string; }, zip?: File) => {
     const proj = await projectsApi.create(payload);
     if (zip) {
       await projectsApi.uploadZip(payload.slug, zip);
     }
     if (payload.vcsUrl) {
-      await projectsApi.importGit(payload.slug, payload.vcsUrl, payload.branchName);
+      await projectsApi.importGit(payload.slug, payload.vcsUrl, payload.branchName, payload.githubUsername, payload.githubToken);
     }
     return proj;
   },
@@ -191,11 +191,13 @@ export const projectsApi = {
     return response.data;
   },
   
-  createVersionFromGitHub: async (slug: string, repoUrl: string, message?: string, branchName?: string): Promise<ProjectVersion> => {
+  createVersionFromGitHub: async (slug: string, repoUrl: string, message?: string, branchName?: string, githubUsername?: string, githubToken?: string): Promise<ProjectVersion> => {
     const response = await axios.post(`${BACKEND_BASE_URL}/api/projects/${slug}/versions/github`, {
       repoUrl,
       message,
-      branchName
+      branchName,
+      githubUsername,
+      githubToken
     });
     return response.data;
   },
