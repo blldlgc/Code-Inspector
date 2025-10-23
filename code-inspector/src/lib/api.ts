@@ -136,6 +136,8 @@ export const projectsApi = {
     const proj = await projectsApi.create(payload);
     if (zip) {
       await projectsApi.uploadZip(payload.slug, zip);
+      // ZIP yüklendikten sonra versiyon oluştur
+      await projectsApi.createVersionFromZip(payload.slug, zip, "Initial version from ZIP");
     }
     if (payload.vcsUrl) {
       await projectsApi.importGit(payload.slug, payload.vcsUrl, payload.branchName, payload.githubUsername, payload.githubToken);

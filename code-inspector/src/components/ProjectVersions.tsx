@@ -139,9 +139,9 @@ export function ProjectVersions({ projectSlug, onVersionSelect, projectVcsUrl }:
   
   return (
     <Card>
-      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <CardHeader>
         <CardTitle>Project Versions</CardTitle>
-        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+        <div className="flex flex-wrap gap-2">
           <Dialog open={zipDialogOpen} onOpenChange={setZipDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm" className="flex-grow sm:flex-grow-0">
@@ -220,20 +220,16 @@ export function ProjectVersions({ projectSlug, onVersionSelect, projectVcsUrl }:
                   />)}
                   {githubAccess === 'private' && (
                   <div className="text-xs text-muted-foreground mt-1 space-y-1">
-                    <div><span className="text-blue-600">ℹ</span> How to create a token: GitHub → Settings → Developer settings → Personal access tokens (classic) → Generate new token</div>
+                    <div><span className="text-blue-600">ℹ</span> How to create a token: <a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">GitHub → Settings → Developer settings → Personal access tokens (classic) → Generate new token</a></div>
                     <div><span className="text-blue-600">ℹ</span> Required scopes: <span className="font-mono">repo</span> (and <span className="font-mono">read:org</span> if org repo)</div>
-                    <div><span className="text-blue-600">ℹ</span> If org repo: open the token and click “Enable SSO” to authorize for your org</div>
+                    <div><span className="text-blue-600">ℹ</span> If org repo: open the token and click "Enable SSO" to authorize for your org</div>
                   </div>)}
                   <Input 
                     placeholder="Version message (optional)" 
                     value={githubMessage} 
                     onChange={(e) => setGithubMessage(e.target.value)} 
                   />
-                  <div className="text-xs text-muted-foreground">
-                    <p>• Public repositories: Token is optional</p>
-                    <p>• Private repositories: Token is required</p>
-                    <p>• Create token at: <a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">github.com/settings/tokens</a></p>
-                  </div>
+                  
                 </div>
               </div>
               <DialogFooter>
@@ -254,7 +250,11 @@ export function ProjectVersions({ projectSlug, onVersionSelect, projectVcsUrl }:
         </div>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="versions">
+        <Tabs defaultValue="versions" onValueChange={(value) => {
+          if (value === 'history' && commitHistory.length === 0 && !historyLoading) {
+            fetchCommitHistory();
+          }
+        }}>
           <TabsList className="mb-4">
             <TabsTrigger value="versions">Versions</TabsTrigger>
             <TabsTrigger value="history">Git History</TabsTrigger>
@@ -279,8 +279,14 @@ export function ProjectVersions({ projectSlug, onVersionSelect, projectVcsUrl }:
                 No versions available. Upload a ZIP file or import from GitHub to create a version.
               </div>
             ) : (
-              <div className="space-y-2">
-                {versions.map(version => (
+              <div>
+                {versions.length > 5 && (
+                  <div className="text-xs text-muted-foreground mb-1 px-1">
+                    Showing {versions.length} versions (scrollable)
+                  </div>
+                )}
+                <div className={`space-y-2 ${versions.length > 5 ? 'max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent' : ''}`}>
+                  {versions.map(version => (
                   <div 
                     key={version.id} 
                     className="flex flex-col sm:flex-row sm:items-center justify-between border rounded p-3 hover:bg-muted/50 cursor-pointer gap-2"
@@ -335,6 +341,7 @@ export function ProjectVersions({ projectSlug, onVersionSelect, projectVcsUrl }:
                     </Button>
                   </div>
                 ))}
+                </div>
               </div>
             )}
           </TabsContent>
@@ -355,12 +362,12 @@ export function ProjectVersions({ projectSlug, onVersionSelect, projectVcsUrl }:
               </div>
             ) : commitHistory.length === 0 ? (
               <div className="text-center p-4 text-muted-foreground">
-                No commit history available. Click the History button to load.
+                No commit history available.
               </div>
             ) : (
               <div>
                 {commitHistory.length > 5 && (
-                  <div className="text-xs text-muted-foreground mb-2 px-1">
+                  <div className="text-xs text-muted-foreground mb-1 px-1">
                     Showing {commitHistory.length} commits (scrollable)
                   </div>
                 )}
