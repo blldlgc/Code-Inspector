@@ -139,9 +139,9 @@ export function ProjectVersions({ projectSlug, onVersionSelect, projectVcsUrl }:
   
   return (
     <Card>
-      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <CardHeader>
         <CardTitle>Project Versions</CardTitle>
-        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+        <div className="flex flex-wrap gap-2">
           <Dialog open={zipDialogOpen} onOpenChange={setZipDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm" className="flex-grow sm:flex-grow-0">
@@ -279,8 +279,14 @@ export function ProjectVersions({ projectSlug, onVersionSelect, projectVcsUrl }:
                 No versions available. Upload a ZIP file or import from GitHub to create a version.
               </div>
             ) : (
-              <div className="space-y-2">
-                {versions.map(version => (
+              <div>
+                {versions.length > 5 && (
+                  <div className="text-xs text-muted-foreground mb-1 px-1">
+                    Showing {versions.length} versions (scrollable)
+                  </div>
+                )}
+                <div className={`space-y-2 ${versions.length > 5 ? 'max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent' : ''}`}>
+                  {versions.map(version => (
                   <div 
                     key={version.id} 
                     className="flex flex-col sm:flex-row sm:items-center justify-between border rounded p-3 hover:bg-muted/50 cursor-pointer gap-2"
@@ -335,6 +341,7 @@ export function ProjectVersions({ projectSlug, onVersionSelect, projectVcsUrl }:
                     </Button>
                   </div>
                 ))}
+                </div>
               </div>
             )}
           </TabsContent>
@@ -355,14 +362,12 @@ export function ProjectVersions({ projectSlug, onVersionSelect, projectVcsUrl }:
               </div>
             ) : commitHistory.length === 0 ? (
               <div className="text-center p-4 text-muted-foreground">
-                <div>No commit history available.</div>
-                <div className="text-xs mt-1">History loads automatically when you switch to this tab.</div>
-                <div className="text-xs mt-1">You can also click the History button to reload.</div>
+                No commit history available.
               </div>
             ) : (
               <div>
                 {commitHistory.length > 5 && (
-                  <div className="text-xs text-muted-foreground mb-2 px-1">
+                  <div className="text-xs text-muted-foreground mb-1 px-1">
                     Showing {commitHistory.length} commits (scrollable)
                   </div>
                 )}

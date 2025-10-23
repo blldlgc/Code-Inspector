@@ -97,7 +97,7 @@ export default function ProjectDetail() {
   }, [slug]);
   
   return (
-    <div className="p-4 space-y-4">
+    <div className="w-full py-8 px-6 space-y-4">
       <div className="flex items-center gap-2">
         <Button variant="secondary" onClick={() => navigate('/projects')}>Back</Button>
         <div className="font-semibold">
@@ -185,7 +185,7 @@ export default function ProjectDetail() {
                   <Input value={cwd} onChange={() => {}} readOnly />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="border rounded p-2 h-[70vh] overflow-auto">
+                  <div className="border rounded p-2 h-[60vh] overflow-auto">
                     {items.map(fi => (
                       <div 
                         key={fi.path} 
@@ -200,7 +200,7 @@ export default function ProjectDetail() {
                       </div>
                     ))}
                   </div>
-                  <div className="border rounded p-2 h-[70vh] overflow-auto">
+                  <div className="border rounded p-2 h-[60vh] overflow-auto">
                     <div className="mb-2 text-sm opacity-70">{selectedPath}</div>
                     <pre className="whitespace-pre-wrap text-sm">{content}</pre>
                   </div>
@@ -209,20 +209,24 @@ export default function ProjectDetail() {
             </TabsContent>
             
             <TabsContent value="compare">
-              <VersionCompare projectSlug={slug!} />
+              <div className="h-[60vh] overflow-auto">
+                <VersionCompare projectSlug={slug!} />
+              </div>
             </TabsContent>
             
             <TabsContent value="analysis">
-              {activeVersion ? (
-                <AnalysisTab 
-                  projectSlug={slug!} 
-                  versionId={activeVersion.id} 
-                />
-              ) : (
-                <Card className="p-4 text-center">
-                  <p>Select a version to see analysis results</p>
-                </Card>
-              )}
+              <div className="h-[60vh] overflow-auto">
+                {activeVersion ? (
+                  <AnalysisTab 
+                    projectSlug={slug!} 
+                    versionId={activeVersion.id} 
+                  />
+                ) : (
+                  <Card className="p-4 text-center">
+                    <p>Select a version to see analysis results</p>
+                  </Card>
+                )}
+              </div>
             </TabsContent>
           </Tabs>
         </div>
