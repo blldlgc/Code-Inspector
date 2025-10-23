@@ -100,9 +100,11 @@ export default function ProjectDetail() {
     <div className="w-full py-8 px-6 space-y-4">
       <div className="flex items-center gap-2">
         <Button variant="secondary" onClick={() => navigate('/projects')}>Back</Button>
-        <div className="font-semibold">
+        <div className="font-semibold flex items-center gap-2 flex-wrap">
           {project?.name} 
-          <span className="opacity-60"> (URL Path: {slug})</span>
+          <Badge variant="outline" className="text-xs">
+            {slug}
+          </Badge>
           {project?.vcsUrl && (() => {
             const githubInfo = parseGitHubUrl(project.vcsUrl);
             return githubInfo ? (
