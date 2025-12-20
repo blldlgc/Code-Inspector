@@ -1,6 +1,7 @@
 package com.codeinspector.backend.service;
 
 import com.codeinspector.backend.dto.CodeAnalysisResult;
+import com.codeinspector.backend.dto.CodeComparisonResponse;
 import com.codeinspector.backend.dto.CodeMetricsResponse;
 import com.codeinspector.backend.dto.CoverageResult;
 import com.codeinspector.backend.dto.GraphResponse;
@@ -387,12 +388,16 @@ public class AnalysisService {
     /**
      * Clone Detection analizi
      * Not: Bu analiz tüm dosya çiftlerini karşılaştırır, uzun sürebilir
+     * Performans optimizasyonu: Önce hızlı CPD analizi yapılır, eğer threshold'u geçerse tam analiz yapılır
      */
     private String performCloneDetectionAnalysis(Project project, List<ProjectAnalysisService.JavaFileInfo> javaFiles) throws Exception {
         Map<String, Object> result = new HashMap<>();
         List<Map<String, Object>> duplicatePairs = new ArrayList<>();
         int totalComparisons = 0;
         double totalSimilarity = 0;
+        final double FAST_THRESHOLD = 20.0; // Hızlı analiz için threshold (tam analiz yapmak için)
+        final double FULL_THRESHOLD = 30.0; // Tam analiz sonucu için threshold
+        final double CPD_ONLY_THRESHOLD = 20.0; // Sadece CPD analizi için threshold (tam analiz yapmadan)
 
         // Tüm dosya çiftlerini karşılaştır
         for (int i = 0; i < javaFiles.size(); i++) {
@@ -401,17 +406,76 @@ public class AnalysisService {
                     String code1 = projectAnalysisService.readJavaFile(project.getSlug(), javaFiles.get(i).relativePath());
                     String code2 = projectAnalysisService.readJavaFile(project.getSlug(), javaFiles.get(j).relativePath());
                     
-                    var comparisonResult = codeComparisonService.compareCode(code1, code2);
-                    double similarity = comparisonResult.hybridSimilarityPercentage();
+                    // Önce hızlı CPD analizi yap
+                    double fastSimilarity = codeComparisonService.compareCodeFast(code1, code2);
                     
-                    if (similarity > 50) { // %50'den fazla benzerlik varsa kaydet
+                    // Eğer hızlı analiz threshold'u geçerse, tam analiz yap
+                    CodeComparisonResponse comparisonResult;
+                    double similarity;
+                    boolean useFullAnalysis = false;
+                    
+                    if (fastSimilarity >= FAST_THRESHOLD) {
+                        // Tam analiz yap (Simian + CodeBERT) - performans için sadece yeterince yüksek similarity'de
+                        comparisonResult = codeComparisonService.compareCode(code1, code2);
+                        similarity = comparisonResult.hybridSimilarityPercentage();
+                        useFullAnalysis = true;
+                        logger.debug("Full analysis for {} vs {}: fast={}%, hybrid={}%", 
+                            javaFiles.get(i).relativePath(), javaFiles.get(j).relativePath(), 
+                            String.format("%.2f", fastSimilarity), String.format("%.2f", similarity));
+                    } else {
+                        // Sadece CPD analizi yeterli, tam analiz yapma (performans optimizasyonu)
+                        similarity = fastSimilarity;
+                        comparisonResult = null;
+                        useFullAnalysis = false;
+                        logger.debug("CPD-only analysis for {} vs {}: similarity={}%", 
+                            javaFiles.get(i).relativePath(), javaFiles.get(j).relativePath(), 
+                            String.format("%.2f", similarity));
+                    }
+                    
+                    // Threshold kontrolü: Tam analiz için 30, sadece CPD için 20
+                    double thresholdToUse = useFullAnalysis ? FULL_THRESHOLD : CPD_ONLY_THRESHOLD;
+                    
+                    if (similarity > thresholdToUse) {
+                        logger.debug("Adding duplicate pair: {} vs {} with similarity {}%", 
+                            javaFiles.get(i).relativePath(), javaFiles.get(j).relativePath(), 
+                            String.format("%.2f", similarity));
                         Map<String, Object> pair = new HashMap<>();
                         pair.put("file1", javaFiles.get(i).relativePath());
                         pair.put("file2", javaFiles.get(j).relativePath());
                         pair.put("similarity", similarity);
-                        pair.put("codeBertSimilarity", comparisonResult.codeBertSimilarityScore());
-                        pair.put("cpdSimilarity", comparisonResult.CPDsimilarityPercentage());
-                        pair.put("simianSimilarity", comparisonResult.simianSimilarityPercentage());
+                        
+                        if (comparisonResult != null && useFullAnalysis) {
+                            // Tam analiz yapıldıysa tüm detayları ekle
+                            pair.put("codeBertSimilarity", comparisonResult.codeBertSimilarityScore());
+                            pair.put("cpdSimilarity", comparisonResult.CPDsimilarityPercentage());
+                            pair.put("simianSimilarity", comparisonResult.simianSimilarityPercentage());
+                            
+                            // DuplicatedLines bilgisini ekle
+                            String matchedLines = comparisonResult.matchedLines();
+                            if (matchedLines != null && !matchedLines.isEmpty()) {
+                                // MatchedLines string'ini satırlara böl
+                                String[] lines = matchedLines.split("\n");
+                                List<String> duplicatedLinesList = new ArrayList<String>();
+                                for (String line : lines) {
+                                    String trimmed = line.trim();
+                                    if (!trimmed.isEmpty() && 
+                                        !trimmed.startsWith("Simian Report:") && 
+                                        !trimmed.matches("\\d+\\.\\d+% Similarity")) {
+                                        duplicatedLinesList.add(trimmed);
+                                    }
+                                }
+                                pair.put("duplicatedLines", duplicatedLinesList);
+                            } else {
+                                pair.put("duplicatedLines", new ArrayList<String>());
+                            }
+                        } else {
+                            // Sadece CPD analizi yapıldıysa
+                            pair.put("codeBertSimilarity", 0.0);
+                            pair.put("cpdSimilarity", fastSimilarity);
+                            pair.put("simianSimilarity", 0.0);
+                            pair.put("duplicatedLines", new ArrayList<String>());
+                        }
+                        
                         duplicatePairs.add(pair);
                     }
                     
