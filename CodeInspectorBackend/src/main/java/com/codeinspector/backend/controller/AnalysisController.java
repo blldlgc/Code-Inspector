@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/projects/{slug}/versions/{versionId}/analysis")
@@ -69,6 +70,29 @@ public class AnalysisController {
         
         AnalysisResult result = analysisService.analyzeVersion(project, version, analysisType);
         return ResponseEntity.ok(result);
+    }
+
+    /**
+     * Belirli bir versiyon için TÜM analiz tiplerini (code-quality, security, coverage,
+     * code-smell, clone-detection, code-graph, metrics) sırayla çalıştırır.
+     *
+     * Response: analysisType -> AnalysisResult map'i
+     */
+    @PostMapping("/run-all")
+    public ResponseEntity<Map<String, AnalysisResult>> runAllAnalyses(
+            @PathVariable String slug,
+            @PathVariable Long versionId) throws Exception {
+
+        Project project = projectService.getBySlug(slug);
+        if (project == null) return ResponseEntity.notFound().build();
+
+        ProjectVersion version = versionService.getVersion(versionId);
+        if (version == null || !version.getProject().getId().equals(project.getId())) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Map<String, AnalysisResult> results = analysisService.runAllAnalyses(project, version);
+        return ResponseEntity.ok(results);
     }
 
     /**

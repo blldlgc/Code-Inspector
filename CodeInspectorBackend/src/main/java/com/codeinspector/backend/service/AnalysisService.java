@@ -2,6 +2,7 @@ package com.codeinspector.backend.service;
 
 import com.codeinspector.backend.dto.CodeAnalysisResult;
 import com.codeinspector.backend.dto.CodeMetricsResponse;
+import com.codeinspector.backend.dto.CoverageResult;
 import com.codeinspector.backend.dto.GraphResponse;
 import com.codeinspector.backend.dto.SecurityAnalysisResult;
 import com.codeinspector.backend.model.AnalysisResult;
@@ -10,6 +11,7 @@ import com.codeinspector.backend.model.ProjectVersion;
 import com.codeinspector.backend.repository.AnalysisResultRepository;
 import com.codeinspector.backend.utils.CodeMetricsAnalyzer;
 import com.codeinspector.backend.utils.CodeSmellAnalyzer;
+import com.codeinspector.backend.utils.InMemoryCoverageAnalyzer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +40,7 @@ public class AnalysisService {
     private final CodeComparisonService codeComparisonService;
     private final CodeGraphService codeGraphService;
     private final SecurityService securityService;
+    private final ProjectCoverageService projectCoverageService;
     private final ObjectMapper objectMapper;
     
     @Autowired
@@ -49,6 +52,7 @@ public class AnalysisService {
             CodeComparisonService codeComparisonService,
             CodeGraphService codeGraphService,
             SecurityService securityService,
+            ProjectCoverageService projectCoverageService,
             ObjectMapper objectMapper) {
         this.analysisResultRepository = analysisResultRepository;
         this.versionService = versionService;
@@ -57,24 +61,70 @@ public class AnalysisService {
         this.codeComparisonService = codeComparisonService;
         this.codeGraphService = codeGraphService;
         this.securityService = securityService;
+        this.projectCoverageService = projectCoverageService;
         this.objectMapper = objectMapper;
     }
 
     /**
-     * Belirli bir versiyon için analiz yapar ve sonuçları kaydeder
+     * Belirli bir versiyon için tek bir analiz yapar ve sonucu kaydeder
      */
     @Transactional
     public AnalysisResult analyzeVersion(Project project, ProjectVersion version, String analysisType) throws Exception {
         // Önce versiyonu checkout yap
         versionService.checkoutVersion(project, version.getId());
-        
+        return runSingleAnalysis(project, version, analysisType);
+    }
+
+    /**
+     * Belirli bir versiyon için tüm analiz tiplerini (code-quality, security, coverage, code-smell,
+     * clone-detection, code-graph, metrics) sırayla çalıştırır ve sonuçları map olarak döner.
+     *
+     * Not: Versiyon checkout işlemi yalnızca bir kez yapılır.
+     */
+    @Transactional
+    public Map<String, AnalysisResult> runAllAnalyses(Project project, ProjectVersion version) throws Exception {
+        logger.info("Running all analyses for project: {}, version: {}", project.getSlug(), version.getId());
+
+        // Versiyonu bir kez checkout et
+        versionService.checkoutVersion(project, version.getId());
+
+        Map<String, AnalysisResult> results = new HashMap<>();
+        String[] analysisTypes = new String[] {
+                "code-quality",
+                "security",
+                "coverage",
+                "code-smell",
+                "clone-detection",
+                "code-graph",
+                "metrics"
+        };
+
+        for (String analysisType : analysisTypes) {
+            try {
+                AnalysisResult result = runSingleAnalysis(project, version, analysisType);
+                results.put(analysisType, result);
+            } catch (Exception e) {
+                // Bir analiz başarısız olsa bile diğerlerini çalıştırmaya devam et
+                logger.error("Error running analysis type: {} for project: {}, version: {}",
+                        analysisType, project.getSlug(), version.getId(), e);
+            }
+        }
+
+        return results;
+    }
+
+    /**
+     * Tek bir analiz tipini çalıştırır ve sonucu veritabanına yazar.
+     * Hem tekil analiz endpoint'i hem de run-all için ortak kullanılır.
+     */
+    private AnalysisResult runSingleAnalysis(Project project, ProjectVersion version, String analysisType) throws Exception {
         // Analiz tipine göre ilgili analiz servisini çağır
         String resultData = performAnalysis(project, analysisType);
-        
+
         // Mevcut analiz sonucunu kontrol et
         Optional<AnalysisResult> existingResult = analysisResultRepository.findByVersionIdAndType(
                 version.getId(), analysisType);
-        
+
         if (existingResult.isPresent()) {
             // Mevcut sonucu güncelle
             AnalysisResult result = existingResult.get();
@@ -384,27 +434,11 @@ public class AnalysisService {
 
     /**
      * Coverage analizi
-     * Not: Test dosyaları gereklidir, şimdilik placeholder
+     * ProjectCoverageService kullanarak proje coverage raporu üretir.
      */
     private String performCoverageAnalysis(Project project, List<ProjectAnalysisService.JavaFileInfo> javaFiles) throws Exception {
-        // Test dosyalarını bul
-        List<ProjectAnalysisService.JavaFileInfo> testFiles = javaFiles.stream()
-            .filter(f -> f.relativePath().contains("Test") || f.relativePath().endsWith("Test.java"))
-            .collect(Collectors.toList());
-
-        if (testFiles.isEmpty()) {
-            return objectMapper.writeValueAsString(Map.of(
-                "error", "No test files found",
-                "message", "Coverage analysis requires test files (*Test.java)"
-            ));
-        }
-
-        // TODO: InMemoryCoverageAnalyzer entegrasyonu
-        // Şimdilik basit bir mesaj döndür
-        return objectMapper.writeValueAsString(Map.of(
-            "message", "Coverage analysis not yet fully implemented",
-            "testFilesFound", testFiles.size(),
-            "note", "InMemoryCoverageAnalyzer integration pending"
-        ));
+        logger.info("Starting coverage analysis for project: {}", project.getSlug());
+        Map<String, Object> coverageResult = projectCoverageService.analyzeProjectCoverage(project);
+        return objectMapper.writeValueAsString(coverageResult);
     }
 }

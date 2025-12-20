@@ -247,6 +247,14 @@ export const projectsApi = {
       `${BACKEND_BASE_URL}/api/projects/${slug}/versions/${versionId}/analysis/${analysisType}`
     );
     return response.data;
+  },
+
+  // Tüm analizleri tek seferde çalıştıran endpoint
+  runAllAnalyses: async (slug: string, versionId: number): Promise<Record<string, AnalysisResult>> => {
+    const response = await axios.post(
+      `${BACKEND_BASE_URL}/api/projects/${slug}/versions/${versionId}/analysis/run-all`
+    );
+    return response.data;
   }
 };
 
