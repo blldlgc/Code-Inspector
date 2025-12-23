@@ -13,6 +13,7 @@ import { ProjectVersions } from '@/components/ProjectVersions';
 import { VersionCompare } from '@/components/VersionCompare';
 import { parseGitHubUrl } from '@/lib/utils';
 import { GitBranch } from 'lucide-react';
+import { VoiceReader } from '@/components/VoiceReader';
 
 export default function ProjectDetail() {
   const { slug } = useParams();
@@ -1218,6 +1219,22 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
             </TabsList>
             
             <TabsContent value={activeAnalysis || ''}>
+              {activeAnalysis && results.find(r => r.analysisType === activeAnalysis) && (
+                <VoiceReader
+                  text={(() => {
+                    const result = results.find(r => r.analysisType === activeAnalysis);
+                    if (!result) return '';
+                    try {
+                      const data = JSON.parse(result.resultData);
+                      return `Analysis results: ${JSON.stringify(data, null, 2)}`;
+                    } catch {
+                      return result.resultData;
+                    }
+                  })()}
+                  title={`${activeAnalysis} Analysis Results`}
+                  className="mb-4"
+                />
+              )}
               {renderActiveAnalysisContent()}
             </TabsContent>
           </Tabs>

@@ -31,7 +31,6 @@ body {
 }
 
 h1 {
-  font-size: 3.2em;
   line-height: 1.1;
 }
 
@@ -39,9 +38,7 @@ button {
   border-radius: 8px;
   border: 1px solid transparent;
   padding: 0.6em 1.2em;
-  font-size: 1em;
   font-weight: 500;
-  font-family: inherit;
   background-color: #1a1a1a;
   cursor: pointer;
   transition: border-color 0.25s;
@@ -160,7 +157,143 @@ button:focus-visible {
   * {
     @apply border-border;
   }
+  html {
+    font-size: var(--accessibility-font-size, 1rem);
+    font-family: var(--accessibility-font-family, Inter, system-ui, Avenir, Helvetica, Arial, sans-serif);
+  }
   body {
     @apply bg-background text-foreground;
+    font-size: inherit;
+    font-family: inherit;
   }
+  /* Tüm elementler font-size'ı inherit etsin (border-border'dan sonra) */
+  *:not(html):not(body) {
+    font-size: inherit;
+  }
+  /* Başlıklar için orantılı büyüme */
+  h1 {
+    font-size: calc(1em * 3.2);
+    line-height: 1.2;
+  }
+  h2 {
+    font-size: calc(1em * 2.4);
+    line-height: 1.2;
+  }
+  h3 {
+    font-size: calc(1em * 1.8);
+    line-height: 1.2;
+  }
+  h4 {
+    font-size: calc(1em * 1.4);
+    line-height: 1.2;
+  }
+  h5 {
+    font-size: calc(1em * 1.2);
+    line-height: 1.2;
+  }
+  h6 {
+    font-size: calc(1em * 1.1);
+    line-height: 1.2;
+  }
+  /* Button ve diğer form elementleri için */
+  button, input, select, textarea, label, p, span, div, a, li, td, th {
+    font-size: inherit;
+    font-family: inherit;
+  }
+}
+
+/* Erişilebilirlik: Font boyutu değişkenleri */
+:root {
+  --accessibility-font-size: 1rem;
+  --accessibility-font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
+
+/* Yüksek kontrast modu */
+.high-contrast {
+  --background: 0 0% 100%;
+  --foreground: 0 0% 0%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 0%;
+  --primary: 0 0% 0%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 90%;
+  --secondary-foreground: 0 0% 0%;
+  --muted: 0 0% 95%;
+  --muted-foreground: 0 0% 0%;
+  --accent: 0 0% 90%;
+  --accent-foreground: 0 0% 0%;
+  --border: 0 0% 0%;
+  --input: 0 0% 0%;
+  --ring: 0 0% 0%;
+}
+
+.dark.high-contrast {
+  --background: 0 0% 0%;
+  --foreground: 0 0% 100%;
+  --card: 0 0% 0%;
+  --card-foreground: 0 0% 100%;
+  --primary: 0 0% 100%;
+  --primary-foreground: 0 0% 0%;
+  --secondary: 0 0% 20%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 0 0% 10%;
+  --muted-foreground: 0 0% 100%;
+  --accent: 0 0% 20%;
+  --accent-foreground: 0 0% 100%;
+  --border: 0 0% 100%;
+  --input: 0 0% 100%;
+  --ring: 0 0% 100%;
+}
+
+/* Renk körlüğü temaları - CSS filtreleri */
+.colorblind-deuteranopia {
+  filter: url(#deuteranopia);
+}
+
+.colorblind-protanopia {
+  filter: url(#protanopia);
+}
+
+.colorblind-tritanopia {
+  filter: url(#tritanopia);
+}
+
+/* Renk körlüğü SVG filtreleri (sayfa yüklendiğinde eklenir) */
+.colorblind-filters {
+  position: absolute;
+  width: 0;
+  height: 0;
+  visibility: hidden;
+}
+
+/* Klavye navigasyonu için focus ring */
+*:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+/* Erişilebilirlik: Skip to content link */
+.skip-to-content {
+  position: absolute;
+  left: -9999px;
+  z-index: 999;
+}
+
+.skip-to-content:focus {
+  left: 50%;
+  top: 1rem;
+  transform: translateX(-50%);
+  padding: 0.5rem 1rem;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border-radius: 0.25rem;
 }

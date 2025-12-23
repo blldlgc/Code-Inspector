@@ -29,21 +29,32 @@ public class CorsConfig {
     private long maxAge;
 
     @Bean
-    public CorsFilter corsFilter() {
+    public UrlBasedCorsConfigurationSource corsConfigurationSource() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
         
-        // Origins
+        // Origins - allowCredentials = true olduğunda setAllowedOriginPatterns kullan
         List<String> origins = Arrays.asList(allowedOrigins.split(","));
-        config.setAllowedOrigins(origins);
+        config.setAllowedOriginPatterns(origins);
         
         // Methods
         List<String> methods = Arrays.asList(allowedMethods.split(","));
         config.setAllowedMethods(methods);
         
-        // Headers
+        // Headers - "*" yerine spesifik header'ları kullan
+        if (!"*".equals(allowedHeaders)) {
         List<String> headers = Arrays.asList(allowedHeaders.split(","));
         config.setAllowedHeaders(headers);
+        } else {
+            // allowCredentials = true olduğunda "*" kullanılamaz, spesifik header'ları ekle
+            config.addAllowedHeader("Authorization");
+            config.addAllowedHeader("Content-Type");
+            config.addAllowedHeader("X-Requested-With");
+            config.addAllowedHeader("Accept");
+            config.addAllowedHeader("Origin");
+            config.addAllowedHeader("Access-Control-Request-Method");
+            config.addAllowedHeader("Access-Control-Request-Headers");
+        }
         
         // Exposed Headers
         List<String> exposed = Arrays.asList(exposedHeaders.split(","));
@@ -54,7 +65,12 @@ public class CorsConfig {
         config.setMaxAge(maxAge);
         
         source.registerCorsConfiguration("/api/**", config);
-        return new CorsFilter(source);
+        return source;
+    }
+
+    @Bean
+    public CorsFilter corsFilter() {
+        return new CorsFilter(corsConfigurationSource());
     }
 }
 

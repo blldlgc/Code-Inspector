@@ -5,6 +5,7 @@ import { ThemeProvider } from "./components/theme-provider"
 import { Toaster } from './components/ui/sonner.tsx'
 import { DialogComponent } from './components/DialogManager';
 import { AuthProvider } from '@/context/AuthContext';
+import { AccessibilityProvider } from '@/context/AccessibilityContext';
 import { AppRouter } from './routes/AppRouter';
 import { authService } from '@/lib/auth';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
@@ -17,9 +18,11 @@ const App = () => {
     <ErrorBoundary>
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
         <AuthProvider>
+          <AccessibilityProvider>
           <AppRouter />
           <DialogComponent />
           <Toaster />
+          </AccessibilityProvider>
         </AuthProvider>
       </ThemeProvider>
     </ErrorBoundary>
