@@ -337,8 +337,12 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
         source: edge.source,
         target: edge.target,
         type: edge.type,
-        color: edge.type === 'depends' ? '#F39C12' : '#34495E',
-        width: edge.type === 'depends' ? 2 : 1
+        color: edge.type === 'depends' ? '#F39C12' : 
+               edge.type === 'calls' ? '#3498DB' : // Metot-metot çağrıları için mavi
+               '#34495E', // has
+        width: edge.type === 'depends' ? 2 : 
+               edge.type === 'calls' ? 1.5 : // Metot çağrıları için orta kalınlık
+               1 // has
       }));
     
     // Debug logları - sadece sorun varsa göster
@@ -1163,6 +1167,10 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
                   <div className="w-3 h-1 rounded" style={{ backgroundColor: '#F39C12' }}></div>
                   <span>Dependencies</span>
                 </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-1 rounded" style={{ backgroundColor: '#3498DB' }}></div>
+                  <span>Method Calls</span>
+                </div>
               </div>
               <Button
                 variant="outline"
@@ -1199,8 +1207,10 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
               linkColor={(link: any) => link.color}
               linkWidth={(link: any) => link.width}
               linkDistance={(link: any) => {
-                // Link mesafesi - depends edge'leri için daha uzun
-                return link.type === 'depends' ? 100 : 50;
+                // Link mesafesi - edge tipine göre ayarla
+                if (link.type === 'depends') return 100; // Sınıf bağımlılıkları daha uzun
+                if (link.type === 'calls') return 60; // Metot çağrıları orta mesafe
+                return 50; // has (sınıf-metot ilişkisi) en yakın
               }}
               linkDirectionalArrowLength={3}
               linkDirectionalArrowRelPos={1}

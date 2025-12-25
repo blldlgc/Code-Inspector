@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -26,6 +27,12 @@ import java.util.regex.Pattern;
 public class ProjectGraphService {
 
     private static final Logger logger = LoggerFactory.getLogger(ProjectGraphService.class);
+    
+    private final JavaASTDependencyAnalyzer astAnalyzer;
+
+    public ProjectGraphService(JavaASTDependencyAnalyzer astAnalyzer) {
+        this.astAnalyzer = astAnalyzer;
+    }
 
     // Basit regex'ler – production için tam parser yerine hafif bir analiz
     private static final Pattern PACKAGE_PATTERN = Pattern.compile("^\\s*package\\s+([\\w\\.]+)\\s*;", Pattern.MULTILINE);
@@ -53,6 +60,7 @@ public class ProjectGraphService {
 
         Map<String, Set<String>> classToMethods = new HashMap<>();
         Map<String, Set<String>> classDeps = new HashMap<>();
+        Map<String, Set<String>> methodCalls = new HashMap<>(); // className.methodName -> Set<targetMethodId>
         
         // Projedeki tüm sınıfların full name'lerini tut (sınıflar arası bağlantılar için)
         Set<String> projectClasses = new HashSet<>();
@@ -89,7 +97,7 @@ public class ProjectGraphService {
                 .limit(2000) // çok büyük projeler için güvenlik sınırı
                 .forEach(path -> {
                     try {
-                        parseJavaFile(path, classToMethods, classDeps, projectClasses, simpleNameToFullNames);
+                        parseJavaFile(path, classToMethods, classDeps, methodCalls, projectClasses, simpleNameToFullNames);
                     } catch (IOException e) {
                         logger.warn("Failed to parse Java file {}: {}", path, e.getMessage());
                     }
@@ -152,7 +160,7 @@ public class ProjectGraphService {
         for (Map.Entry<String, Set<String>> entry : classDeps.entrySet()) {
             String source = entry.getKey();
             Set<String> deps = entry.getValue();
-            logger.debug("Class {} has {} dependencies in classDeps", source, deps.size());
+            logger.info("Class {} has {} dependencies in classDeps: {}", source, deps.size(), deps);
             
             // Source'un vertex olarak eklenmiş olduğundan emin ol
             if (!vertexIds.contains(source)) {
@@ -161,7 +169,12 @@ public class ProjectGraphService {
             }
             
             for (String target : deps) {
-                if (!source.equals(target) && projectClasses.contains(target)) {
+                if (source.equals(target)) {
+                    logger.debug("Skipped self-reference: {} -> {}", source, target);
+                    continue;
+                }
+                
+                if (projectClasses.contains(target)) {
                     // Target'ın da vertex olarak eklenmiş olduğundan emin ol
                     if (!vertexIds.contains(target)) {
                         logger.warn("Target class {} not found in vertices! Skipping edge {} -> {}", target, source, target);
@@ -173,14 +186,50 @@ public class ProjectGraphService {
                     dependsEdgeCount++;
                     connectedClasses.add(source);
                     connectedClasses.add(target);
-                    logger.debug("Created depends edge: {} -> {}", source, target);
-                } else if (!source.equals(target)) {
-                    logger.debug("Skipped edge {} -> {} (target not in projectClasses)", source, target);
+                    logger.info("✅ Created depends edge: {} -> {}", source, target);
+                } else {
+                    logger.debug("Skipped edge {} -> {} (target '{}' not in projectClasses)", source, target, target);
                 }
             }
         }
         logger.info("Created {} depends edges between classes", dependsEdgeCount);
-        logger.info("Total edges created: {} ({} depends, {} has)", edges.size(), dependsEdgeCount, edges.size() - dependsEdgeCount);
+        
+        // Metot-metot çağrı kenarları (calls)
+        int callsEdgeCount = 0;
+        for (Map.Entry<String, Set<String>> entry : methodCalls.entrySet()) {
+            String sourceMethodId = entry.getKey(); // className.methodName
+            Set<String> calledMethods = entry.getValue();
+            
+            // Source method'un vertex olarak eklenmiş olduğundan emin ol
+            if (!vertexIds.contains(sourceMethodId)) {
+                logger.debug("Source method {} not found in vertices, skipping calls edges", sourceMethodId);
+                continue;
+            }
+            
+            for (String calledMethod : calledMethods) {
+                // Called method'un vertex olarak eklenmiş olduğundan emin ol
+                if (vertexIds.contains(calledMethod)) {
+                    edges.add(new Edge(sourceMethodId, calledMethod, "calls"));
+                    callsEdgeCount++;
+                    logger.debug("Created calls edge: {} -> {}", sourceMethodId, calledMethod);
+                } else {
+                    // Eğer calledMethod sadece method name ise (scope yok), className.methodName formatında dene
+                    String[] sourceParts = sourceMethodId.split("\\.");
+                    if (sourceParts.length >= 2) {
+                        String sourceClassName = sourceParts[0];
+                        String potentialMethodId = sourceClassName + "." + calledMethod;
+                        if (vertexIds.contains(potentialMethodId)) {
+                            edges.add(new Edge(sourceMethodId, potentialMethodId, "calls"));
+                            callsEdgeCount++;
+                            logger.debug("Created calls edge (resolved): {} -> {}", sourceMethodId, potentialMethodId);
+                        }
+                    }
+                }
+            }
+        }
+        logger.info("Created {} calls edges between methods", callsEdgeCount);
+        logger.info("Total edges created: {} ({} depends, {} has, {} calls)", 
+                edges.size(), dependsEdgeCount, edges.size() - dependsEdgeCount - callsEdgeCount, callsEdgeCount);
         
         // Debug: classDeps özeti
         int totalDeps = classDeps.values().stream().mapToInt(Set::size).sum();
@@ -275,6 +324,7 @@ public class ProjectGraphService {
             Path file,
             Map<String, Set<String>> classToMethods,
             Map<String, Set<String>> classDeps,
+            Map<String, Set<String>> methodCalls,
             Set<String> projectClasses,
             Map<String, Set<String>> simpleNameToFullNames
     ) throws IOException {
@@ -293,6 +343,93 @@ public class ProjectGraphService {
 
         classToMethods.computeIfAbsent(fullClassName, k -> new HashSet<>());
         classDeps.computeIfAbsent(fullClassName, k -> new HashSet<>());
+        
+        // AST analizi ile detaylı bağımlılık tespiti (fallback: regex analizi)
+        try {
+            File javaFile = file.toFile();
+            
+            // AST ile sınıf bağımlılıklarını analiz et
+            Map<String, Set<String>> astClassDeps = astAnalyzer.analyzeClassDependencies(javaFile);
+            if (astClassDeps.containsKey(simpleClassName)) {
+                Set<String> astDeps = astClassDeps.get(simpleClassName);
+                logger.debug("AST found {} potential dependencies for {}: {}", astDeps.size(), fullClassName, astDeps);
+                
+                int addedCount = 0;
+                // AST'den gelen bağımlılıkları ekle (full name matching ile)
+                for (String depName : astDeps) {
+                    boolean added = false;
+                    
+                    // Önce full qualified name ile kontrol et
+                    if (projectClasses.contains(depName)) {
+                        classDeps.get(fullClassName).add(depName);
+                        added = true;
+                        addedCount++;
+                        logger.debug("Added dependency (full match): {} -> {}", fullClassName, depName);
+                    } else {
+                        // Simple name ile eşleştir (depName simple name olabilir)
+                        String depSimpleName = depName.contains(".") ? 
+                            depName.substring(depName.lastIndexOf('.') + 1) : depName;
+                        
+                        Set<String> matchingFullNames = simpleNameToFullNames.get(depSimpleName);
+                        if (matchingFullNames != null && !matchingFullNames.isEmpty()) {
+                            String matchedFullName = null;
+                            if (matchingFullNames.size() == 1) {
+                                // Tek eşleşme varsa direkt kullan
+                                matchedFullName = matchingFullNames.iterator().next();
+                            } else {
+                                // Birden fazla eşleşme varsa, aynı package içindeki varsa onu kullan
+                                boolean found = false;
+                                for (String candidateFullName : matchingFullNames) {
+                                    if (candidateFullName.startsWith(pkg != null ? pkg + "." : "")) {
+                                        matchedFullName = candidateFullName;
+                                        found = true;
+                                        break;
+                                    }
+                                }
+                                if (!found) {
+                                    matchedFullName = matchingFullNames.iterator().next();
+                                }
+                            }
+                            
+                            if (matchedFullName != null && !matchedFullName.equals(fullClassName)) {
+                                classDeps.get(fullClassName).add(matchedFullName);
+                                added = true;
+                                addedCount++;
+                                logger.debug("Added dependency (simple match): {} -> {} (from {})", 
+                                        fullClassName, matchedFullName, depSimpleName);
+                            }
+                        }
+                    }
+                    
+                    if (!added) {
+                        logger.debug("Could not match dependency: {} for class {}", depName, fullClassName);
+                    }
+                }
+                logger.info("AST analysis added {} class dependencies for {} (from {} potential)", 
+                        addedCount, fullClassName, astDeps.size());
+            } else {
+                logger.debug("AST analysis found no dependencies for class {}", simpleClassName);
+            }
+            
+            // AST ile metot bağımlılıklarını analiz et
+            Map<String, Map<String, Set<String>>> astMethodDeps = astAnalyzer.analyzeMethodDependencies(javaFile);
+            if (astMethodDeps.containsKey(simpleClassName)) {
+                Map<String, Set<String>> classMethodDeps = astMethodDeps.get(simpleClassName);
+                for (Map.Entry<String, Set<String>> methodEntry : classMethodDeps.entrySet()) {
+                    String methodName = methodEntry.getKey();
+                    String methodId = fullClassName + "." + methodName;
+                    Set<String> calledMethods = methodEntry.getValue();
+                    
+                    // Metot çağrılarını methodCalls map'ine ekle
+                    methodCalls.computeIfAbsent(methodId, k -> new HashSet<>()).addAll(calledMethods);
+                }
+                logger.debug("AST analysis added method dependencies for {} methods in {}", 
+                        classMethodDeps.size(), fullClassName);
+            }
+        } catch (Exception e) {
+            logger.warn("AST analysis failed for file {}, falling back to regex: {}", file, e.getMessage());
+            // AST başarısız olursa regex analizi devam eder
+        }
 
         // imports -> class dependencies
         Matcher importMatcher = IMPORT_PATTERN.matcher(content);

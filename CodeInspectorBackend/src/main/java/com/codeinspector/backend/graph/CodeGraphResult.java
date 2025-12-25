@@ -61,7 +61,11 @@ public class CodeGraphResult {
     public static class Edge {
         private String source;
         private String target;
-        private String type; // depends | has | calls
+        // type: "depends" | "has" | "calls"
+        // - depends: Sınıf-sınıf bağımlılığı
+        // - has: Sınıf-metot ilişkisi  
+        // - calls: Metot-metot çağrısı
+        private String type;
 
         public Edge() {
         }

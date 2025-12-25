@@ -113,6 +113,10 @@ export interface CodeGraphVertex {
 export interface CodeGraphEdge {
   source: string;
   target: string;
+  // type: 'depends' | 'has' | 'calls'
+  // - depends: Sınıf-sınıf bağımlılığı
+  // - has: Sınıf-metot ilişkisi
+  // - calls: Metot-metot çağrısı (YENİ)
   type: 'depends' | 'has' | 'calls';
 }
 
