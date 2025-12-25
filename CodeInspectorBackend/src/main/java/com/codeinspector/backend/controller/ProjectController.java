@@ -7,6 +7,8 @@ import com.codeinspector.backend.service.ProjectService;
 import com.codeinspector.backend.service.ProjectImportService;
 import com.codeinspector.backend.service.ProjectStorageService;
 import com.codeinspector.backend.service.ProjectVersionService;
+import com.codeinspector.backend.service.ProjectGraphService;
+import com.codeinspector.backend.graph.CodeGraphResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -30,16 +32,19 @@ public class ProjectController {
     private final ProjectImportService importService;
     private final ProjectStorageService storageService;
     private final ProjectVersionService versionService;
+    private final ProjectGraphService projectGraphService;
 
     public ProjectController(
             ProjectService projectService, 
             ProjectImportService importService, 
             ProjectStorageService storageService,
-            ProjectVersionService versionService) {
+            ProjectVersionService versionService,
+            ProjectGraphService projectGraphService) {
         this.projectService = projectService;
         this.importService = importService;
         this.storageService = storageService;
         this.versionService = versionService;
+        this.projectGraphService = projectGraphService;
     }
 
     @GetMapping
@@ -143,6 +148,25 @@ public class ProjectController {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.TEXT_PLAIN);
         return ResponseEntity.ok().headers(headers).body(content);
+    }
+
+    /**
+     * Proje kodundan sınıf/metot grafını üretir.
+     */
+    @GetMapping(path = "/{slug}/graph")
+    public ResponseEntity<CodeGraphResult> getProjectGraph(@PathVariable String slug) {
+        try {
+            Project project = projectService.getBySlug(slug);
+            if (project == null) {
+                logger.warn("Project not found with slug for graph: {}", slug);
+                return ResponseEntity.notFound().build();
+            }
+            CodeGraphResult result = projectGraphService.analyzeProject(project);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            logger.error("Error generating project graph for slug: {}", slug, e);
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     // Yeni versiyon endpoint'leri

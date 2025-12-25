@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -7,12 +7,13 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { projectsApi, projectFilesApi, ProjectVersion } from '@/lib/api';
+import { projectsApi, projectFilesApi, ProjectVersion, CodeGraphResponse } from '@/lib/api';
 import { ShareProjectDialog } from '@/components/ShareProjectDialog';
 import { ProjectVersions } from '@/components/ProjectVersions';
 import { VersionCompare } from '@/components/VersionCompare';
 import { parseGitHubUrl } from '@/lib/utils';
 import { GitBranch } from 'lucide-react';
+import ForceGraph2D from 'react-force-graph-2d';
 
 export default function ProjectDetail() {
   const { slug } = useParams();
@@ -245,6 +246,121 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
   const [analyzing, setAnalyzing] = useState(false);
   const [activeAnalysis, setActiveAnalysis] = useState<string | null>(null);
   const [runAllProgress, setRunAllProgress] = useState<number>(0);
+  const [projectGraph, setProjectGraph] = useState<CodeGraphResponse | null>(null);
+  const [projectGraphError, setProjectGraphError] = useState<string | null>(null);
+  const [projectGraphLoading, setProjectGraphLoading] = useState(false);
+  
+  // Graph ref'i component seviyesinde tanımla
+  const graphRef = useRef<any>(null);
+  const graphContainerRef = useRef<HTMLDivElement>(null);
+  const [graphDimensions, setGraphDimensions] = useState({ width: 600, height: 600 });
+  
+  // Container boyutlarını güncelle
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (graphContainerRef.current) {
+        // clientWidth/clientHeight border dahil iç alanı verir (daha doğru)
+        const width = graphContainerRef.current.clientWidth;
+        const height = graphContainerRef.current.clientHeight;
+        setGraphDimensions({ width, height });
+      }
+    };
+    
+    updateDimensions();
+    // ResizeObserver kullanarak daha hassas takip
+    const resizeObserver = new ResizeObserver(updateDimensions);
+    if (graphContainerRef.current) {
+      resizeObserver.observe(graphContainerRef.current);
+    }
+    window.addEventListener('resize', updateDimensions);
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateDimensions);
+    };
+  }, []);
+  
+  // Graph verisini component seviyesinde hesapla
+  const graphData = useMemo(() => {
+    if (!projectGraph) {
+      return { nodes: [], links: [] };
+    }
+    
+    // Benzersiz node ID'leri oluştur
+    const nodeMap = new Map();
+    projectGraph.vertices.forEach((vertex, index) => {
+      const isHub = vertex.id === '__ROOT__' || vertex.metrics?.isHub === true;
+      nodeMap.set(vertex.id, {
+        id: vertex.id,
+        label: vertex.label,
+        type: vertex.type,
+        color: isHub ? '#E74C3C' : (vertex.type === 'class' ? '#8E44AD' : '#27AE60'), // Hub node kırmızı
+        size: isHub ? 12 : (vertex.type === 'class' ? 8 : 6), // Hub node daha büyük
+        index: index,
+        isHub: isHub,
+        ...vertex.metrics
+      });
+    });
+
+    // Debug: Edge'leri ve node'ları kontrol et
+    const dependsEdges = projectGraph.edges.filter(e => e.type === 'depends');
+    const filteredOutEdges: any[] = [];
+    
+    // Geçerli linkleri oluştur - sadece class-to-class depends edge'leri için özel kontrol
+    const links = projectGraph.edges
+      .filter(edge => {
+        const sourceExists = nodeMap.has(edge.source);
+        const targetExists = nodeMap.has(edge.target);
+        
+        // Eğer edge filtreleniyorsa ve depends tipindeyse, debug bilgisi topla
+        if (!sourceExists || !targetExists) {
+          if (edge.type === 'depends') {
+            // Source ve target'ın class olup olmadığını kontrol et
+            const sourceVertex = projectGraph.vertices.find(v => v.id === edge.source);
+            const targetVertex = projectGraph.vertices.find(v => v.id === edge.target);
+            
+            filteredOutEdges.push({
+              source: edge.source,
+              target: edge.target,
+              sourceExists,
+              targetExists,
+              sourceType: sourceVertex?.type,
+              targetType: targetVertex?.type,
+              sourceInNodeMap: Array.from(nodeMap.keys()).includes(edge.source),
+              targetInNodeMap: Array.from(nodeMap.keys()).includes(edge.target)
+            });
+          }
+          return false;
+        }
+        return true;
+      })
+      .map(edge => ({
+        source: edge.source,
+        target: edge.target,
+        type: edge.type,
+        color: edge.type === 'depends' ? '#F39C12' : '#34495E',
+        width: edge.type === 'depends' ? 2 : 1
+      }));
+    
+    // Debug logları - sadece sorun varsa göster
+    if (dependsEdges.length > 0) {
+      const validDependsLinks = links.filter(l => l.type === 'depends').length;
+      if (validDependsLinks < dependsEdges.length) {
+        console.log('🔍 Graph Debug Info:');
+        console.log('Total depends edges from backend:', dependsEdges.length);
+        console.log('Valid depends edges after filtering:', validDependsLinks);
+        if (filteredOutEdges.length > 0) {
+          console.warn('⚠️ Filtered out depends edges:', filteredOutEdges);
+          console.log('Sample node IDs:', Array.from(nodeMap.keys()).slice(0, 5));
+          console.log('Sample depends edges from backend:', dependsEdges.slice(0, 3));
+        }
+      }
+    }
+
+    return {
+      nodes: Array.from(nodeMap.values()),
+      links: links
+    };
+  }, [projectGraph]);
   
   const fetchResults = async () => {
     try {
@@ -261,6 +377,20 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
       setLoading(false);
     }
   };
+
+  const loadProjectGraph = async () => {
+    try {
+      setProjectGraphLoading(true);
+      setProjectGraphError(null);
+      const graph = await projectsApi.getCodeGraph(projectSlug);
+      setProjectGraph(graph);
+    } catch (error: any) {
+      console.error('Error loading project code graph:', error);
+      setProjectGraphError(error?.message || 'Code graph could not be loaded.');
+    } finally {
+      setProjectGraphLoading(false);
+    }
+  };
   
   const runAnalysis = async (analysisType: string) => {
     try {
@@ -268,6 +398,15 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
       await projectsApi.analyzeVersion(projectSlug, versionId, analysisType);
       await fetchResults();
       setActiveAnalysis(analysisType);
+      
+      // Eğer code-graph analizi çalıştırılıyorsa, graph'ı da yükle
+      if (analysisType === 'code-graph') {
+        if (!projectGraph && !projectGraphError) {
+          await loadProjectGraph();
+        }
+        // Graph görselleştirmesini göster
+        setActiveAnalysis('project-graph');
+      }
     } catch (error) {
       console.error('Error running analysis:', error);
     } finally {
@@ -940,6 +1079,261 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
     );
   };
 
+  const renderProjectGraphView = () => {
+    if (projectGraphLoading) {
+      return (
+        <div className="text-sm text-muted-foreground text-center py-4">
+          Loading project code graph...
+        </div>
+      );
+    }
+
+    if (projectGraphError) {
+      return (
+        <div className="text-sm text-red-500 py-4">
+          {projectGraphError}
+        </div>
+      );
+    }
+
+    if (!projectGraph) {
+      return (
+        <div className="text-sm text-muted-foreground py-4">
+          Project code graph has not been loaded yet.
+        </div>
+      );
+    }
+
+    const classCount = projectGraph.vertices.filter(v => v.type === 'class').length;
+    const methodCount = projectGraph.vertices.filter(v => v.type === 'method').length;
+
+    const topClasses = projectGraph.vertices
+      .filter(v => v.type === 'class')
+      .slice(0, 10);
+
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Card className="p-3">
+            <div className="text-xs text-muted-foreground">Total Nodes</div>
+            <div className="text-lg font-semibold">{projectGraph.metrics.totalNodes}</div>
+          </Card>
+          <Card className="p-3">
+            <div className="text-xs text-muted-foreground">Total Edges</div>
+            <div className="text-lg font-semibold">{projectGraph.metrics.totalEdges}</div>
+          </Card>
+          <Card className="p-3">
+            <div className="text-xs text-muted-foreground">Avg Degree</div>
+            <div className="text-lg font-semibold">
+              {projectGraph.metrics.avgDegree.toFixed(2)}
+            </div>
+          </Card>
+          <Card className="p-3">
+            <div className="text-xs text-muted-foreground">Max Degree</div>
+            <div className="text-lg font-semibold">{projectGraph.metrics.maxDegree}</div>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+          <Card className="p-3">
+            <div className="text-xs text-muted-foreground mb-1">Classes</div>
+            <div className="text-lg font-semibold">{classCount}</div>
+          </Card>
+          <Card className="p-3">
+            <div className="text-xs text-muted-foreground mb-1">Methods</div>
+            <div className="text-lg font-semibold">{methodCount}</div>
+          </Card>
+        </div>
+
+        {/* Graph Visualization */}
+        <Card className="p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-sm font-semibold">Code Graph Visualization</h3>
+            <div className="flex items-center gap-4">
+              <div className="flex gap-4 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#8E44AD' }}></div>
+                  <span>Classes</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#27AE60' }}></div>
+                  <span>Methods</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-1 rounded" style={{ backgroundColor: '#F39C12' }}></div>
+                  <span>Dependencies</span>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (graphRef.current) {
+                    // Reset zoom ve pan
+                    graphRef.current.zoom(1);
+                    graphRef.current.centerAt(0, 0, 1000);
+                    // Sonra tüm node'ları görünür yap
+                    setTimeout(() => {
+                      graphRef.current?.zoomToFit(400, 20);
+                    }, 100);
+                  }
+                }}
+              >
+                Reset View
+              </Button>
+            </div>
+          </div>
+          <div 
+            ref={graphContainerRef}
+            className="border rounded-md bg-background overflow-hidden" 
+            style={{ height: '600px', position: 'relative' }}
+          >
+            <ForceGraph2D
+              ref={graphRef}
+              graphData={graphData}
+              width={graphDimensions.width}
+              height={graphDimensions.height}
+              nodeLabel={(node: any) => `${node.label} (${node.type})`}
+              nodeColor={(node: any) => node.color}
+              nodeVal={(node: any) => node.size}
+              linkColor={(link: any) => link.color}
+              linkWidth={(link: any) => link.width}
+              linkDistance={(link: any) => {
+                // Link mesafesi - depends edge'leri için daha uzun
+                return link.type === 'depends' ? 100 : 50;
+              }}
+              linkDirectionalArrowLength={3}
+              linkDirectionalArrowRelPos={1}
+              // Charge kuvvetini kaldır - node'lar birbirini itmesin, sadece link mesafesi kullan
+              d3Force="charge"
+              d3ForceStrength={0}
+              // Center force - node'ları merkeze topla (otomatik eklenir, strength ayarlanabilir)
+              d3AlphaDecay={0.0228}
+              d3VelocityDecay={0.4}
+              cooldownTime={15000}
+              enableZoomInteraction={true}
+              enablePanInteraction={true}
+              enableNodeDrag={true}
+              onNodeDrag={(node: any) => {
+                // Node'un yarıçapını hesaba kat (size en büyük 8, yarıçap 4)
+                const nodeRadius = (node.size || 8) / 2;
+                const padding = nodeRadius + 10; // Node yarıçapı + ekstra padding
+                const maxX = graphDimensions.width / 2 - padding;
+                const maxY = graphDimensions.height / 2 - padding;
+                const minX = -graphDimensions.width / 2 + padding;
+                const minY = -graphDimensions.height / 2 + padding;
+                
+                if (node.x > maxX) node.x = maxX;
+                if (node.x < minX) node.x = minX;
+                if (node.y > maxY) node.y = maxY;
+                if (node.y < minY) node.y = minY;
+              }}
+              onNodeDragEnd={(node: any) => {
+                // Node sürükleme bittiğinde fixed pozisyonu kaldır
+                node.fx = null;
+                node.fy = null;
+              }}
+              onNodeClick={(node: any) => {
+                console.log('Clicked node:', node);
+              }}
+              onLinkClick={(link: any) => {
+                console.log('Clicked link:', link);
+              }}
+              nodeCanvasObject={(node: any, ctx: any, globalScale: number) => {
+                // Sadece yeterince yakınlaştırıldığında etiketleri göster
+                if (globalScale < 1.4) return;
+
+                const label = node.type === 'method' 
+                  ? node.label.split('.').pop() || node.label 
+                  : node.label;
+                const fontSize = 12/globalScale;
+                ctx.font = `${fontSize}px Sans-Serif`;
+                const textWidth = ctx.measureText(label).width;
+                const bckgDimensions = [textWidth, fontSize].map(n => n + fontSize * 0.2);
+
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.fillRect(
+                  node.x - bckgDimensions[0] / 2,
+                  node.y - bckgDimensions[1] / 2,
+                  bckgDimensions[0],
+                  bckgDimensions[1]
+                );
+
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = node.color;
+                ctx.fillText(label, node.x, node.y);
+              }}
+              nodeCanvasObjectMode={() => 'after'}
+              onEngineTick={() => {
+                // Container'ın gerçek boyutlarını kullan ve node'ları sınırlar içinde tut
+                // Her node'un kendi yarıçapını hesaba kat
+                graphData.nodes.forEach((node: any) => {
+                  const nodeRadius = (node.size || 8) / 2;
+                  const padding = nodeRadius + 10; // Node yarıçapı + ekstra padding
+                  const maxX = graphDimensions.width / 2 - padding;
+                  const maxY = graphDimensions.height / 2 - padding;
+                  const minX = -graphDimensions.width / 2 + padding;
+                  const minY = -graphDimensions.height / 2 + padding;
+                  
+                  if (node.x > maxX) node.x = maxX;
+                  if (node.x < minX) node.x = minX;
+                  if (node.y > maxY) node.y = maxY;
+                  if (node.y < minY) node.y = minY;
+                });
+              }}
+              onEngineStop={() => {
+                // Graph simülasyonu bittiğinde otomatik olarak merkeze topla
+                if (graphRef.current && graphData.nodes.length > 0) {
+                  setTimeout(() => {
+                    graphRef.current?.zoomToFit(400, 20);
+                  }, 100);
+                }
+              }}
+            />
+          </div>
+        </Card>
+
+        {/* Class Table */}
+        <Card className="p-4">
+          <h3 className="text-sm font-semibold mb-3">Class Details</h3>
+          <div className="border rounded-md max-h-80 overflow-auto text-xs">
+            <table className="w-full">
+              <thead className="bg-muted/40">
+                <tr>
+                  <th className="text-left px-3 py-2">Class</th>
+                  <th className="text-right px-3 py-2">Methods</th>
+                  <th className="text-right px-3 py-2">Dependencies</th>
+                </tr>
+              </thead>
+              <tbody>
+                {topClasses.map(cls => {
+                  const metrics = cls.metrics || {};
+                  const totalMethods = metrics.totalMethods ?? 0;
+                  const totalDependencies = metrics.totalDependencies ?? 0;
+                  return (
+                    <tr key={cls.id} className="border-t hover:bg-muted/20 cursor-pointer">
+                      <td className="px-3 py-2 font-mono break-all">{cls.id}</td>
+                      <td className="px-3 py-2 text-right">{totalMethods}</td>
+                      <td className="px-3 py-2 text-right">{totalDependencies}</td>
+                    </tr>
+                  );
+                })}
+                {topClasses.length === 0 && (
+                  <tr>
+                    <td colSpan={3} className="px-3 py-3 text-center text-muted-foreground">
+                      No classes found in project graph.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </div>
+    );
+  };
+
   const renderCodeQualityView = () => {
     // Türkçe açıklama: code-quality aslında metrics + code smell kombinasyonu, bu yüzden özet kart + detay tablo gösteriyoruz
     const data = getParsedData('code-quality');
@@ -1061,9 +1455,12 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
       case 'clone-detection':
         return renderCloneDetectionView();
       case 'code-graph':
-        return renderCodeGraphView();
+        // code-graph analizi için de project graph görselleştirmesini göster
+        return renderProjectGraphView();
       case 'code-quality':
         return renderCodeQualityView();
+      case 'project-graph':
+        return renderProjectGraphView();
       default: {
         const data = getParsedData(activeAnalysis);
         if (!data) {
@@ -1128,6 +1525,18 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
             disabled={analyzing}
           >
             Run Code Graph Analysis
+          </Button>
+          <Button
+            variant="outline"
+            onClick={async () => {
+              setActiveAnalysis('project-graph');
+              if (!projectGraph && !projectGraphError) {
+                await loadProjectGraph();
+              }
+            }}
+            disabled={analyzing || projectGraphLoading}
+          >
+            View Project Code Graph
           </Button>
           <Button 
             variant="outline" 

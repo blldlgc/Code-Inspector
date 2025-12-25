@@ -103,6 +103,32 @@ export interface CommitInfo {
   date: string;
 }
 
+export interface CodeGraphVertex {
+  id: string;
+  label: string;
+  type: 'class' | 'method';
+  metrics?: Record<string, any>;
+}
+
+export interface CodeGraphEdge {
+  source: string;
+  target: string;
+  type: 'depends' | 'has' | 'calls';
+}
+
+export interface CodeGraphMetrics {
+  totalNodes: number;
+  totalEdges: number;
+  avgDegree: number;
+  maxDegree: number;
+}
+
+export interface CodeGraphResponse {
+  vertices: CodeGraphVertex[];
+  edges: CodeGraphEdge[];
+  metrics: CodeGraphMetrics;
+}
+
 export const projectsApi = {
   list: async () => {
     // Token kontrolü yap
@@ -222,6 +248,12 @@ export const projectsApi = {
   
   getCommitHistory: async (slug: string): Promise<CommitInfo[]> => {
     const response = await axios.get(`${BACKEND_BASE_URL}/api/projects/${slug}/versions/history`);
+    return response.data;
+  },
+  
+  // Tek proje kod grafı
+  getCodeGraph: async (slug: string): Promise<CodeGraphResponse> => {
+    const response = await axios.get(`${BACKEND_BASE_URL}/api/projects/${slug}/graph`);
     return response.data;
   },
   
