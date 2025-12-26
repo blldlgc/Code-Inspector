@@ -29,9 +29,30 @@ public class ProjectGraphService {
     private static final Logger logger = LoggerFactory.getLogger(ProjectGraphService.class);
     
     private final JavaASTDependencyAnalyzer astAnalyzer;
+    private final GraphConnectivityService connectivityService;
+    private final GraphScatteringService scatteringService;
+    private final GraphRuptureService ruptureService;
+    private final GraphIntegrityService integrityService;
+    private final GraphToughnessService toughnessService;
+    private final GraphDominationService dominationService;
+    private final GraphTwoVertexCoverService twoVertexCoverService;
 
-    public ProjectGraphService(JavaASTDependencyAnalyzer astAnalyzer) {
+    public ProjectGraphService(JavaASTDependencyAnalyzer astAnalyzer, 
+                              GraphConnectivityService connectivityService,
+                              GraphScatteringService scatteringService,
+                              GraphRuptureService ruptureService,
+                              GraphIntegrityService integrityService,
+                              GraphToughnessService toughnessService,
+                              GraphDominationService dominationService,
+                              GraphTwoVertexCoverService twoVertexCoverService) {
         this.astAnalyzer = astAnalyzer;
+        this.connectivityService = connectivityService;
+        this.scatteringService = scatteringService;
+        this.ruptureService = ruptureService;
+        this.integrityService = integrityService;
+        this.toughnessService = toughnessService;
+        this.dominationService = dominationService;
+        this.twoVertexCoverService = twoVertexCoverService;
     }
 
     // Basit regex'ler – production için tam parser yerine hafif bir analiz
@@ -516,6 +537,113 @@ public class ProjectGraphService {
         }
         m.setMaxDegree(max);
         m.setAvgDegree(degree.isEmpty() ? 0.0 : (double) sum / degree.size());
+        
+        // Degree Distribution hesapla
+        Map<Integer, Integer> degreeDistribution = new HashMap<>();
+        for (int d : degree.values()) {
+            degreeDistribution.merge(d, 1, Integer::sum);
+        }
+        // Degree 0 olan node'ları da ekle (hiç edge'i olmayan node'lar)
+        int nodesWithEdges = degree.size();
+        int isolatedNodes = vertices.size() - nodesWithEdges;
+        if (isolatedNodes > 0) {
+            degreeDistribution.put(0, isolatedNodes);
+        }
+        m.setDegreeDistribution(degreeDistribution);
+        
+        // ORTAK GRAPH DATA HAZIRLA (BİR KERE) - Performans optimizasyonu
+        GraphAnalysisHelper.GraphData graphData = null;
+        try {
+            graphData = GraphAnalysisHelper.prepareGraphData(vertices, edges);
+            logger.debug("Graph data prepared: {} nodes, {} edges", 
+                    graphData.allNodes.size(), graphData.undirectedEdges.size());
+        } catch (Exception e) {
+            logger.warn("Failed to prepare graph data: {}", e.getMessage(), e);
+        }
+        
+        // Connectivity number hesapla (hazır graph data ile)
+        if (graphData != null) {
+            try {
+                int connectivityNumber = connectivityService.calculateConnectivityNumber(graphData);
+                m.setConnectivityNumber(connectivityNumber);
+                logger.info("Connectivity number calculated: {}", connectivityNumber);
+            } catch (Exception e) {
+                logger.warn("Failed to calculate connectivity number: {}", e.getMessage(), e);
+                m.setConnectivityNumber(-1);
+            }
+            
+            // Scattering number hesapla (aynı hazır graph data ile)
+            try {
+                double scatteringNumber = scatteringService.calculateScatteringNumber(graphData);
+                m.setScatteringNumber(scatteringNumber);
+                logger.info("Scattering number calculated: {}", scatteringNumber);
+            } catch (Exception e) {
+                logger.warn("Failed to calculate scattering number: {}", e.getMessage(), e);
+                m.setScatteringNumber(-1.0);
+            }
+            
+            // Rupture number hesapla (aynı hazır graph data ile)
+            try {
+                double ruptureNumber = ruptureService.calculateRuptureNumber(graphData);
+                m.setRuptureNumber(ruptureNumber);
+                logger.info("Rupture number calculated: {}", ruptureNumber);
+            } catch (Exception e) {
+                logger.warn("Failed to calculate rupture number: {}", e.getMessage(), e);
+                m.setRuptureNumber(-1.0);
+            }
+            
+            // Integrity number hesapla (aynı hazır graph data ile)
+            try {
+                double integrityNumber = integrityService.calculateIntegrityNumber(graphData);
+                m.setIntegrityNumber(integrityNumber);
+                logger.info("Integrity number calculated: {}", integrityNumber);
+            } catch (Exception e) {
+                logger.warn("Failed to calculate integrity number: {}", e.getMessage(), e);
+                m.setIntegrityNumber(-1.0);
+            }
+            
+            // Toughness number hesapla (aynı hazır graph data ile)
+            try {
+                double toughnessNumber = toughnessService.calculateToughnessNumber(graphData);
+                m.setToughnessNumber(toughnessNumber);
+                logger.info("Toughness number calculated: {}", toughnessNumber);
+            } catch (Exception e) {
+                logger.warn("Failed to calculate toughness number: {}", e.getMessage(), e);
+                m.setToughnessNumber(-1.0);
+            }
+            
+            // Domination number hesapla (aynı hazır graph data ile)
+            try {
+                int dominationNumber = dominationService.calculateDominationNumber(graphData);
+                m.setDominationNumber(dominationNumber);
+                logger.info("Domination number calculated: {}", dominationNumber);
+            } catch (Exception e) {
+                logger.warn("Failed to calculate domination number: {}", e.getMessage(), e);
+                m.setDominationNumber(-1);
+            }
+            
+            // 2-Vertex Cover hesapla (aynı hazır graph data ile)
+            try {
+                GraphTwoVertexCoverService.TwoVertexCoverResult result = 
+                    twoVertexCoverService.calculateTwoVertexCover(graphData);
+                m.setTwoVertexCoverNumber(result.size);
+                m.setTwoVertexCoverNodes(result.nodes);
+                logger.info("2-Vertex Cover calculated: {} nodes", result.size);
+            } catch (Exception e) {
+                logger.warn("Failed to calculate 2-vertex cover: {}", e.getMessage(), e);
+                m.setTwoVertexCoverNumber(-1);
+                m.setTwoVertexCoverNodes(new ArrayList<>());
+            }
+        } else {
+            // Fallback: Eski yöntemle hesapla (backward compatibility)
+            try {
+                int connectivityNumber = connectivityService.calculateConnectivityNumber(vertices, edges);
+                m.setConnectivityNumber(connectivityNumber);
+            } catch (Exception e) {
+                m.setConnectivityNumber(-1);
+            }
+        }
+        
         return m;
     }
 }

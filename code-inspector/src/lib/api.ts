@@ -125,6 +125,15 @@ export interface CodeGraphMetrics {
   totalEdges: number;
   avgDegree: number;
   maxDegree: number;
+  connectivityNumber?: number; // κ(G) - Graph connectivity number
+  scatteringNumber?: number; // s(G) - Graph scattering number
+  ruptureNumber?: number; // r(G) - Graph rupture number
+  integrityNumber?: number; // I(G) - Graph integrity number
+  toughnessNumber?: number; // τ(G) - Graph toughness number
+  dominationNumber?: number; // γ(G) - Graph domination number
+  twoVertexCoverNumber?: number; // β₂(G) - Graph 2-vertex cover number
+  twoVertexCoverNodes?: string[]; // Seçilen node'lar (2-vertex cover)
+  degreeDistribution?: { [key: number]: number }; // degree -> node count
 }
 
 export interface CodeGraphResponse {

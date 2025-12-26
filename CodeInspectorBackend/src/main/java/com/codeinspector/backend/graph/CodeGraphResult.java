@@ -1,5 +1,7 @@
 package com.codeinspector.backend.graph;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -106,6 +108,15 @@ public class CodeGraphResult {
         private int totalEdges;
         private double avgDegree;
         private int maxDegree;
+        private int connectivityNumber = -1; // -1 = hesaplanmadı
+        private double scatteringNumber = -1.0; // -1.0 = hesaplanmadı
+        private double ruptureNumber = -1.0; // -1.0 = hesaplanmadı
+        private double integrityNumber = -1.0; // -1.0 = hesaplanmadı
+        private double toughnessNumber = -1.0; // -1.0 = hesaplanmadı, POSITIVE_INFINITY = parçalanamaz
+        private int dominationNumber = -1; // -1 = hesaplanmadı
+        private int twoVertexCoverNumber = -1; // -1 = hesaplanmadı
+        private List<String> twoVertexCoverNodes = new ArrayList<>(); // Seçilen node'lar
+        private Map<Integer, Integer> degreeDistribution = new HashMap<>(); // degree -> node count
 
         public int getTotalNodes() {
             return totalNodes;
@@ -137,6 +148,78 @@ public class CodeGraphResult {
 
         public void setMaxDegree(int maxDegree) {
             this.maxDegree = maxDegree;
+        }
+
+        public int getConnectivityNumber() {
+            return connectivityNumber;
+        }
+
+        public void setConnectivityNumber(int connectivityNumber) {
+            this.connectivityNumber = connectivityNumber;
+        }
+
+        public double getScatteringNumber() {
+            return scatteringNumber;
+        }
+
+        public void setScatteringNumber(double scatteringNumber) {
+            this.scatteringNumber = scatteringNumber;
+        }
+
+        public double getRuptureNumber() {
+            return ruptureNumber;
+        }
+
+        public void setRuptureNumber(double ruptureNumber) {
+            this.ruptureNumber = ruptureNumber;
+        }
+
+        public double getIntegrityNumber() {
+            return integrityNumber;
+        }
+
+        public void setIntegrityNumber(double integrityNumber) {
+            this.integrityNumber = integrityNumber;
+        }
+
+        public double getToughnessNumber() {
+            return toughnessNumber;
+        }
+
+        public void setToughnessNumber(double toughnessNumber) {
+            this.toughnessNumber = toughnessNumber;
+        }
+
+        public int getDominationNumber() {
+            return dominationNumber;
+        }
+
+        public void setDominationNumber(int dominationNumber) {
+            this.dominationNumber = dominationNumber;
+        }
+
+        public int getTwoVertexCoverNumber() {
+            return twoVertexCoverNumber;
+        }
+
+        public void setTwoVertexCoverNumber(int twoVertexCoverNumber) {
+            this.twoVertexCoverNumber = twoVertexCoverNumber;
+        }
+
+        public List<String> getTwoVertexCoverNodes() {
+            return twoVertexCoverNodes;
+        }
+
+        public void setTwoVertexCoverNodes(List<String> twoVertexCoverNodes) {
+            this.twoVertexCoverNodes = twoVertexCoverNodes;
+        }
+
+        public Map<Integer, Integer> getDegreeDistribution() {
+            return degreeDistribution;
+        }
+
+        public void setDegreeDistribution(Map<Integer, Integer> degreeDistribution) {
+            this.degreeDistribution = degreeDistribution;
         }
     }
 
