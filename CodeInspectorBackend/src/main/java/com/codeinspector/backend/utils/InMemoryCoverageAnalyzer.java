@@ -228,11 +228,20 @@ public class InMemoryCoverageAnalyzer {
 
     // Sınıf adını çıkarmak için basit metod
     private String extractClassName(String code) {
+        // Önce "public class" ara, bulunamazsa "class" ara
         String marker = "public class ";
         int idx = code.indexOf(marker);
+        
         if (idx < 0) {
-            throw new RuntimeException("'public class' bulunamadı, sınıf adı tespit edilemiyor.");
+            // "public class" bulunamadı, "class" ara
+            marker = "class ";
+            idx = code.indexOf(marker);
+            if (idx < 0) {
+                throw new RuntimeException("'public class' veya 'class' bulunamadı, sınıf adı tespit edilemiyor. Kod içeriği: " + 
+                    (code.length() > 200 ? code.substring(0, 200) + "..." : code));
+            }
         }
+        
         String after = code.substring(idx + marker.length()).trim();
         int spaceIndex = after.indexOf(' ');
         int braceIndex = after.indexOf('{');
@@ -332,13 +341,7 @@ public class InMemoryCoverageAnalyzer {
     }
 
     private void writeFile(File file, String content) throws IOException {
-        // Test sınıfı için gerekli importları ekle
-        if (file.getName().endsWith("Test.java")) {
-            content = "import java.io.PrintStream;\n" +
-                     "import java.io.OutputStream;\n" +
-                     "import java.io.ByteArrayOutputStream;\n" +
-                     content;
-        }
+        // İçeriği olduğu gibi yaz (ekstra import ekleyip package sırasını bozma)
         try (FileWriter fw = new FileWriter(file)) {
             fw.write(content);
         }

@@ -118,14 +118,48 @@ public class AdminService {
         long activeUsers = userRepository.countByEnabledTrueAndDeletedAtIsNull();
         long inactiveUsers = totalUsers - activeUsers;
         long adminCount = userRepository.countByRoleAndDeletedAtIsNull(UserRole.ADMIN);
+        
+        // Son bir haftada giriş yapan aktif kullanıcı sayısını hesapla
+        long activeUsersLastWeek = getActiveUsersLastWeek();
 
         stats.put("totalUsers", totalUsers);
-        stats.put("activeUsers", activeUsers);
+        stats.put("activeUsers", activeUsersLastWeek); // Gerçek aktif kullanıcı sayısı
         stats.put("inactiveUsers", inactiveUsers);
         stats.put("adminCount", adminCount);
         stats.put("newUsersLast24h", userRepository.countByCreatedAtAfterAndDeletedAtIsNull(LocalDateTime.now().minusHours(24)));
 
         return stats;
+    }
+    
+    // Son bir haftada giriş yapan kullanıcı sayısını hesapla
+    private long getActiveUsersLastWeek() {
+        try {
+            LocalDateTime oneWeekAgo = LocalDateTime.now().minusDays(7);
+            
+            // LOGIN_SUCCESS event'lerini son bir hafta içinde filtrele
+            List<com.codeinspector.backend.model.SecurityLog> loginLogs = securityLogService.getLogsByEventType("LOGIN_SUCCESS", 
+                org.springframework.data.domain.PageRequest.of(0, Integer.MAX_VALUE))
+                .getContent()
+                .stream()
+                .filter(log -> log.getCreatedAt().isAfter(oneWeekAgo))
+                .collect(java.util.stream.Collectors.toList());
+            
+            // Benzersiz kullanıcı ID'lerini say
+            long uniqueActiveUsers = loginLogs.stream()
+                .map(com.codeinspector.backend.model.SecurityLog::getUserId)
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .count();
+            
+            System.out.println("AdminService.getActiveUsersLastWeek - Found " + uniqueActiveUsers + " active users in last week");
+            return uniqueActiveUsers;
+            
+        } catch (Exception e) {
+            System.err.println("AdminService.getActiveUsersLastWeek - Error: " + e.getMessage());
+            e.printStackTrace();
+            // Hata durumunda enabled kullanıcı sayısını döndür
+            return userRepository.countByEnabledTrueAndDeletedAtIsNull();
+        }
     }
 
     @org.springframework.beans.factory.annotation.Autowired

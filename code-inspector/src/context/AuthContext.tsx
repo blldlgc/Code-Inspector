@@ -23,8 +23,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setCurrentUser(user);
     };
 
+    // Periyodik token kontrolü (her 5 dakikada bir)
+    const tokenCheckInterval = setInterval(() => {
+      if (authService.isAuthenticated()) {
+        // Token hala geçerli, durumu güncelle
+        setIsAuthenticated(true);
+        setCurrentUser(authService.getCurrentUser());
+      } else {
+        // Token süresi geçmiş, durumu güncelle
+        setIsAuthenticated(false);
+        setCurrentUser(null);
+      }
+    }, 5 * 60 * 1000); // 5 dakika
+
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(tokenCheckInterval);
+    };
   }, []);
 
   const logout = () => {

@@ -1,4 +1,5 @@
 import axios, { AxiosResponse } from 'axios';
+import { authService } from './auth';
 
 const BACKEND_BASE_URL: string = (import.meta as any).env?.VITE_BACKEND_URL || 'http://localhost:8080';
 
@@ -104,14 +105,18 @@ export interface CommitInfo {
 
 export const projectsApi = {
   list: async () => {
+    // Token kontrolü yap
+    authService.checkTokenAndLogout();
     const res = await axios.get(`${BACKEND_BASE_URL}/api/projects`);
     return res.data as { id: number; name: string; slug: string; description?: string; vcsUrl?: string }[];
   },
   get: async (slug: string) => {
+    authService.checkTokenAndLogout();
     const res = await axios.get(`${BACKEND_BASE_URL}/api/projects/${slug}`);
     return res.data;
   },
   create: async (payload: { name: string; slug: string; description?: string; vcsUrl?: string; branchName?: string; }) => {
+    authService.checkTokenAndLogout();
     const res = await axios.post(`${BACKEND_BASE_URL}/api/projects`, payload);
     return res.data;
   },
@@ -240,6 +245,14 @@ export const projectsApi = {
   getAnalysisResult: async (slug: string, versionId: number, analysisType: string): Promise<AnalysisResult> => {
     const response = await axios.get(
       `${BACKEND_BASE_URL}/api/projects/${slug}/versions/${versionId}/analysis/${analysisType}`
+    );
+    return response.data;
+  },
+
+  // Tüm analizleri tek seferde çalıştıran endpoint
+  runAllAnalyses: async (slug: string, versionId: number): Promise<Record<string, AnalysisResult>> => {
+    const response = await axios.post(
+      `${BACKEND_BASE_URL}/api/projects/${slug}/versions/${versionId}/analysis/run-all`
     );
     return response.data;
   }

@@ -18,6 +18,7 @@ import {
   Shield,
   UsersRound,
 } from "lucide-react";
+import { FadeIn } from "@/components/ui/fade-in";
 import { columns } from "@/components/admin/users/columns";
 import { UserStats } from "@/components/admin/dashboard/user-stats";
 import { SystemHealth } from "@/components/admin/dashboard/system-health";
@@ -95,31 +96,90 @@ export default function AdminPanel() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="dashboard" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <UserStats />
-          </div>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-            <Card className="col-span-4">
-              <CardHeader>
-                <CardTitle>System Status</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <SystemHealth />
-              </CardContent>
-            </Card>
-          </div>
+        <TabsContent value="dashboard" className="space-y-6">
+          {/* Welcome Section */}
+          <FadeIn delay={0}>
+            <div className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900/50 dark:to-slate-800/30 rounded-lg p-6 border hover:shadow-lg transition-shadow duration-300">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground mb-2">Welcome to Admin Dashboard</h2>
+                  <p className="text-muted-foreground">Monitor your system performance and manage users efficiently</p>
+                </div>
+                <div className="hidden md:block">
+                  <div className="w-16 h-16 bg-gradient-to-br from-slate-600 to-slate-700 dark:from-slate-500 dark:to-slate-600 rounded-full flex items-center justify-center hover:scale-110 transition-transform duration-300">
+                    <BarChart className="h-8 w-8 text-white" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </FadeIn>
+
+          {/* User Statistics */}
+          <FadeIn delay={200}>
+            <div>
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                User Statistics
+              </h3>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <UserStats />
+              </div>
+            </div>
+          </FadeIn>
+
+          {/* System Health */}
+          <FadeIn delay={400}>
+            <div>
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                System Health
+              </h3>
+              <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-slate-500 rounded-full animate-pulse" />
+                    Real-time System Metrics
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">Live monitoring of system performance and resource usage</p>
+                </CardHeader>
+                <CardContent>
+                  <SystemHealth />
+                </CardContent>
+              </Card>
+            </div>
+          </FadeIn>
         </TabsContent>
 
-        <TabsContent value="users">
-          <Card>
-            <CardHeader>
+        <TabsContent value="users" className="space-y-6">
+          {/* Users Overview */}
+          <FadeIn delay={0}>
+            <div className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/50 dark:to-blue-800/30 rounded-lg p-6 border hover:shadow-lg transition-shadow duration-300">
               <div className="flex items-center justify-between">
-                <CardTitle>User Management</CardTitle>
-                <Dialog open={open} onOpenChange={setOpen}>
-                  <DialogTrigger asChild>
-                    <Button onClick={() => setOpen(true)}>New User</Button>
-                  </DialogTrigger>
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground mb-2">User Management</h2>
+                  <p className="text-muted-foreground">Manage system users and their permissions</p>
+                </div>
+                <div className="hidden md:block">
+                  <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-700 dark:from-blue-500 dark:to-blue-600 rounded-full flex items-center justify-center hover:scale-110 transition-transform duration-300">
+                    <Users className="h-8 w-8 text-white" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </FadeIn>
+
+          <FadeIn delay={200}>
+            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                    User List
+                  </CardTitle>
+                  <Dialog open={open} onOpenChange={setOpen}>
+                    <DialogTrigger asChild>
+                      <Button onClick={() => setOpen(true)}>New User</Button>
+                    </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
                       <DialogTitle>New User</DialogTitle>
@@ -241,40 +301,110 @@ export default function AdminPanel() {
                 />
               )}
             </CardContent>
-          </Card>
+            </Card>
+          </FadeIn>
         </TabsContent>
 
-        <TabsContent value="security">
-          <Card>
-            <CardHeader>
-              <CardTitle>Security Logs</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <SecurityLogs />
-            </CardContent>
-          </Card>
+        <TabsContent value="security" className="space-y-6">
+          {/* Security Overview */}
+          <FadeIn delay={0}>
+            <div className="bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/50 dark:to-red-800/30 rounded-lg p-6 border hover:shadow-lg transition-shadow duration-300">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground mb-2">Security Center</h2>
+                  <p className="text-muted-foreground">Monitor security events and system threats</p>
+                </div>
+                <div className="hidden md:block">
+                  <div className="w-16 h-16 bg-gradient-to-br from-red-600 to-red-700 dark:from-red-500 dark:to-red-600 rounded-full flex items-center justify-center hover:scale-110 transition-transform duration-300">
+                    <Shield className="h-8 w-8 text-white" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </FadeIn>
+
+          <FadeIn delay={200}>
+            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                  Security Logs
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">Real-time security monitoring and threat detection</p>
+              </CardHeader>
+              <CardContent>
+                <SecurityLogs />
+              </CardContent>
+            </Card>
+          </FadeIn>
         </TabsContent>
 
-        <TabsContent value="teams">
-          <Card>
-            <CardHeader>
-              <CardTitle>Team Management</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <TeamsList />
-            </CardContent>
-          </Card>
+        <TabsContent value="teams" className="space-y-6">
+          {/* Teams Overview */}
+          <FadeIn delay={0}>
+            <div className="bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/50 dark:to-green-800/30 rounded-lg p-6 border hover:shadow-lg transition-shadow duration-300">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground mb-2">Team Management</h2>
+                  <p className="text-muted-foreground">Organize users into teams and manage permissions</p>
+                </div>
+                <div className="hidden md:block">
+                  <div className="w-16 h-16 bg-gradient-to-br from-green-600 to-green-700 dark:from-green-500 dark:to-green-600 rounded-full flex items-center justify-center hover:scale-110 transition-transform duration-300">
+                    <UsersRound className="h-8 w-8 text-white" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </FadeIn>
+
+          <FadeIn delay={200}>
+            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                  Teams List
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">Manage team structures and member assignments</p>
+              </CardHeader>
+              <CardContent>
+                <TeamsList />
+              </CardContent>
+            </Card>
+          </FadeIn>
         </TabsContent>
 
-        <TabsContent value="settings">
-          <Card>
-            <CardHeader>
-              <CardTitle>System Settings</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <SystemSettings />
-            </CardContent>
-          </Card>
+        <TabsContent value="settings" className="space-y-6">
+          {/* Settings Overview */}
+          <FadeIn delay={0}>
+            <div className="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/50 dark:to-purple-800/30 rounded-lg p-6 border hover:shadow-lg transition-shadow duration-300">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground mb-2">System Settings</h2>
+                  <p className="text-muted-foreground">Configure system parameters and preferences</p>
+                </div>
+                <div className="hidden md:block">
+                  <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-purple-700 dark:from-purple-500 dark:to-purple-600 rounded-full flex items-center justify-center hover:scale-110 transition-transform duration-300">
+                    <Settings className="h-8 w-8 text-white" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </FadeIn>
+
+          <FadeIn delay={200}>
+            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
+                  Configuration Panel
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">Adjust system settings and application preferences</p>
+              </CardHeader>
+              <CardContent>
+                <SystemSettings />
+              </CardContent>
+            </Card>
+          </FadeIn>
         </TabsContent>
       </Tabs>
     </PageLayout>

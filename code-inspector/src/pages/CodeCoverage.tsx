@@ -10,6 +10,7 @@ import { exampleCodes } from '@/constants/exampleCodes';
 import { useNavigate } from "react-router-dom";
 import { RainbowButton } from '@/components/ui/rainbow-button';
 import { Loader2 } from "lucide-react";
+import { VoiceReader } from "@/components/VoiceReader";
 
 interface MethodCoverage {
     [key: string]: [number, number]; // [coveredLines, totalLines]
@@ -117,6 +118,14 @@ export default function CodeCoverage() {
                             <CardTitle>Coverage Analysis Results</CardTitle>
                         </CardHeader>
                         <CardContent>
+                            <VoiceReader
+                                text={`Test kapsama analizi sonuçları. Genel test kapsama yüzdesi: ${coverage.coveragePercentage.toFixed(2)} yüzde. Kapsanan satır sayısı: ${coverage.coveredLines}. Toplam satır sayısı: ${coverage.totalLines}. ${Object.entries(coverage.methodCoverage).map(([methodName, [covered, total]]) => {
+                                    const percentage = (covered / total) * 100;
+                                    return `${methodName} metodu: ${percentage.toFixed(0)} yüzde kapsama, ${covered} kapsanan satır, ${total} toplam satır`;
+                                }).join('. ')}`}
+                                title="Kapsama Analizi Sonuçları"
+                                className="mb-6"
+                            />
                             <div className="space-y-6">
                                 {/* Genel Kapsama Yüzdesi */}
                                 <div className="p-6 border rounded-lg">

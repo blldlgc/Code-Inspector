@@ -29,17 +29,17 @@ const LoginPage = () => {
     e.preventDefault();
     try {
       if (!username.match(/^[a-zA-Z0-9_]{3,}$/)) {
-        setError('Username must be at least 3 characters long and can only contain letters, numbers and underscore');
+        setSignupError('Username must be at least 3 characters long and can only contain letters, numbers and underscore');
         return;
       }
 
       if (!email.match(/^[A-Za-z0-9+_.-]+@(.+)$/)) {
-        setError('Invalid email format');
+        setSignupError('Invalid email format');
         return;
       }
 
       if (password.length < 6) {
-        setError('Password must be at least 6 characters long');
+        setSignupError('Password must be at least 6 characters long');
         return;
       }
 

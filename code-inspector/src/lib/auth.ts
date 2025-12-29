@@ -30,6 +30,36 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 axios.defaults.baseURL = API_URL;
 
 export const authService = {
+  // Token süresi kontrolü için yardımcı fonksiyon
+  isTokenExpired(): boolean {
+    const token = this.getToken();
+    if (!token) return true;
+    
+    try {
+      // JWT token'ı decode et (payload kısmını al)
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const currentTime = Math.floor(Date.now() / 1000);
+      
+      // Token süresi geçmiş mi kontrol et
+      return payload.exp < currentTime;
+    } catch (error) {
+      console.error('Token decode hatası:', error);
+      return true; // Hatalı token'ı geçersiz say
+    }
+  },
+
+  // Token süresini kontrol et ve gerekirse çıkış yap
+  checkTokenAndLogout(): void {
+    if (this.isTokenExpired()) {
+      console.log('Token süresi geçmiş, otomatik çıkış yapılıyor...');
+      this.logout();
+      // Login sayfasına yönlendir
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
+  },
+
   async login(request: LoginRequest): Promise<AuthResponse> {
     const response = await axios.post('/api/auth/login', request);
     console.log('AuthService - API Response:', {
@@ -122,7 +152,17 @@ export const authService = {
   },
 
   isAuthenticated(): boolean {
-    return !!this.getToken();
+    const token = this.getToken();
+    if (!token) return false;
+    
+    // Token süresi geçmiş mi kontrol et
+    if (this.isTokenExpired()) {
+      // Süresi geçmiş token'ı temizle
+      this.logout();
+      return false;
+    }
+    
+    return true;
   },
 
   // Axios interceptor kurulumu
@@ -130,6 +170,16 @@ export const authService = {
     axios.interceptors.request.use(
       (config) => {
         const token = this.getToken();
+        
+        // Token süresi kontrolü yap (sadece token varsa)
+        if (token && this.isTokenExpired()) {
+          console.log('Token süresi geçmiş, otomatik çıkış yapılıyor...');
+          this.logout();
+          if (window.location.pathname !== '/login') {
+            window.location.href = '/login';
+          }
+          return Promise.reject(new Error('Token expired'));
+        }
 
         // Genel erişime açık endpointler
         const publicPathPatterns = [
@@ -158,7 +208,7 @@ export const authService = {
         const isPublic = publicPathPatterns.some((re) => re.test(path));
 
         // Sadece korumalı endpointlere Authorization ekle
-        if (!isPublic && token) {
+        if (!isPublic && token && !this.isTokenExpired()) {
           config.headers.Authorization = `Bearer ${token}`;
         }
         return config;
@@ -172,6 +222,7 @@ export const authService = {
       (response) => response,
       async (error) => {
         if (error.response?.status === 401) {
+          console.log('401 Unauthorized - Token geçersiz, çıkış yapılıyor...');
           this.logout();
           window.location.href = '/login';
         }
