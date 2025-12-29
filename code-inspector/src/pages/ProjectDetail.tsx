@@ -1754,6 +1754,16 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
               >
                 {connectivityInfo.label}
               </Badge>
+              {projectGraph.metrics.connectivityCalculationMethod && (
+                <Badge 
+                  variant="secondary" 
+                  className={projectGraph.metrics.connectivityCalculationMethod === 'EXACT' 
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'}
+                >
+                  {projectGraph.metrics.connectivityCalculationMethod === 'EXACT' ? '🟢 Exact' : '🟡 Heuristic'}
+                </Badge>
+              )}
             </div>
             <div className="text-sm text-muted-foreground">
               {connectivityInfo.description}
@@ -1782,6 +1792,16 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
               >
                 {scatteringInfo.label}
               </Badge>
+              {projectGraph.metrics.scatteringCalculationMethod && (
+                <Badge 
+                  variant="secondary" 
+                  className={projectGraph.metrics.scatteringCalculationMethod === 'EXACT' 
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'}
+                >
+                  {projectGraph.metrics.scatteringCalculationMethod === 'EXACT' ? '🟢 Exact' : '🟡 Heuristic'}
+                </Badge>
+              )}
             </div>
             <div className="text-sm text-muted-foreground">
               {scatteringInfo.description}
@@ -1815,6 +1835,16 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
               >
                 {ruptureInfo.label}
               </Badge>
+              {projectGraph.metrics.ruptureCalculationMethod && (
+                <Badge 
+                  variant="secondary" 
+                  className={projectGraph.metrics.ruptureCalculationMethod === 'EXACT' 
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'}
+                >
+                  {projectGraph.metrics.ruptureCalculationMethod === 'EXACT' ? '🟢 Exact' : '🟡 Heuristic'}
+                </Badge>
+              )}
             </div>
             <div className="text-sm text-muted-foreground">
               {ruptureInfo.description}
@@ -1848,6 +1878,16 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
               >
                 {integrityInfo.label}
               </Badge>
+              {projectGraph.metrics.integrityCalculationMethod && (
+                <Badge 
+                  variant="secondary" 
+                  className={projectGraph.metrics.integrityCalculationMethod === 'EXACT' 
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'}
+                >
+                  {projectGraph.metrics.integrityCalculationMethod === 'EXACT' ? '🟢 Exact' : '🟡 Heuristic'}
+                </Badge>
+              )}
             </div>
             <div className="text-sm text-muted-foreground">
               {integrityInfo.description}
@@ -1886,6 +1926,16 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
               >
                 {toughnessInfo.label}
               </Badge>
+              {projectGraph.metrics.toughnessCalculationMethod && (
+                <Badge 
+                  variant="secondary" 
+                  className={projectGraph.metrics.toughnessCalculationMethod === 'EXACT' 
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'}
+                >
+                  {projectGraph.metrics.toughnessCalculationMethod === 'EXACT' ? '🟢 Exact' : '🟡 Heuristic'}
+                </Badge>
+              )}
             </div>
             <div className="text-sm text-muted-foreground">
               {toughnessInfo.description}

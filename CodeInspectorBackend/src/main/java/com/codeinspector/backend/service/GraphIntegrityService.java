@@ -20,12 +20,14 @@ import java.util.stream.Collectors;
 public class GraphIntegrityService {
 
     private static final Logger logger = LoggerFactory.getLogger(GraphIntegrityService.class);
-    private static final int MAX_R = 8; // Maksimum deneme sayısı (güvenlik sınırı)
-    private static final int MAX_SUBSETS = 200; // Maksimum subset sayısı
+    private static final int MAX_R = 3; // Maksimum r değeri (daha dengeli: r=0,1,2,3 denenir)
+    private static final int MAX_SUBSETS = 100; // Maksimum subset sayısı (heap-safe, daha kapsamlı)
+    private static final int NODE_LIMIT_FOR_EXACT = 25; // 25'ten fazla node varsa heuristic kullan
 
     /**
      * Integrity number (I(G)) hesaplar.
      * Hazırlanmış graph data kullanır (performans optimizasyonu).
+     * Küçük graflar için exact, büyük graflar için heuristic algoritma kullanır.
      * 
      * @param graphData Hazırlanmış graph data (GraphAnalysisHelper.prepareGraphData ile oluşturulmuş)
      * @return Integrity number, veya -1.0 eğer hesaplanamazsa
@@ -59,10 +61,20 @@ public class GraphIntegrityService {
             return allNodes.size(); // Her node ayrı component, r=0: maxComponentSize = node sayısı
         }
 
-        logger.info("Calculating integrity for {} nodes, {} edges", allNodes.size(), allEdges.size());
+        int totalNodes = allNodes.size();
+        logger.info("Calculating integrity for {} nodes, {} edges", totalNodes, allEdges.size());
+
+        // Node limiti kontrolü - büyük graflar için heuristic kullan
+        if (totalNodes > NODE_LIMIT_FOR_EXACT) {
+            logger.info("Graph has {} nodes → using HEURISTIC integrity calculation", totalNodes);
+            return calculateApproximateIntegrity(graphData);
+        }
+
+        logger.info("Graph has {} nodes → using EXACT integrity calculation", totalNodes);
 
         double bestIntegrity = Double.POSITIVE_INFINITY;
-        int maxR = Math.min(MAX_R, allNodes.size()); // En fazla tüm node'ları çıkarabiliriz
+        // r değerini sınırla
+        int maxR = Math.min(MAX_R, totalNodes); // En fazla tüm node'ları çıkarabiliriz
 
         // r = 0'dan başlayarak dene (hiç node çıkarmadan)
         for (int r = 0; r <= maxR; r++) {
@@ -111,8 +123,62 @@ public class GraphIntegrityService {
             }
         }
 
-        logger.info("Integrity number calculated: {}", bestIntegrity);
+        logger.info("Integrity number calculated: {} (EXACT method)", bestIntegrity);
         return bestIntegrity == Double.POSITIVE_INFINITY ? -1.0 : bestIntegrity;
+    }
+
+    /**
+     * Heuristic Integrity fonksiyonu (büyük graflar için).
+     */
+    private double calculateApproximateIntegrity(GraphAnalysisHelper.GraphData graphData) {
+        Set<String> allNodes = graphData.allNodes;
+        List<GraphAnalysisHelper.UndirectedEdge> allEdges = graphData.undirectedEdges;
+        Map<String, Integer> degree = graphData.degree;
+
+        // Degree'ye göre sırala (yüksek degree'li node'lar önce)
+        List<String> sortedByDegree = allNodes.stream()
+                .sorted((a, b) -> Integer.compare(
+                        degree.getOrDefault(b, 0),
+                        degree.getOrDefault(a, 0)
+                ))
+                .limit(3) // En fazla 3 node dene
+                .collect(java.util.stream.Collectors.toList());
+
+        double best = Double.POSITIVE_INFINITY;
+        for (int i = 1; i <= sortedByDegree.size(); i++) {
+            Set<String> removed = new HashSet<>(sortedByDegree.subList(0, i));
+            Set<String> remaining = new HashSet<>(allNodes);
+            remaining.removeAll(removed);
+
+            if (remaining.isEmpty()) {
+                best = Math.min(best, i);
+                continue;
+            }
+
+            // Edge'leri filtrele
+            List<GraphAnalysisHelper.UndirectedEdge> remainingEdges = allEdges.stream()
+                    .filter(e -> remaining.contains(e.u) && remaining.contains(e.v))
+                    .collect(java.util.stream.Collectors.toList());
+
+            List<Set<String>> components = GraphAnalysisHelper.getConnectedComponents(remaining, remainingEdges);
+            if (components.isEmpty()) {
+                best = Math.min(best, i);
+                continue;
+            }
+
+            int maxComponentSize = 0;
+            for (Set<String> component : components) {
+                maxComponentSize = Math.max(maxComponentSize, component.size());
+            }
+
+            double integrity = i + maxComponentSize;
+            best = Math.min(best, integrity);
+            logger.debug("Heuristic integrity = {} (r: {}, maxComponentSize: {})", 
+                    integrity, i, maxComponentSize);
+        }
+
+        logger.info("Integrity number calculated: {} (HEURISTIC method)", best);
+        return best == Double.POSITIVE_INFINITY ? -1.0 : best;
     }
 
     /**
