@@ -69,12 +69,16 @@ export const generateContent = async (prompt: string, temperature: number = 0.5,
 
     try {
         // Gemini API için ayrı axios instance kullan (interceptor'lardan muaf)
-        console.log('Gemini API çağrısı:', { 
-            endpoint: GEMINI_API_ENDPOINT, 
-            model: GEMINI_MODEL,
-            version: GEMINI_API_VERSION,
-            hasApiKey: !!API_KEY
-        });
+        console.log('=== Gemini API Request ===');
+        console.log('Endpoint:', GEMINI_API_ENDPOINT);
+        console.log('Model:', GEMINI_MODEL);
+        console.log('Version:', GEMINI_API_VERSION);
+        console.log('Has API Key:', !!API_KEY);
+        console.log('Temperature:', requestData.generationConfig?.temperature);
+        console.log('Max Output Tokens:', requestData.generationConfig?.maxOutputTokens);
+        console.log('Prompt length:', requestData.contents[0].parts[0].text.length, 'characters');
+        console.log('Prompt preview (first 500 chars):', requestData.contents[0].parts[0].text.substring(0, 500));
+        console.log('==========================');
         
         // Gemini API REST endpoint formatı
         // Dokümantasyon: https://ai.google.dev/api/rest
@@ -88,8 +92,8 @@ export const generateContent = async (prompt: string, temperature: number = 0.5,
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                // Timeout ayarla
-                timeout: 60000, // 60 saniye
+                // Timeout ayarla (uzun test kodları için artırıldı)
+                timeout: 120000, // 120 saniye (2 dakika)
             }
         );
 
@@ -202,6 +206,14 @@ export const generateContent = async (prompt: string, temperature: number = 0.5,
             throw new Error(
                 `Gemini API istek hatası (400).\n` +
                 `Hata detayı: ${JSON.stringify(errorData, null, 2)}`
+            );
+        } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+            throw new Error(
+                `Gemini API isteği zaman aşımına uğradı (timeout).\n` +
+                `Timeout süresi: 120 saniye (2 dakika)\n` +
+                `Prompt uzunluğu çok büyük olabilir veya API yanıt vermekte gecikiyor.\n` +
+                `Lütfen daha küçük bir kod parçası ile deneyin veya tekrar deneyin.\n` +
+                `Prompt detayları için browser console'u kontrol edin.`
             );
         } else {
             throw new Error(
