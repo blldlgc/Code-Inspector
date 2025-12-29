@@ -565,7 +565,7 @@ public class ProjectGraphService {
         if (graphData != null) {
             try {
                 int totalNodes = graphData.allNodes.size();
-                String method = totalNodes > 30 ? "HEURISTIC" : "EXACT";
+                String method = totalNodes > 25 ? "HEURISTIC" : "EXACT";
                 int connectivityNumber = connectivityService.calculateConnectivityNumber(graphData);
                 m.setConnectivityNumber(connectivityNumber);
                 m.setConnectivityCalculationMethod(method);
@@ -579,7 +579,7 @@ public class ProjectGraphService {
             // Scattering number hesapla (aynı hazır graph data ile)
             try {
                 int totalNodes = graphData.allNodes.size();
-                String method = totalNodes > 30 ? "HEURISTIC" : "EXACT";
+                String method = totalNodes > 25 ? "HEURISTIC" : "EXACT";
                 double scatteringNumber = scatteringService.calculateScatteringNumber(graphData);
                 m.setScatteringNumber(scatteringNumber);
                 m.setScatteringCalculationMethod(method);
@@ -606,7 +606,7 @@ public class ProjectGraphService {
             // Integrity number hesapla (aynı hazır graph data ile)
             try {
                 int totalNodes = graphData.allNodes.size();
-                String method = totalNodes > 30 ? "HEURISTIC" : "EXACT";
+                String method = totalNodes > 25 ? "HEURISTIC" : "EXACT";
                 double integrityNumber = integrityService.calculateIntegrityNumber(graphData);
                 m.setIntegrityNumber(integrityNumber);
                 m.setIntegrityCalculationMethod(method);
@@ -620,7 +620,7 @@ public class ProjectGraphService {
             // Toughness number hesapla (aynı hazır graph data ile)
             try {
                 int totalNodes = graphData.allNodes.size();
-                String method = totalNodes > 30 ? "HEURISTIC" : "EXACT";
+                String method = totalNodes > 25 ? "HEURISTIC" : "EXACT";
                 double toughnessNumber = toughnessService.calculateToughnessNumber(graphData);
                 m.setToughnessNumber(toughnessNumber);
                 m.setToughnessCalculationMethod(method);

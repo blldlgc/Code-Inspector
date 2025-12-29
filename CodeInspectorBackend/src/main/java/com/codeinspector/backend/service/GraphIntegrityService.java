@@ -20,9 +20,9 @@ import java.util.stream.Collectors;
 public class GraphIntegrityService {
 
     private static final Logger logger = LoggerFactory.getLogger(GraphIntegrityService.class);
-    private static final int MAX_R = 2; // Maksimum r değeri (literatürde küçük cut'lar yeterli)
-    private static final int MAX_SUBSETS = 50; // Maksimum subset sayısı (heap-safe)
-    private static final int NODE_LIMIT_FOR_EXACT = 30; // 30'dan fazla node varsa heuristic kullan
+    private static final int MAX_R = 3; // Maksimum r değeri (daha dengeli: r=0,1,2,3 denenir)
+    private static final int MAX_SUBSETS = 100; // Maksimum subset sayısı (heap-safe, daha kapsamlı)
+    private static final int NODE_LIMIT_FOR_EXACT = 25; // 25'ten fazla node varsa heuristic kullan
 
     /**
      * Integrity number (I(G)) hesaplar.
