@@ -7,14 +7,19 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { projectsApi, projectFilesApi, ProjectVersion, CodeGraphResponse } from '@/lib/api';
+import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { projectsApi, projectFilesApi, ProjectVersion, CodeGraphResponse, generateContent } from '@/lib/api';
 import { ShareProjectDialog } from '@/components/ShareProjectDialog';
 import { ProjectVersions } from '@/components/ProjectVersions';
 import { VersionCompare } from '@/components/VersionCompare';
-import { parseGitHubUrl } from '@/lib/utils';
-import { GitBranch } from 'lucide-react';
+import { parseGitHubUrl, cn } from '@/lib/utils';
+import { GitBranch, Loader2, Copy } from 'lucide-react';
 import ForceGraph2D from 'react-force-graph-2d';
 import { VoiceReader } from '@/components/VoiceReader';
+import { RainbowButton } from '@/components/ui/rainbow-button';
+import { toast } from 'sonner';
+import axios from 'axios';
 
 export default function ProjectDetail() {
   const { slug } = useParams();
@@ -254,6 +259,14 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
   const [projectGraphError, setProjectGraphError] = useState<string | null>(null);
   const [projectGraphLoading, setProjectGraphLoading] = useState(false);
   
+  // States for test generation
+  const [selectedFileForTest, setSelectedFileForTest] = useState<string | null>(null);
+  const [testGenerationLoading, setTestGenerationLoading] = useState(false);
+  const [generatedTestCode, setGeneratedTestCode] = useState<string | null>(null);
+  const [testGenerationResult, setTestGenerationResult] = useState<any | null>(null);
+  const [testGenerationError, setTestGenerationError] = useState<string | null>(null);
+  const [testDialogOpen, setTestDialogOpen] = useState(false);
+  
   // Graph ref'i component seviyesinde tanımla
   const graphRef = useRef<any>(null);
   const graphContainerRef = useRef<HTMLDivElement>(null);
@@ -392,6 +405,9 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
       setProjectGraphError(null);
       const graph = await projectsApi.getCodeGraph(projectSlug);
       setProjectGraph(graph);
+      // Save to localStorage for persistence
+      const storageKey = `projectGraph_${projectSlug}_${versionId}`;
+      localStorage.setItem(storageKey, JSON.stringify(graph));
     } catch (error: any) {
       console.error('Error loading project code graph:', error);
       setProjectGraphError(error?.message || 'Code graph could not be loaded.');
@@ -407,12 +423,11 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
       await fetchResults();
       setActiveAnalysis(analysisType);
       
-      // Eğer code-graph analizi çalıştırılıyorsa, graph'ı da yükle
+      // If code-graph analysis is run, also load the graph
       if (analysisType === 'code-graph') {
-        if (!projectGraph && !projectGraphError) {
-          await loadProjectGraph();
-        }
-        // Graph görselleştirmesini göster
+        // Always reload graph to ensure it's up to date
+        await loadProjectGraph();
+        // Show graph visualization
         setActiveAnalysis('project-graph');
       }
     } catch (error) {
@@ -425,6 +440,17 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
   useEffect(() => {
     if (projectSlug && versionId) {
       fetchResults();
+      // Load project graph from localStorage if available
+      const storageKey = `projectGraph_${projectSlug}_${versionId}`;
+      const savedGraph = localStorage.getItem(storageKey);
+      if (savedGraph) {
+        try {
+          const graph = JSON.parse(savedGraph);
+          setProjectGraph(graph);
+        } catch (e) {
+          console.error('Error parsing saved project graph:', e);
+        }
+      }
     }
   }, [projectSlug, versionId]);
 
@@ -468,6 +494,159 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
     }
   };
 
+  // Function for test generation
+  const handleGenerateTestForFile = async (filePath: string, fileData?: any) => {
+    try {
+      setTestGenerationLoading(true);
+      setTestGenerationError(null);
+      setGeneratedTestCode(null);
+      setTestGenerationResult(null);
+      setSelectedFileForTest(filePath);
+      setTestDialogOpen(true);
+
+      // Get file content from backend
+      let sourceCode: string;
+      try {
+        sourceCode = await projectFilesApi.read(projectSlug, filePath);
+      } catch (error: any) {
+        setTestGenerationError(`File reading error: ${error.message || 'Could not retrieve file content'}`);
+        setTestGenerationLoading(false);
+        return;
+      }
+
+      // Prepare coverage information (if available)
+      let coverageInfo = '';
+      if (fileData) {
+        const coveragePercentage = fileData.coveragePercentage || 0;
+        const methodCoverage = fileData.methodCoverage || {};
+        
+        const uncoveredMethods = Object.entries(methodCoverage)
+          .filter(([_, [covered, total]]) => {
+            const percentage = (covered / total) * 100;
+            return percentage < 100;
+          })
+          .map(([methodName, [covered, total]]) => {
+            const percentage = (covered / total) * 100;
+            return `${methodName} (${percentage.toFixed(0)}% covered, ${covered}/${total} lines)`;
+          });
+
+        coverageInfo = `
+Current Coverage Information:
+- Overall Coverage: ${coveragePercentage.toFixed(1)}%
+- Covered Lines: ${fileData.coveredLines || 0} / ${fileData.totalLines || 0}
+
+Methods that need better coverage:
+${uncoveredMethods.length > 0 ? uncoveredMethods.map(m => `  - ${m}`).join('\n') : '  - All methods need coverage'}
+
+Goal: Generate comprehensive tests to achieve 100% coverage for this file.
+`;
+      }
+
+      // Prompt to send to Gemini API
+      const prompt = `
+Please analyze this Java code and generate comprehensive unit tests for it.
+The tests should:
+- Use JUnit 4 framework
+- Include assertions for all possible scenarios
+- Cover edge cases
+- Have clear test method names
+- Include comments explaining each test
+- Aim for 100% code coverage
+- Return the code between triple backticks with java language tag
+
+${coverageInfo}
+
+Here's the code to generate tests for:
+
+${sourceCode}
+      `;
+
+      // Log prompt to console (for debugging)
+      console.log('=== Gemini API Prompt ===');
+      console.log('Prompt length:', prompt.length, 'characters');
+      console.log('Source code length:', sourceCode.length, 'characters');
+      console.log('Coverage info length:', coverageInfo.length, 'characters');
+      console.log('Full prompt:', prompt);
+      console.log('========================');
+
+      // Get test code from Gemini API
+      const temperature = 0.5;
+      const maxOutputTokens = 32768;
+      const rawResponse = await generateContent(prompt, temperature, maxOutputTokens);
+      
+      // Extract test code from ```java``` blocks
+      const codeMatch = rawResponse.match(/```java([\s\S]*?)```/);
+      const testCode = codeMatch ? codeMatch[1].trim() : rawResponse.trim();
+      
+      // Save generated test code to state
+      setGeneratedTestCode(testCode);
+
+      try {
+        // Send source code and generated test code to backend
+        const BACKEND_BASE_URL = (import.meta as any).env?.VITE_BACKEND_URL || 'http://localhost:8080';
+        const response = await axios.post(`${BACKEND_BASE_URL}/api/coverage`, {
+          sourceCode,
+          testCode
+        });
+
+        // Calculate number of tests
+        const numberOfTests = (testCode.match(/@Test/g) || []).length;
+
+        // Save results to state
+        setTestGenerationResult({
+          ...response.data,
+          testCode,
+          numberOfTests
+        });
+        
+      } catch (coverageError: any) {
+        // Get error message from backend
+        const errorMessage = coverageError.response?.data?.message 
+          || coverageError.message 
+          || 'Unknown error';
+        
+        const status = coverageError.response?.status;
+        const statusText = coverageError.response?.statusText || '';
+        const errorData = coverageError.response?.data || {};
+        
+        // Create detailed error message
+        let detailedError = `Coverage analysis failed. Test code was generated but could not be analyzed.\n\n`;
+        detailedError += `HTTP Status: ${status} ${statusText}\n`;
+        detailedError += `Error Message: ${errorMessage}\n`;
+        
+        // Add additional error information from backend if available
+        if (errorData.error) {
+          detailedError += `\nDetail: ${errorData.error}`;
+        }
+        if (errorData.errorType) {
+          detailedError += `\nError Type: ${errorData.errorType}`;
+        }
+        
+        // Detailed error logging to console
+        console.error('=== Coverage Analysis Error ===');
+        console.error('Status:', status, statusText);
+        console.error('Error Message:', errorMessage);
+        console.error('Error Data:', errorData);
+        console.error('Full Error:', coverageError);
+        console.error('Request Config:', {
+          url: coverageError.config?.url,
+          method: coverageError.config?.method,
+          dataLength: coverageError.config?.data ? JSON.stringify(coverageError.config.data).length : 0
+        });
+        console.error('==============================');
+        
+        setTestGenerationError(detailedError);
+        setTestGenerationResult(null);
+      }
+
+    } catch (error: any) {
+      setTestGenerationError(`Test generation failed: ${error.message || 'Unknown error'}`);
+      console.error('Error generating test:', error);
+    } finally {
+      setTestGenerationLoading(false);
+    }
+  };
+
   const renderCoverageView = () => {
     // Türkçe açıklama: Coverage analiz sonucu için progress bar ve tablo görünümü
     // Backend'den gelen gerçek veriyi kullanıyoruz
@@ -478,7 +657,7 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
       return (
         <div className="text-center p-4">
           <p className="text-sm text-muted-foreground">
-            Coverage analizi henüz yapılmadı. Lütfen "Run Coverage Analysis" butonuna tıklayın.
+            Coverage analysis has not been performed yet. Please click the "Run Coverage Analysis" button.
           </p>
         </div>
       );
@@ -524,6 +703,7 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
         coveragePercentage: hasError ? 0 : Number(file.coveragePercentage ?? 0),
         coveredLines: hasError ? 0 : Number(file.coveredLines ?? 0),
         totalLines: hasError ? 0 : Number(file.totalLines ?? 0),
+        methodCoverage: hasError ? {} : (file.methodCoverage || {}),
         hasError: hasError,
         error: file.error || file.errorType || null,
         errorMessage: file.error || null,
@@ -596,6 +776,7 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
                 <th className="text-right px-3 py-2">Coverage</th>
                 <th className="text-right px-3 py-2">Covered / Total Lines</th>
                 <th className="text-left px-3 py-2">Status</th>
+                <th className="text-left px-3 py-2">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -613,6 +794,25 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
                     <Badge variant="outline" className="bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800">
                       Success
                     </Badge>
+                  </td>
+                  <td className="px-3 py-2">
+                    {file.coveragePercentage < 100 && (
+                      <RainbowButton
+                        onClick={() => handleGenerateTestForFile(file.filePath, file)}
+                        size="sm"
+                        className="text-xs"
+                        disabled={testGenerationLoading && selectedFileForTest === file.filePath}
+                      >
+                        {testGenerationLoading && selectedFileForTest === file.filePath ? (
+                          <>
+                            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                            Generating...
+                          </>
+                        ) : (
+                          'Generate Tests'
+                        )}
+                      </RainbowButton>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -675,16 +875,156 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
               
               {transformedFiles.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-3 py-4 text-center text-muted-foreground">
+                  <td colSpan={5} className="px-3 py-4 text-center text-muted-foreground">
                     {totalTestFiles === 0 
-                      ? "Test dosyası bulunamadı. Coverage analizi için test dosyaları (*Test.java veya *Tests.java) gereklidir."
-                      : "Dosya bazlı coverage verisi mevcut değil."}
+                      ? "No test files found. Test files (*Test.java or *Tests.java) are required for coverage analysis."
+                      : "File-based coverage data is not available."}
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
+
+        {/* Test Generation Modal */}
+        <Dialog open={testDialogOpen} onOpenChange={setTestDialogOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                AI Generated Tests
+                {selectedFileForTest && (
+                  <span className="text-sm text-muted-foreground font-normal block mt-1">
+                    {selectedFileForTest}
+                  </span>
+                )}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-6">
+              {testGenerationLoading && (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <span className="ml-2 text-sm text-muted-foreground">
+                    AI is generating test codes...
+                  </span>
+                </div>
+              )}
+
+              {testGenerationError && (
+                <Alert variant="destructive">
+                  <AlertDescription className="whitespace-pre-wrap">
+                    {testGenerationError}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {testGenerationResult && !testGenerationError && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Card className="p-4">
+                    <p className="text-sm text-muted-foreground">Number of Tests</p>
+                    <p className="text-2xl font-bold">{testGenerationResult.numberOfTests}</p>
+                  </Card>
+                  <Card className="p-4">
+                    <p className="text-sm text-muted-foreground">Coverage</p>
+                    <p className="text-2xl font-bold">{testGenerationResult.coveragePercentage.toFixed(2)}%</p>
+                  </Card>
+                  <Card className="p-4">
+                    <p className="text-sm text-muted-foreground">Status</p>
+                    <p className={`text-2xl font-bold ${testGenerationResult.coveragePercentage > 80 ? 'text-green-500' : 'text-red-500'}`}>
+                      {testGenerationResult.coveragePercentage > 80 ? 'Success' : 'Failed'}
+                    </p>
+                  </Card>
+                </div>
+              )}
+
+              {generatedTestCode && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Generated Test Code</label>
+                  <div className="relative">
+                    <Textarea
+                      value={generatedTestCode}
+                      readOnly
+                      className="min-h-[300px] font-mono text-sm bg-muted"
+                    />
+                    <Button
+                      onClick={() => {
+                        navigator.clipboard.writeText(generatedTestCode);
+                        toast("Code copied to clipboard", {
+                          description: "Test code has been copied successfully",
+                          duration: 2500,
+                          icon: <Copy className="h-4 w-4 text-blue-500" />,
+                        });
+                      }}
+                      variant="outline"
+                      size="sm"
+                      className="absolute top-2 right-2"
+                    >
+                      <Copy className="h-4 w-4 mr-1" />
+                      Copy Code
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {testGenerationResult && !testGenerationError && testGenerationResult.methodCoverage && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Method Coverage</h3>
+                  <div className="grid gap-4">
+                    {Object.entries(testGenerationResult.methodCoverage).map(([methodName, [covered, total]]) => {
+                      const percentage = (covered / total) * 100;
+                      return (
+                        <div key={methodName} className="rounded-lg border p-4">
+                          <div className="flex justify-between items-center mb-2">
+                            <code className="text-sm font-mono">{methodName}</code>
+                            <span className={cn(
+                              "px-2.5 py-0.5 rounded-full text-xs font-medium",
+                              percentage === 100 
+                                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                : percentage === 0 
+                                  ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                                  : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                            )}>
+                              {percentage.toFixed(0)}%
+                            </span>
+                          </div>
+                          <div className="w-full bg-secondary rounded-full h-2">
+                            <div 
+                              className={cn(
+                                "h-2 rounded-full transition-all",
+                                percentage === 100 
+                                  ? "bg-green-500"
+                                  : percentage === 0 
+                                    ? "bg-red-500"
+                                    : "bg-yellow-500"
+                              )}
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-2">
+                            {covered} / {total} lines covered
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setTestDialogOpen(false);
+                  setGeneratedTestCode(null);
+                  setTestGenerationResult(null);
+                  setTestGenerationError(null);
+                  setSelectedFileForTest(null);
+                }}
+              >
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   };
@@ -2441,18 +2781,6 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
             disabled={analyzing}
           >
             Run Code Graph Analysis
-          </Button>
-          <Button
-            variant="outline"
-            onClick={async () => {
-              setActiveAnalysis('project-graph');
-              if (!projectGraph && !projectGraphError) {
-                await loadProjectGraph();
-              }
-            }}
-            disabled={analyzing || projectGraphLoading}
-          >
-            View Project Code Graph
           </Button>
           <Button 
             variant="outline" 
