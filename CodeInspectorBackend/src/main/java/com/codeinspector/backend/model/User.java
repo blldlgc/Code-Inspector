@@ -57,6 +57,10 @@ public class User implements UserDetails {
     @Builder.Default
     private LocalDateTime updatedAt = LocalDateTime.now();
 
+    // Temporarily comment out bidirectional relationship to test
+    // @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
+    // private UserAccessibilitySettings accessibilitySettings;
+
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();

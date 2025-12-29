@@ -7,6 +7,7 @@ import { Loader2 } from "lucide-react"
 import { PageLayout } from "@/components/PageLayout"
 import { motion, AnimatePresence } from "framer-motion"
 import { exampleCodes } from '@/constants/exampleCodes';
+import { VoiceReader } from "@/components/VoiceReader";
 
 interface MetricsResponse {
   metrics: Record<string, string>;
@@ -118,6 +119,14 @@ export default function MetricsAnalyzer() {
                   <CardTitle>Analysis Results</CardTitle>
                 </CardHeader>
                 <CardContent>
+                  <VoiceReader
+                    text={Object.entries(metrics)
+                      .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
+                      .map(([key, value]) => `${key.replace(/([A-Z])/g, ' $1').trim()}: ${value}`)
+                      .join('. ')}
+                    title="Metrik Analizi Sonuçları"
+                    className="mb-4"
+                  />
                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {Object.entries(metrics)
                       .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))

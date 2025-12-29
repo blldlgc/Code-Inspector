@@ -53,6 +53,15 @@ public class CodeComparisonService {
         );
     }
 
+    /**
+     * Hızlı karşılaştırma - sadece CPD analizi yapar (Simian ve CodeBERT çalıştırmaz)
+     * Performans optimizasyonu için kullanılır
+     */
+    public double compareCodeFast(String code1, String code2) {
+        var duplicatedLines = duplicateCodeDetector.detectDuplicates(code1, code2);
+        return duplicateCodeDetector.calculateSimilarityPercentage(code1, code2, duplicatedLines);
+    }
+
     public CodeMetricsResponse analyzeMetrics(String code) {
         var metrics = codeMetricsAnalyzer.analyzeMetrics(code);
         return new CodeMetricsResponse(metrics);

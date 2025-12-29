@@ -14,6 +14,7 @@ import { VersionCompare } from '@/components/VersionCompare';
 import { parseGitHubUrl } from '@/lib/utils';
 import { GitBranch } from 'lucide-react';
 import ForceGraph2D from 'react-force-graph-2d';
+import { VoiceReader } from '@/components/VoiceReader';
 
 export default function ProjectDetail() {
   const { slug } = useParams();
@@ -241,6 +242,9 @@ export default function ProjectDetail() {
 
 // Analiz sonuçları için bileşen
 function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionId: number }) {
+  const [duplicatedLinesDialogOpen, setDuplicatedLinesDialogOpen] = useState(false);
+  const [selectedDuplicatedLines, setSelectedDuplicatedLines] = useState<string[]>([]);
+  const [selectedPairInfo, setSelectedPairInfo] = useState<{file1: string, file2: string} | null>(null);
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
@@ -948,15 +952,28 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
                   </td>
                   <td className="px-3 py-2">
                     {Array.isArray(pair.duplicatedLines) && pair.duplicatedLines.length > 0 ? (
-                      <div className="flex flex-wrap gap-1">
-                        {pair.duplicatedLines.map((r: string, i: number) => (
+                      <div className="flex flex-wrap gap-1 max-w-md">
+                        {pair.duplicatedLines.slice(0, 10).map((r: string, i: number) => (
                           <span
                             key={i}
-                            className="inline-flex items-center rounded bg-muted px-2 py-0.5 text-[11px]"
+                            className="inline-flex items-center rounded bg-muted px-2 py-0.5 text-[11px] font-mono"
+                            title={r}
                           >
-                            {r}
+                            {r.length > 30 ? r.substring(0, 30) + '...' : r}
                           </span>
                         ))}
+                        {pair.duplicatedLines.length > 10 && (
+                          <button
+                            onClick={() => {
+                              setSelectedDuplicatedLines(pair.duplicatedLines);
+                              setSelectedPairInfo({ file1: pair.file1, file2: pair.file2 });
+                              setDuplicatedLinesDialogOpen(true);
+                            }}
+                            className="inline-flex items-center rounded bg-muted px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-muted/80 cursor-pointer transition-colors"
+                          >
+                            +{pair.duplicatedLines.length - 10} more
+                          </button>
+                        )}
                       </div>
                     ) : (
                       <span className="text-muted-foreground text-xs">No details</span>
@@ -974,6 +991,34 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
             </tbody>
           </table>
         </div>
+
+        {/* Duplicated Lines Dialog */}
+        <Dialog open={duplicatedLinesDialogOpen} onOpenChange={setDuplicatedLinesDialogOpen}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
+            <DialogHeader>
+              <DialogTitle>Duplicated Lines</DialogTitle>
+              {selectedPairInfo && (
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <div><span className="font-medium">File 1:</span> <span className="font-mono text-xs">{selectedPairInfo.file1}</span></div>
+                  <div><span className="font-medium">File 2:</span> <span className="font-mono text-xs">{selectedPairInfo.file2}</span></div>
+                </div>
+              )}
+            </DialogHeader>
+            <div className="space-y-2 mt-4">
+              {selectedDuplicatedLines.map((line: string, idx: number) => (
+                <div
+                  key={idx}
+                  className="p-2 rounded bg-muted font-mono text-xs break-all border"
+                >
+                  {line}
+                </div>
+              ))}
+            </div>
+            <DialogFooter>
+              <Button onClick={() => setDuplicatedLinesDialogOpen(false)}>Close</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   };
@@ -2274,6 +2319,22 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
             </TabsList>
             
             <TabsContent value={activeAnalysis || ''}>
+              {activeAnalysis && results.find(r => r.analysisType === activeAnalysis) && (
+                <VoiceReader
+                  text={(() => {
+                    const result = results.find(r => r.analysisType === activeAnalysis);
+                    if (!result) return '';
+                    try {
+                      const data = JSON.parse(result.resultData);
+                      return `Analysis results: ${JSON.stringify(data, null, 2)}`;
+                    } catch {
+                      return result.resultData;
+                    }
+                  })()}
+                  title={`${activeAnalysis} Analysis Results`}
+                  className="mb-4"
+                />
+              )}
               {renderActiveAnalysisContent()}
             </TabsContent>
           </Tabs>

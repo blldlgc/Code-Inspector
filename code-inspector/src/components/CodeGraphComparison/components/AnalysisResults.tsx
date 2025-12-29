@@ -100,7 +100,7 @@ export const AnalysisResults = ({
     <div className={`space-y-6 ${className}`}>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Analiz Sonuçları</CardTitle>
+          <CardTitle>Analysis Results</CardTitle>
           <Button
             onClick={generatePDF}
             disabled={isGeneratingPDF}

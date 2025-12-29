@@ -18,6 +18,7 @@ import {
   ExternalLink,
   Radar,
   Folder,
+  Accessibility,
 } from "lucide-react"
 
 import {
@@ -64,6 +65,8 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { ModeToggle } from "./mode-toggle"
 import { AIChatBox } from "@/components/AIChatBox";
+import { AccessibilitySettings } from "@/components/accessibility/AccessibilitySettings";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import logo from "/logo.png"
 import { projectsApi } from '@/lib/api';
 
@@ -79,6 +82,12 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
   const [projectTitle, setProjectTitle] = useState<string | null>(null);
   const [isProjectPage, setIsProjectPage] = useState<boolean>(false);
   const [isLoadingProject, setIsLoadingProject] = useState<boolean>(false);
+  const [isAccessibilitySettingsOpen, setIsAccessibilitySettingsOpen] = useState(false);
+
+  // Klavye kısayolları
+  useKeyboardShortcuts({
+    onAccessibilitySettings: () => setIsAccessibilitySettingsOpen(true),
+  });
 
   // Proje detay sayfasındaysak proje adını çek
   useEffect(() => {
@@ -265,6 +274,18 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
             description: "Evaluate code quality and predict errors",
           },
         ],
+      },
+      {
+        title: "Settings",
+        items: [
+          {
+            title: "Accessibility",
+            url: "#",
+            icon: Accessibility,
+            description: "Erişilebilirlik ayarları",
+            onClick: () => setIsAccessibilitySettingsOpen(true),
+          } as any,
+        ],
       }];
 
       const allMenus = [...adminMenu, ...standardMenu];
@@ -357,7 +378,13 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
                       tooltip={item.description}
                     >
                       <button 
-                        onClick={() => navigate(item.url)}
+                        onClick={() => {
+                          if (item.onClick) {
+                            item.onClick();
+                          } else {
+                            navigate(item.url);
+                          }
+                        }}
                         className="flex items-center focus:outline-none"
                       >
                         <item.icon className="mr-2 h-4 w-4" />
@@ -508,6 +535,10 @@ export default function SidebarLayout({ children }: { children: ReactNode }) {
 </div>
         </SidebarInset>
         <AIChatBox />
+        <AccessibilitySettings
+          open={isAccessibilitySettingsOpen}
+          onOpenChange={setIsAccessibilitySettingsOpen}
+        />
       </SidebarProvider>
     </div>
   );

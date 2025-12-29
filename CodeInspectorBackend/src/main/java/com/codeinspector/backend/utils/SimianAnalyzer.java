@@ -8,10 +8,14 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
 public class SimianAnalyzer {
+
+    private static final Logger logger = LoggerFactory.getLogger(SimianAnalyzer.class);
 
     private static final String SIMIAN_JAR_PATH = new File(
             "src/main/java/com/codeinspector/backend/libs/simian-4.0.0/simian-4.0.0.jar"
@@ -71,7 +75,7 @@ public class SimianAnalyzer {
             String line;
             while ((line = reader.readLine()) != null) {
                 outputLines.add(line);
-                System.out.println("Simian Output: " + line); // Simian çıktısını logla
+                logger.debug("Simian Output: {}", line); // Simian çıktısını debug seviyesinde logla
             }
         }
 
