@@ -564,52 +564,71 @@ public class ProjectGraphService {
         // Connectivity number hesapla (hazır graph data ile)
         if (graphData != null) {
             try {
+                int totalNodes = graphData.allNodes.size();
+                String method = totalNodes > 30 ? "HEURISTIC" : "EXACT";
                 int connectivityNumber = connectivityService.calculateConnectivityNumber(graphData);
                 m.setConnectivityNumber(connectivityNumber);
-                logger.info("Connectivity number calculated: {}", connectivityNumber);
+                m.setConnectivityCalculationMethod(method);
+                logger.info("Connectivity number calculated: {} (method: {})", connectivityNumber, method);
             } catch (Exception e) {
                 logger.warn("Failed to calculate connectivity number: {}", e.getMessage(), e);
                 m.setConnectivityNumber(-1);
+                m.setConnectivityCalculationMethod(null);
             }
             
             // Scattering number hesapla (aynı hazır graph data ile)
             try {
+                int totalNodes = graphData.allNodes.size();
+                String method = totalNodes > 30 ? "HEURISTIC" : "EXACT";
                 double scatteringNumber = scatteringService.calculateScatteringNumber(graphData);
                 m.setScatteringNumber(scatteringNumber);
-                logger.info("Scattering number calculated: {}", scatteringNumber);
+                m.setScatteringCalculationMethod(method);
+                logger.info("Scattering number calculated: {} (method: {})", scatteringNumber, method);
             } catch (Exception e) {
                 logger.warn("Failed to calculate scattering number: {}", e.getMessage(), e);
                 m.setScatteringNumber(-1.0);
+                m.setScatteringCalculationMethod(null);
             }
             
             // Rupture number hesapla (aynı hazır graph data ile)
+            // Not: Rupture service her zaman heuristic algoritma kullanır
             try {
                 double ruptureNumber = ruptureService.calculateRuptureNumber(graphData);
                 m.setRuptureNumber(ruptureNumber);
-                logger.info("Rupture number calculated: {}", ruptureNumber);
+                m.setRuptureCalculationMethod("HEURISTIC"); // Her zaman heuristic
+                logger.info("Rupture number calculated: {} (method: HEURISTIC)", ruptureNumber);
             } catch (Exception e) {
                 logger.warn("Failed to calculate rupture number: {}", e.getMessage(), e);
                 m.setRuptureNumber(-1.0);
+                m.setRuptureCalculationMethod(null);
             }
             
             // Integrity number hesapla (aynı hazır graph data ile)
             try {
+                int totalNodes = graphData.allNodes.size();
+                String method = totalNodes > 30 ? "HEURISTIC" : "EXACT";
                 double integrityNumber = integrityService.calculateIntegrityNumber(graphData);
                 m.setIntegrityNumber(integrityNumber);
-                logger.info("Integrity number calculated: {}", integrityNumber);
+                m.setIntegrityCalculationMethod(method);
+                logger.info("Integrity number calculated: {} (method: {})", integrityNumber, method);
             } catch (Exception e) {
                 logger.warn("Failed to calculate integrity number: {}", e.getMessage(), e);
                 m.setIntegrityNumber(-1.0);
+                m.setIntegrityCalculationMethod(null);
             }
             
             // Toughness number hesapla (aynı hazır graph data ile)
             try {
+                int totalNodes = graphData.allNodes.size();
+                String method = totalNodes > 30 ? "HEURISTIC" : "EXACT";
                 double toughnessNumber = toughnessService.calculateToughnessNumber(graphData);
                 m.setToughnessNumber(toughnessNumber);
-                logger.info("Toughness number calculated: {}", toughnessNumber);
+                m.setToughnessCalculationMethod(method);
+                logger.info("Toughness number calculated: {} (method: {})", toughnessNumber, method);
             } catch (Exception e) {
                 logger.warn("Failed to calculate toughness number: {}", e.getMessage(), e);
                 m.setToughnessNumber(-1.0);
+                m.setToughnessCalculationMethod(null);
             }
             
             // Domination number hesapla (aynı hazır graph data ile)

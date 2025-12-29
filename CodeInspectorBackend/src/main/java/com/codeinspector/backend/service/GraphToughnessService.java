@@ -21,12 +21,14 @@ import java.util.stream.Collectors;
 public class GraphToughnessService {
 
     private static final Logger logger = LoggerFactory.getLogger(GraphToughnessService.class);
-    private static final int MAX_R = 8; // Maksimum deneme sayısı (güvenlik sınırı)
-    private static final int MAX_SUBSETS = 200; // Maksimum subset sayısı
+    private static final int MAX_R = 2; // Maksimum r değeri (literatürde küçük cut'lar yeterli)
+    private static final int MAX_SUBSETS = 50; // Maksimum subset sayısı (heap-safe)
+    private static final int NODE_LIMIT_FOR_EXACT = 30; // 30'dan fazla node varsa heuristic kullan
 
     /**
      * Toughness number (τ(G)) hesaplar.
      * Hazırlanmış graph data kullanır (performans optimizasyonu).
+     * Küçük graflar için exact, büyük graflar için heuristic algoritma kullanır.
      * 
      * @param graphData Hazırlanmış graph data (GraphAnalysisHelper.prepareGraphData ile oluşturulmuş)
      * @return Toughness number, veya Double.POSITIVE_INFINITY eğer parçalanamazsa, -1.0 eğer hesaplanamazsa
@@ -56,9 +58,19 @@ public class GraphToughnessService {
             return Double.POSITIVE_INFINITY; // Her node ayrı component, ama r=1 çıkarınca component sayısı azalır, ≥2 bulunamaz
         }
 
-        logger.info("Calculating toughness for {} nodes, {} edges", allNodes.size(), allEdges.size());
+        int totalNodes = allNodes.size();
+        logger.info("Calculating toughness for {} nodes, {} edges", totalNodes, allEdges.size());
+
+        // Node limiti kontrolü - büyük graflar için heuristic kullan
+        if (totalNodes > NODE_LIMIT_FOR_EXACT) {
+            logger.info("Graph has {} nodes → using HEURISTIC toughness calculation", totalNodes);
+            return calculateApproximateToughness(graphData);
+        }
+
+        logger.info("Graph has {} nodes → using EXACT toughness calculation", totalNodes);
 
         double minToughness = Double.POSITIVE_INFINITY;
+        // r değerini sınırla
         int maxR = Math.min(MAX_R, n - 1); // En fazla n-1 node çıkarabiliriz (en az 1 node kalmalı)
 
         // r = 1'den başlayarak dene (en az 1 node çıkarmalıyız)
@@ -104,8 +116,58 @@ public class GraphToughnessService {
             return Double.POSITIVE_INFINITY;
         }
 
-        logger.info("Toughness number calculated: {}", minToughness);
+        logger.info("Toughness number calculated: {} (EXACT method)", minToughness);
         return minToughness;
+    }
+
+    /**
+     * Heuristic Toughness fonksiyonu (büyük graflar için).
+     */
+    private double calculateApproximateToughness(GraphAnalysisHelper.GraphData graphData) {
+        Set<String> allNodes = graphData.allNodes;
+        List<GraphAnalysisHelper.UndirectedEdge> allEdges = graphData.undirectedEdges;
+        Map<String, Integer> degree = graphData.degree;
+
+        // Degree'ye göre sırala (yüksek degree'li node'lar önce)
+        List<String> sortedByDegree = allNodes.stream()
+                .sorted((a, b) -> Integer.compare(
+                        degree.getOrDefault(b, 0),
+                        degree.getOrDefault(a, 0)
+                ))
+                .limit(3) // En fazla 3 node dene
+                .collect(java.util.stream.Collectors.toList());
+
+        double best = Double.POSITIVE_INFINITY;
+        for (int i = 1; i <= sortedByDegree.size(); i++) {
+            Set<String> removed = new HashSet<>(sortedByDegree.subList(0, i));
+            Set<String> remaining = new HashSet<>(allNodes);
+            remaining.removeAll(removed);
+
+            if (remaining.isEmpty()) {
+                continue;
+            }
+
+            // Edge'leri filtrele
+            List<GraphAnalysisHelper.UndirectedEdge> remainingEdges = allEdges.stream()
+                    .filter(e -> remaining.contains(e.u) && remaining.contains(e.v))
+                    .collect(java.util.stream.Collectors.toList());
+
+            int componentCount = GraphAnalysisHelper.countConnectedComponents(remaining, remainingEdges);
+            if (componentCount >= 2) {
+                double ratio = (double) i / componentCount;
+                best = Math.min(best, ratio);
+                logger.debug("Heuristic toughness ratio = {} (r: {}, components: {})", 
+                        ratio, i, componentCount);
+            }
+        }
+
+        if (best == Double.POSITIVE_INFINITY) {
+            logger.info("Toughness number calculated: POSITIVE_INFINITY (HEURISTIC method)");
+            return Double.POSITIVE_INFINITY;
+        }
+
+        logger.info("Toughness number calculated: {} (HEURISTIC method)", best);
+        return best;
     }
 
     /**

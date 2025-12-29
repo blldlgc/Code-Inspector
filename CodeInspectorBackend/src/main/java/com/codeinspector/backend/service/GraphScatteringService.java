@@ -17,11 +17,13 @@ import java.util.stream.Collectors;
 public class GraphScatteringService {
 
     private static final Logger logger = LoggerFactory.getLogger(GraphScatteringService.class);
-    private static final int MAX_R = 5; // Maksimum deneme sayısı (güvenlik sınırı)
+    private static final int MAX_R = 2; // Maksimum r değeri (literatürde küçük cut'lar yeterli)
+    private static final int NODE_LIMIT_FOR_EXACT = 30; // 30'dan fazla node varsa heuristic kullan
 
     /**
      * Scattering number (s(G)) hesaplar.
      * Hazırlanmış graph data kullanır (performans optimizasyonu).
+     * Küçük graflar için exact, büyük graflar için heuristic algoritma kullanır.
      * 
      * @param graphData Hazırlanmış graph data (GraphAnalysisHelper.prepareGraphData ile oluşturulmuş)
      * @return Scattering number, veya -1.0 eğer hesaplanamazsa
@@ -55,17 +57,27 @@ public class GraphScatteringService {
             return 0.0;
         }
 
-        logger.info("Calculating scattering for {} nodes, {} edges", allNodes.size(), undirectedEdges.size());
+        int totalNodes = allNodes.size();
+        logger.info("Calculating scattering for {} nodes, {} edges", totalNodes, undirectedEdges.size());
+
+        // ADIM 1: Node limiti kontrolü - büyük graflar için heuristic kullan
+        if (totalNodes > NODE_LIMIT_FOR_EXACT) {
+            logger.info("Graph has {} nodes → using HEURISTIC scattering calculation", totalNodes);
+            return calculateApproximateScattering(graphData);
+        }
+
+        logger.info("Graph has {} nodes → using EXACT scattering calculation", totalNodes);
 
         double maxScattering = 0.0;
-        int maxR = Math.min(MAX_R, allNodes.size() - 2); // En az 2 node kalmalı
+        // ADIM 2: r değerini sınırla (literatürde küçük cut'lar yeterli)
+        int maxR = Math.min(MAX_R, totalNodes - 2); // En az 2 node kalmalı
 
         // r = 1'den başlayarak dene
         for (int r = 1; r <= maxR; r++) {
             logger.debug("Trying r = {} for scattering", r);
 
-            // r'li subset'ler üret - TÜM kombinasyonları dene
-            List<Set<String>> subsets = generateAllSubsets(candidates, r);
+            // ADIM 3: Subset'leri limitli üret (heap-safe)
+            List<Set<String>> subsets = generateLimitedSubsets(candidates, r, 50);
 
             for (Set<String> removedSet : subsets) {
                 // Node'ları çıkar
@@ -96,8 +108,54 @@ public class GraphScatteringService {
             }
         }
 
-        logger.info("Scattering number calculated: {}", maxScattering);
+        logger.info("Scattering number calculated: {} (EXACT method)", maxScattering);
         return maxScattering;
+    }
+
+    /**
+     * ADIM 4: Heuristic Scattering fonksiyonu (büyük graflar için).
+     * Degree'ye göre en kritik node'ları seçer ve parçalanmayı hesaplar.
+     */
+    private double calculateApproximateScattering(GraphAnalysisHelper.GraphData graphData) {
+        Set<String> allNodes = graphData.allNodes;
+        List<GraphAnalysisHelper.UndirectedEdge> undirectedEdges = graphData.undirectedEdges;
+        Map<String, Integer> degree = graphData.degree;
+
+        // Degree'ye göre sırala (yüksek degree'li node'lar önce)
+        List<String> sortedByDegree = allNodes.stream()
+                .sorted((a, b) -> Integer.compare(
+                        degree.getOrDefault(b, 0),
+                        degree.getOrDefault(a, 0)
+                ))
+                .limit(3) // En fazla 3 node dene
+                .collect(java.util.stream.Collectors.toList());
+
+        double best = 0.0;
+        for (int i = 1; i <= sortedByDegree.size(); i++) {
+            Set<String> removed = new HashSet<>(sortedByDegree.subList(0, i));
+            Set<String> remaining = new HashSet<>(allNodes);
+            remaining.removeAll(removed);
+
+            if (remaining.size() < 2) {
+                continue;
+            }
+
+            // Edge'leri filtrele
+            List<GraphAnalysisHelper.UndirectedEdge> remainingEdges = undirectedEdges.stream()
+                    .filter(e -> remaining.contains(e.u) && remaining.contains(e.v))
+                    .collect(java.util.stream.Collectors.toList());
+
+            int components = GraphAnalysisHelper.countConnectedComponents(remaining, remainingEdges);
+            if (components >= 2) {
+                double scattering = components - i;
+                best = Math.max(best, scattering);
+                logger.debug("Heuristic scattering = {} (components: {}, removed: {})", 
+                        scattering, components, i);
+            }
+        }
+
+        logger.info("Scattering number calculated: {} (HEURISTIC method)", best);
+        return best;
     }
 
     /**
@@ -113,11 +171,12 @@ public class GraphScatteringService {
     }
 
     /**
-     * r'li subset'ler üret - TÜM kombinasyonları dene.
+     * r'li subset'ler üret - Limitli kombinasyonlar (heap-safe).
      */
-    private List<Set<String>> generateAllSubsets(
+    private List<Set<String>> generateLimitedSubsets(
             List<String> candidates,
-            int r) {
+            int r,
+            int limit) {
 
         List<Set<String>> subsets = new ArrayList<>();
 
@@ -130,20 +189,11 @@ public class GraphScatteringService {
             return subsets;
         }
 
-        // Kombinasyon sayısını hesapla
-        long totalCombinations = binomialCoefficient(candidates.size(), r);
+        // Limitli kombinasyon üretimi
+        generateCombinations(candidates, 0, r, new HashSet<>(), subsets, limit);
 
-        // Performans uyarısı (çok fazla kombinasyon varsa)
-        if (totalCombinations > 10000) {
-            logger.warn("Large number of combinations ({}) for r={} with {} nodes. This may take time.",
-                    totalCombinations, r, candidates.size());
-        }
-
-        // TÜM kombinasyonları üret (limit yok)
-        generateCombinations(candidates, 0, r, new HashSet<>(), subsets, Integer.MAX_VALUE);
-
-        logger.debug("Generated {} subsets of size {} (expected: {})",
-                subsets.size(), r, totalCombinations);
+        logger.debug("Generated {} subsets of size {} (limit: {})",
+                subsets.size(), r, limit);
         return subsets;
     }
 

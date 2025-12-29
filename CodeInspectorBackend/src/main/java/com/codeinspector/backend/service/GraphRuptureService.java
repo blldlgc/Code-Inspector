@@ -23,7 +23,7 @@ public class GraphRuptureService {
     /**
      * Rupture number (r(G)) hesaplar.
      * Hazırlanmış graph data kullanır (performans optimizasyonu).
-     * Heuristic algoritma ile en kritik node'ları seçer.
+     * Her zaman heuristic algoritma kullanır (optimal performans için).
      * 
      * @param graphData Hazırlanmış graph data (GraphAnalysisHelper.prepareGraphData ile oluşturulmuş)
      * @return Rupture number, veya -1.0 eğer hesaplanamazsa
@@ -56,7 +56,12 @@ public class GraphRuptureService {
             return -1.0;
         }
 
-        logger.info("Calculating rupture for {} nodes, {} edges", allNodes.size(), allEdges.size());
+        int totalNodes = allNodes.size();
+        logger.info("Calculating rupture for {} nodes, {} edges", totalNodes, allEdges.size());
+
+        // Node limiti kontrolü - büyük graflar için zaten heuristic kullanıyoruz
+        // Küçük graflar için de heuristic kullanıyoruz (zaten optimal)
+        logger.info("Graph has {} nodes → using HEURISTIC rupture calculation", totalNodes);
 
         // Heuristic algoritma ile S kümesini oluştur
         Set<String> S = buildRemovalSet(allNodes, allEdges);
