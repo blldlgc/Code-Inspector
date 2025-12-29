@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -7,12 +7,13 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { projectsApi, projectFilesApi, ProjectVersion } from '@/lib/api';
+import { projectsApi, projectFilesApi, ProjectVersion, CodeGraphResponse } from '@/lib/api';
 import { ShareProjectDialog } from '@/components/ShareProjectDialog';
 import { ProjectVersions } from '@/components/ProjectVersions';
 import { VersionCompare } from '@/components/VersionCompare';
 import { parseGitHubUrl } from '@/lib/utils';
 import { GitBranch } from 'lucide-react';
+import ForceGraph2D from 'react-force-graph-2d';
 import { VoiceReader } from '@/components/VoiceReader';
 
 export default function ProjectDetail() {
@@ -249,6 +250,125 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
   const [analyzing, setAnalyzing] = useState(false);
   const [activeAnalysis, setActiveAnalysis] = useState<string | null>(null);
   const [runAllProgress, setRunAllProgress] = useState<number>(0);
+  const [projectGraph, setProjectGraph] = useState<CodeGraphResponse | null>(null);
+  const [projectGraphError, setProjectGraphError] = useState<string | null>(null);
+  const [projectGraphLoading, setProjectGraphLoading] = useState(false);
+  
+  // Graph ref'i component seviyesinde tanımla
+  const graphRef = useRef<any>(null);
+  const graphContainerRef = useRef<HTMLDivElement>(null);
+  const [graphDimensions, setGraphDimensions] = useState({ width: 600, height: 600 });
+  
+  // Container boyutlarını güncelle
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (graphContainerRef.current) {
+        // clientWidth/clientHeight border dahil iç alanı verir (daha doğru)
+        const width = graphContainerRef.current.clientWidth;
+        const height = graphContainerRef.current.clientHeight;
+        setGraphDimensions({ width, height });
+      }
+    };
+    
+    updateDimensions();
+    // ResizeObserver kullanarak daha hassas takip
+    const resizeObserver = new ResizeObserver(updateDimensions);
+    if (graphContainerRef.current) {
+      resizeObserver.observe(graphContainerRef.current);
+    }
+    window.addEventListener('resize', updateDimensions);
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateDimensions);
+    };
+  }, []);
+  
+  // Graph verisini component seviyesinde hesapla
+  const graphData = useMemo(() => {
+    if (!projectGraph) {
+      return { nodes: [], links: [] };
+    }
+    
+    // Benzersiz node ID'leri oluştur
+    const nodeMap = new Map();
+    projectGraph.vertices.forEach((vertex, index) => {
+      const isHub = vertex.id === '__ROOT__' || vertex.metrics?.isHub === true;
+      nodeMap.set(vertex.id, {
+        id: vertex.id,
+        label: vertex.label,
+        type: vertex.type,
+        color: isHub ? '#E74C3C' : (vertex.type === 'class' ? '#8E44AD' : '#27AE60'), // Hub node kırmızı
+        size: isHub ? 12 : (vertex.type === 'class' ? 8 : 6), // Hub node daha büyük
+        index: index,
+        isHub: isHub,
+        ...vertex.metrics
+      });
+    });
+
+    // Debug: Edge'leri ve node'ları kontrol et
+    const dependsEdges = projectGraph.edges.filter(e => e.type === 'depends');
+    const filteredOutEdges: any[] = [];
+    
+    // Geçerli linkleri oluştur - sadece class-to-class depends edge'leri için özel kontrol
+    const links = projectGraph.edges
+      .filter(edge => {
+        const sourceExists = nodeMap.has(edge.source);
+        const targetExists = nodeMap.has(edge.target);
+        
+        // Eğer edge filtreleniyorsa ve depends tipindeyse, debug bilgisi topla
+        if (!sourceExists || !targetExists) {
+          if (edge.type === 'depends') {
+            // Source ve target'ın class olup olmadığını kontrol et
+            const sourceVertex = projectGraph.vertices.find(v => v.id === edge.source);
+            const targetVertex = projectGraph.vertices.find(v => v.id === edge.target);
+            
+            filteredOutEdges.push({
+              source: edge.source,
+              target: edge.target,
+              sourceExists,
+              targetExists,
+              sourceType: sourceVertex?.type,
+              targetType: targetVertex?.type,
+              sourceInNodeMap: Array.from(nodeMap.keys()).includes(edge.source),
+              targetInNodeMap: Array.from(nodeMap.keys()).includes(edge.target)
+            });
+          }
+          return false;
+        }
+        return true;
+      })
+      .map(edge => ({
+        source: edge.source,
+        target: edge.target,
+        type: edge.type,
+        color: edge.type === 'depends' ? '#F39C12' : 
+               edge.type === 'calls' ? '#3498DB' : // Metot-metot çağrıları için mavi
+               '#34495E', // has
+        width: edge.type === 'depends' ? 2 : 
+               edge.type === 'calls' ? 1.5 : // Metot çağrıları için orta kalınlık
+               1 // has
+      }));
+    
+    // Debug logları - sadece sorun varsa göster
+    if (dependsEdges.length > 0) {
+      const validDependsLinks = links.filter(l => l.type === 'depends').length;
+      if (validDependsLinks < dependsEdges.length) {
+        console.log('🔍 Graph Debug Info:');
+        console.log('Total depends edges from backend:', dependsEdges.length);
+        console.log('Valid depends edges after filtering:', validDependsLinks);
+        if (filteredOutEdges.length > 0) {
+          console.warn('⚠️ Filtered out depends edges:', filteredOutEdges);
+          console.log('Sample node IDs:', Array.from(nodeMap.keys()).slice(0, 5));
+          console.log('Sample depends edges from backend:', dependsEdges.slice(0, 3));
+        }
+      }
+    }
+
+    return {
+      nodes: Array.from(nodeMap.values()),
+      links: links
+    };
+  }, [projectGraph]);
   
   const fetchResults = async () => {
     try {
@@ -265,6 +385,20 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
       setLoading(false);
     }
   };
+
+  const loadProjectGraph = async () => {
+    try {
+      setProjectGraphLoading(true);
+      setProjectGraphError(null);
+      const graph = await projectsApi.getCodeGraph(projectSlug);
+      setProjectGraph(graph);
+    } catch (error: any) {
+      console.error('Error loading project code graph:', error);
+      setProjectGraphError(error?.message || 'Code graph could not be loaded.');
+    } finally {
+      setProjectGraphLoading(false);
+    }
+  };
   
   const runAnalysis = async (analysisType: string) => {
     try {
@@ -272,6 +406,15 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
       await projectsApi.analyzeVersion(projectSlug, versionId, analysisType);
       await fetchResults();
       setActiveAnalysis(analysisType);
+      
+      // Eğer code-graph analizi çalıştırılıyorsa, graph'ı da yükle
+      if (analysisType === 'code-graph') {
+        if (!projectGraph && !projectGraphError) {
+          await loadProjectGraph();
+        }
+        // Graph görselleştirmesini göster
+        setActiveAnalysis('project-graph');
+      }
     } catch (error) {
       console.error('Error running analysis:', error);
     } finally {
@@ -985,6 +1128,948 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
     );
   };
 
+  const renderProjectGraphView = () => {
+    if (projectGraphLoading) {
+      return (
+        <div className="text-sm text-muted-foreground text-center py-4">
+          Loading project code graph...
+        </div>
+      );
+    }
+
+    if (projectGraphError) {
+      return (
+        <div className="text-sm text-red-500 py-4">
+          {projectGraphError}
+        </div>
+      );
+    }
+
+    if (!projectGraph) {
+      return (
+        <div className="text-sm text-muted-foreground py-4">
+          Project code graph has not been loaded yet.
+        </div>
+      );
+    }
+
+    const classCount = projectGraph.vertices.filter(v => v.type === 'class').length;
+    const methodCount = projectGraph.vertices.filter(v => v.type === 'method').length;
+
+    const topClasses = projectGraph.vertices
+      .filter(v => v.type === 'class')
+      .slice(0, 10);
+
+    // Connectivity Number yorumlama fonksiyonu
+    const getConnectivityInterpretation = (value: number | undefined): { 
+      label: string, 
+      color: string, 
+      description: string 
+    } => {
+      if (value === undefined || value < 0) {
+        return { 
+          label: 'Hesaplanmadı', 
+          color: 'text-muted-foreground',
+          description: 'Connectivity number henüz hesaplanmadı.'
+        };
+      }
+      if (value === 0) {
+        return { 
+          label: 'Bağlantısız', 
+          color: 'text-red-500',
+          description: 'Graf zaten bağlantısız durumda (kenar yok veya izole node\'lar var).'
+        };
+      }
+      if (value === 1) {
+        return { 
+          label: 'Zayıf', 
+          color: 'text-orange-500',
+          description: 'Tek bir node\'un çıkarılması grafiği bağlantısız yapabilir. Yüksek bağımlılık riski.'
+        };
+      }
+      if (value <= 3) {
+        return { 
+          label: 'Orta', 
+          color: 'text-yellow-500',
+          description: `${value} node'un çıkarılması grafiği bağlantısız yapabilir. Orta düzey dayanıklılık.`
+        };
+      }
+      return { 
+        label: 'Güçlü', 
+        color: 'text-green-500',
+        description: `Grafiği bağlantısız yapmak için ${value} node'un çıkarılması gerekiyor. İyi yapısal dayanıklılık.`
+      };
+    };
+
+    const connectivityInfo = getConnectivityInterpretation(projectGraph.metrics.connectivityNumber);
+
+    // Scattering Number yorumlama fonksiyonu
+    const getScatteringInterpretation = (value: number | undefined): { 
+      label: string, 
+      color: string, 
+      description: string 
+    } => {
+      if (value === undefined || value < 0) {
+        return { 
+          label: 'Hesaplanmadı', 
+          color: 'text-muted-foreground',
+          description: 'Scattering number henüz hesaplanmadı.'
+        };
+      }
+      if (value === 0) {
+        return { 
+          label: 'Stabil', 
+          color: 'text-green-500',
+          description: 'Graf parçalanmaya karşı dayanıklı. Node kaybı fazla parça oluşturmuyor. Yapısal bütünlük korunuyor.'
+        };
+      }
+      if (value > 0 && value <= 2) {
+        return { 
+          label: 'Orta', 
+          color: 'text-yellow-500',
+          description: `Az sayıda node çıkarıldığında en fazla ${value.toFixed(1)} parça oluşabilir. Orta düzey kırılganlık, dikkatli olunmalı.`
+        };
+      }
+      return { 
+        label: 'Kırılgan', 
+        color: 'text-red-500',
+        description: `Az sayıda node çıkarıldığında en fazla ${value.toFixed(1)} parça oluşabilir. Yüksek kırılganlık riski, yapısal iyileştirme önerilir.`
+      };
+    };
+
+    const scatteringInfo = getScatteringInterpretation(projectGraph.metrics.scatteringNumber);
+
+    // Rupture Number yorumlama fonksiyonu
+    const getRuptureInterpretation = (value: number | undefined): { 
+      label: string, 
+      color: string, 
+      description: string 
+    } => {
+      if (value === undefined || value < 0) {
+        return { 
+          label: 'Hesaplanmadı', 
+          color: 'text-muted-foreground',
+          description: 'Rupture number henüz hesaplanmadı.'
+        };
+      }
+      if (value === 0) {
+        return { 
+          label: 'Stabil', 
+          color: 'text-green-500',
+          description: 'Graf parçalanmaya karşı dayanıklı. En büyük parça küçük kalıyor.'
+        };
+      }
+      if (value > 0 && value <= 2) {
+        return { 
+          label: 'Orta', 
+          color: 'text-yellow-500',
+          description: `Az sayıda node çıkarıldığında ${value.toFixed(1)} rupture değeri oluşabilir. Orta düzey kırılganlık.`
+        };
+      }
+      return { 
+        label: 'Kırılgan', 
+        color: 'text-red-500',
+        description: `Az sayıda node çıkarıldığında ${value.toFixed(1)} rupture değeri oluşabilir. Yüksek kırılganlık, büyük parça oluşuyor.`
+      };
+    };
+
+    const ruptureInfo = getRuptureInterpretation(projectGraph.metrics.ruptureNumber);
+
+    // Integrity Number yorumlama fonksiyonu
+    const getIntegrityInterpretation = (value: number | undefined): { 
+      label: string, 
+      color: string, 
+      description: string 
+    } => {
+      if (value === undefined || value < 0) {
+        return { 
+          label: 'Hesaplanmadı', 
+          color: 'text-muted-foreground',
+          description: 'Integrity number henüz hesaplanmadı.'
+        };
+      }
+      if (value <= 2) {
+        return { 
+          label: 'Yüksek Bütünlük', 
+          color: 'text-green-500',
+          description: 'Graf yapısal olarak sağlam. Az node kaybıyla küçük parçalara bölünebilir.'
+        };
+      }
+      if (value > 2 && value <= 5) {
+        return { 
+          label: 'Orta Bütünlük', 
+          color: 'text-yellow-500',
+          description: `Graf orta düzeyde bütünlüğe sahip. ${value.toFixed(1)} integrity değeri, bazı node kayıplarında büyük parçalar oluşabileceğini gösterir.`
+        };
+      }
+      return { 
+        label: 'Düşük Bütünlük', 
+        color: 'text-red-500',
+        description: `Graf yapısal olarak zayıf. ${value.toFixed(1)} integrity değeri, node kayıplarında büyük parçalar oluşabileceğini gösterir.`
+      };
+    };
+
+    const integrityInfo = getIntegrityInterpretation(projectGraph.metrics.integrityNumber);
+
+    // Toughness Number yorumlama fonksiyonu
+    const getToughnessInterpretation = (value: number | undefined): { 
+      label: string, 
+      color: string, 
+      description: string 
+    } => {
+      if (value === undefined || value < 0) {
+        return { 
+          label: 'Hesaplanmadı', 
+          color: 'text-muted-foreground',
+          description: 'Toughness number henüz hesaplanmadı.'
+        };
+      }
+      if (value === Number.POSITIVE_INFINITY || !isFinite(value)) {
+        return { 
+          label: 'Parçalanamaz', 
+          color: 'text-green-500',
+          description: 'Graf çok dayanıklı. Parçalanamaz veya parçalanması çok zor.'
+        };
+      }
+      if (value <= 0.5) {
+        return { 
+          label: 'Çok Kırılgan', 
+          color: 'text-red-500',
+          description: `Graf çok kırılgan. ${value.toFixed(2)} toughness değeri, az node kaybında çok fazla parça oluşabileceğini gösterir.`
+        };
+      }
+      if (value > 0.5 && value <= 1.0) {
+        return { 
+          label: 'Kırılgan', 
+          color: 'text-orange-500',
+          description: `Graf kırılgan. ${value.toFixed(2)} toughness değeri, node kayıplarında birkaç parça oluşabileceğini gösterir.`
+        };
+      }
+      if (value > 1.0 && value <= 2.0) {
+        return { 
+          label: 'Orta Dayanıklılık', 
+          color: 'text-yellow-500',
+          description: `Graf orta düzeyde dayanıklı. ${value.toFixed(2)} toughness değeri, bazı node kayıplarında parçalanabileceğini gösterir.`
+        };
+      }
+      return { 
+        label: 'Dayanıklı', 
+        color: 'text-green-500',
+        description: `Graf dayanıklı. ${value.toFixed(2)} toughness değeri, parçalanması için çok sayıda node kaybı gerektiğini gösterir.`
+      };
+    };
+
+    const toughnessInfo = getToughnessInterpretation(projectGraph.metrics.toughnessNumber);
+
+    // Domination Number yorumlama fonksiyonu
+    const getDominationInterpretation = (value: number | undefined, totalNodes: number): { 
+      label: string, 
+      color: string, 
+      description: string 
+    } => {
+      if (value === undefined || value < 0) {
+        return { 
+          label: 'Hesaplanmadı', 
+          color: 'text-muted-foreground',
+          description: 'Domination number henüz hesaplanmadı.'
+        };
+      }
+      if (value === 1) {
+        return { 
+          label: 'Mükemmel', 
+          color: 'text-green-500',
+          description: 'Tek bir node tüm grafı kontrol edebilir. Çok merkezi bir yapı.'
+        };
+      }
+      const ratio = value / totalNodes;
+      if (ratio <= 0.2) {
+        return { 
+          label: 'Çok İyi', 
+          color: 'text-green-500',
+          description: `Sadece ${value} node ile tüm graf kontrol edilebilir. Grafın %${(ratio * 100).toFixed(0)}'si yeterli.`
+        };
+      }
+      if (ratio > 0.2 && ratio <= 0.4) {
+        return { 
+          label: 'İyi', 
+          color: 'text-blue-500',
+          description: `${value} node ile tüm graf kontrol edilebilir. Grafın %${(ratio * 100).toFixed(0)}'si yeterli.`
+        };
+      }
+      if (ratio > 0.4 && ratio <= 0.6) {
+        return { 
+          label: 'Orta', 
+          color: 'text-yellow-500',
+          description: `${value} node ile tüm graf kontrol edilebilir. Grafın %${(ratio * 100).toFixed(0)}'si gerekli.`
+        };
+      }
+      return { 
+        label: 'Zayıf', 
+        color: 'text-orange-500',
+        description: `${value} node ile tüm graf kontrol edilebilir. Grafın %${(ratio * 100).toFixed(0)}'si gerekli. Merkezi yapı zayıf.`
+      };
+    };
+
+    const dominationInfo = getDominationInterpretation(
+      projectGraph.metrics.dominationNumber, 
+      projectGraph.metrics.totalNodes
+    );
+
+    // 2-Vertex Cover Number yorumlama fonksiyonu
+    const getTwoVertexCoverInterpretation = (value: number | undefined, totalNodes: number): { 
+      label: string, 
+      color: string, 
+      description: string 
+    } => {
+      if (value === undefined || value < 0) {
+        return { 
+          label: 'Hesaplanmadı', 
+          color: 'text-muted-foreground',
+          description: '2-Vertex Cover henüz hesaplanmadı.'
+        };
+      }
+      if (value === 1) {
+        return { 
+          label: 'Mükemmel', 
+          color: 'text-green-500',
+          description: 'Tek bir node hem tüm edge\'leri kapsar hem de yedeklilik sağlar. Çok merkezi yapı.'
+        };
+      }
+      const ratio = value / totalNodes;
+      if (ratio <= 0.2) {
+        return { 
+          label: 'Çok İyi', 
+          color: 'text-green-500',
+          description: `Sadece ${value} node ile hem edge kapsama hem de yedeklilik sağlanıyor. Grafın %${(ratio * 100).toFixed(0)}'si yeterli.`
+        };
+      }
+      if (ratio > 0.2 && ratio <= 0.4) {
+        return { 
+          label: 'İyi', 
+          color: 'text-blue-500',
+          description: `${value} node ile hem edge kapsama hem de yedeklilik sağlanıyor. Grafın %${(ratio * 100).toFixed(0)}'si yeterli.`
+        };
+      }
+      if (ratio > 0.4 && ratio <= 0.6) {
+        return { 
+          label: 'Orta', 
+          color: 'text-yellow-500',
+          description: `${value} node ile hem edge kapsama hem de yedeklilik sağlanıyor. Grafın %${(ratio * 100).toFixed(0)}'si gerekli.`
+        };
+      }
+      return { 
+        label: 'Zayıf', 
+        color: 'text-orange-500',
+        description: `${value} node ile hem edge kapsama hem de yedeklilik sağlanıyor. Grafın %${(ratio * 100).toFixed(0)}'si gerekli. Merkezi yapı zayıf.`
+      };
+    };
+
+    const twoVertexCoverInfo = getTwoVertexCoverInterpretation(
+      projectGraph.metrics.twoVertexCoverNumber, 
+      projectGraph.metrics.totalNodes
+    );
+
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+          <Card className="p-3">
+            <div className="text-xs text-muted-foreground">Total Nodes</div>
+            <div className="text-lg font-semibold">{projectGraph.metrics.totalNodes}</div>
+          </Card>
+          <Card className="p-3">
+            <div className="text-xs text-muted-foreground">Total Edges</div>
+            <div className="text-lg font-semibold">{projectGraph.metrics.totalEdges}</div>
+          </Card>
+          <Card className="p-3">
+            <div className="text-xs text-muted-foreground">Avg Degree</div>
+            <div className="text-lg font-semibold">
+              {projectGraph.metrics.avgDegree.toFixed(2)}
+            </div>
+          </Card>
+          <Card className="p-3">
+            <div className="text-xs text-muted-foreground">Max Degree</div>
+            <div className="text-lg font-semibold">{projectGraph.metrics.maxDegree}</div>
+          </Card>
+          <Card className="p-3">
+            <div className="text-xs text-muted-foreground">Connectivity Number</div>
+            <div className="text-lg font-semibold">
+              {projectGraph.metrics.connectivityNumber !== undefined && 
+               projectGraph.metrics.connectivityNumber >= 0 
+                ? projectGraph.metrics.connectivityNumber 
+                : 'N/A'}
+            </div>
+          </Card>
+          <Card className="p-3">
+            <div className="text-xs text-muted-foreground">Scattering Number</div>
+            <div className="text-lg font-semibold">
+              {projectGraph.metrics.scatteringNumber !== undefined && 
+               projectGraph.metrics.scatteringNumber >= 0 
+                ? projectGraph.metrics.scatteringNumber.toFixed(2)
+                : 'N/A'}
+            </div>
+          </Card>
+          <Card className="p-3">
+            <div className="text-xs text-muted-foreground">Rupture Number</div>
+            <div className="text-lg font-semibold">
+              {projectGraph.metrics.ruptureNumber !== undefined && 
+               projectGraph.metrics.ruptureNumber >= 0 
+                ? projectGraph.metrics.ruptureNumber.toFixed(2)
+                : projectGraph.metrics.ruptureNumber === -1.0
+                ? 'N/A'
+                : 'N/A'}
+            </div>
+          </Card>
+          <Card className="p-3">
+            <div className="text-xs text-muted-foreground">Integrity Number</div>
+            <div className="text-lg font-semibold">
+              {projectGraph.metrics.integrityNumber !== undefined && 
+               projectGraph.metrics.integrityNumber >= 0 
+                ? projectGraph.metrics.integrityNumber.toFixed(2)
+                : 'N/A'}
+            </div>
+          </Card>
+          <Card className="p-3">
+            <div className="text-xs text-muted-foreground">Toughness Number</div>
+            <div className="text-lg font-semibold">
+              {projectGraph.metrics.toughnessNumber !== undefined && 
+               projectGraph.metrics.toughnessNumber >= 0 && 
+               isFinite(projectGraph.metrics.toughnessNumber)
+                ? projectGraph.metrics.toughnessNumber.toFixed(2)
+                : projectGraph.metrics.toughnessNumber !== undefined && 
+                  (!isFinite(projectGraph.metrics.toughnessNumber) || 
+                   projectGraph.metrics.toughnessNumber === Number.POSITIVE_INFINITY)
+                ? '∞'
+                : 'N/A'}
+            </div>
+          </Card>
+          <Card className="p-3">
+            <div className="text-xs text-muted-foreground">Domination Number</div>
+            <div className="text-lg font-semibold">
+              {projectGraph.metrics.dominationNumber !== undefined && 
+               projectGraph.metrics.dominationNumber >= 0 
+                ? projectGraph.metrics.dominationNumber
+                : 'N/A'}
+            </div>
+          </Card>
+          <Card className="p-3">
+            <div className="text-xs text-muted-foreground">2-Vertex Cover</div>
+            <div className="text-lg font-semibold">
+              {projectGraph.metrics.twoVertexCoverNumber !== undefined && 
+               projectGraph.metrics.twoVertexCoverNumber >= 0 
+                ? projectGraph.metrics.twoVertexCoverNumber
+                : 'N/A'}
+            </div>
+          </Card>
+          <Card className="p-3">
+            <div className="text-xs text-muted-foreground">Degree Distribution</div>
+            <div className="text-lg font-semibold">
+              {projectGraph.metrics.degreeDistribution && 
+               Object.keys(projectGraph.metrics.degreeDistribution).length > 0
+                ? `${Object.keys(projectGraph.metrics.degreeDistribution).length} levels`
+                : 'N/A'}
+            </div>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+          <Card className="p-3">
+            <div className="text-xs text-muted-foreground mb-1">Classes</div>
+            <div className="text-lg font-semibold">{classCount}</div>
+          </Card>
+          <Card className="p-3">
+            <div className="text-xs text-muted-foreground mb-1">Methods</div>
+            <div className="text-lg font-semibold">{methodCount}</div>
+          </Card>
+        </div>
+
+        {/* Graph Visualization */}
+        <Card className="p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-sm font-semibold">Code Graph Visualization</h3>
+            <div className="flex items-center gap-4">
+              <div className="flex gap-4 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#8E44AD' }}></div>
+                  <span>Classes</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#27AE60' }}></div>
+                  <span>Methods</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-1 rounded" style={{ backgroundColor: '#F39C12' }}></div>
+                  <span>Dependencies</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-1 rounded" style={{ backgroundColor: '#3498DB' }}></div>
+                  <span>Method Calls</span>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (graphRef.current) {
+                    // Reset zoom ve pan
+                    graphRef.current.zoom(1);
+                    graphRef.current.centerAt(0, 0, 1000);
+                    // Sonra tüm node'ları görünür yap
+                    setTimeout(() => {
+                      graphRef.current?.zoomToFit(400, 20);
+                    }, 100);
+                  }
+                }}
+              >
+                Reset View
+              </Button>
+            </div>
+          </div>
+          <div 
+            ref={graphContainerRef}
+            className="border rounded-md bg-background overflow-hidden" 
+            style={{ height: '600px', position: 'relative' }}
+          >
+            <ForceGraph2D
+              ref={graphRef}
+              graphData={graphData}
+              width={graphDimensions.width}
+              height={graphDimensions.height}
+              nodeLabel={(node: any) => `${node.label} (${node.type})`}
+              nodeColor={(node: any) => node.color}
+              nodeVal={(node: any) => node.size}
+              linkColor={(link: any) => link.color}
+              linkWidth={(link: any) => link.width}
+              linkDistance={(link: any) => {
+                // Link mesafesi - edge tipine göre ayarla
+                if (link.type === 'depends') return 100; // Sınıf bağımlılıkları daha uzun
+                if (link.type === 'calls') return 60; // Metot çağrıları orta mesafe
+                return 50; // has (sınıf-metot ilişkisi) en yakın
+              }}
+              linkDirectionalArrowLength={3}
+              linkDirectionalArrowRelPos={1}
+              // Charge kuvvetini kaldır - node'lar birbirini itmesin, sadece link mesafesi kullan
+              d3Force="charge"
+              d3ForceStrength={0}
+              // Center force - node'ları merkeze topla (otomatik eklenir, strength ayarlanabilir)
+              d3AlphaDecay={0.0228}
+              d3VelocityDecay={0.4}
+              cooldownTime={15000}
+              enableZoomInteraction={true}
+              enablePanInteraction={true}
+              enableNodeDrag={true}
+              onNodeDrag={(node: any) => {
+                // Node'un yarıçapını hesaba kat (size en büyük 8, yarıçap 4)
+                const nodeRadius = (node.size || 8) / 2;
+                const padding = nodeRadius + 10; // Node yarıçapı + ekstra padding
+                const maxX = graphDimensions.width / 2 - padding;
+                const maxY = graphDimensions.height / 2 - padding;
+                const minX = -graphDimensions.width / 2 + padding;
+                const minY = -graphDimensions.height / 2 + padding;
+                
+                if (node.x > maxX) node.x = maxX;
+                if (node.x < minX) node.x = minX;
+                if (node.y > maxY) node.y = maxY;
+                if (node.y < minY) node.y = minY;
+              }}
+              onNodeDragEnd={(node: any) => {
+                // Node sürükleme bittiğinde fixed pozisyonu kaldır
+                node.fx = null;
+                node.fy = null;
+              }}
+              onNodeClick={(node: any) => {
+                console.log('Clicked node:', node);
+              }}
+              onLinkClick={(link: any) => {
+                console.log('Clicked link:', link);
+              }}
+              nodeCanvasObject={(node: any, ctx: any, globalScale: number) => {
+                // Sadece yeterince yakınlaştırıldığında etiketleri göster
+                if (globalScale < 1.4) return;
+
+                const label = node.type === 'method' 
+                  ? node.label.split('.').pop() || node.label 
+                  : node.label;
+                const fontSize = 12/globalScale;
+                ctx.font = `${fontSize}px Sans-Serif`;
+                const textWidth = ctx.measureText(label).width;
+                const bckgDimensions = [textWidth, fontSize].map(n => n + fontSize * 0.2);
+
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.fillRect(
+                  node.x - bckgDimensions[0] / 2,
+                  node.y - bckgDimensions[1] / 2,
+                  bckgDimensions[0],
+                  bckgDimensions[1]
+                );
+
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = node.color;
+                ctx.fillText(label, node.x, node.y);
+              }}
+              nodeCanvasObjectMode={() => 'after'}
+              onEngineTick={() => {
+                // Container'ın gerçek boyutlarını kullan ve node'ları sınırlar içinde tut
+                // Her node'un kendi yarıçapını hesaba kat
+                graphData.nodes.forEach((node: any) => {
+                  const nodeRadius = (node.size || 8) / 2;
+                  const padding = nodeRadius + 10; // Node yarıçapı + ekstra padding
+                  const maxX = graphDimensions.width / 2 - padding;
+                  const maxY = graphDimensions.height / 2 - padding;
+                  const minX = -graphDimensions.width / 2 + padding;
+                  const minY = -graphDimensions.height / 2 + padding;
+                  
+                  if (node.x > maxX) node.x = maxX;
+                  if (node.x < minX) node.x = minX;
+                  if (node.y > maxY) node.y = maxY;
+                  if (node.y < minY) node.y = minY;
+                });
+              }}
+              onEngineStop={() => {
+                // Graph simülasyonu bittiğinde otomatik olarak merkeze topla
+                if (graphRef.current && graphData.nodes.length > 0) {
+                  setTimeout(() => {
+                    graphRef.current?.zoomToFit(400, 20);
+                  }, 100);
+                }
+              }}
+            />
+          </div>
+        </Card>
+
+        {/* Connectivity Number Panel */}
+        <Card className="p-4">
+          <h3 className="text-sm font-semibold mb-4">Connectivity Number (κ(G))</h3>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="text-4xl font-bold">
+                {projectGraph.metrics.connectivityNumber !== undefined && 
+                 projectGraph.metrics.connectivityNumber >= 0 
+                  ? projectGraph.metrics.connectivityNumber 
+                  : 'N/A'}
+              </div>
+              <Badge 
+                variant="outline" 
+                className={`${connectivityInfo.color} border-current`}
+              >
+                {connectivityInfo.label}
+              </Badge>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {connectivityInfo.description}
+            </div>
+            <div className="text-xs text-muted-foreground pt-2 border-t">
+              Connectivity Number, grafiği bağlantısız yapmak için çıkarılması gereken minimum node sayısını gösterir. 
+              Düşük değer (0-1) zayıf yapı, yüksek değer (4+) güçlü yapı anlamına gelir.
+            </div>
+          </div>
+        </Card>
+
+        {/* Scattering Number Panel */}
+        <Card className="p-4">
+          <h3 className="text-sm font-semibold mb-4">Scattering Number (s(G))</h3>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="text-4xl font-bold">
+                {projectGraph.metrics.scatteringNumber !== undefined && 
+                 projectGraph.metrics.scatteringNumber >= 0 
+                  ? projectGraph.metrics.scatteringNumber.toFixed(2)
+                  : 'N/A'}
+              </div>
+              <Badge 
+                variant="outline" 
+                className={`${scatteringInfo.color} border-current`}
+              >
+                {scatteringInfo.label}
+              </Badge>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {scatteringInfo.description}
+            </div>
+            <div className="text-xs text-muted-foreground pt-2 border-t">
+              Scattering Number (s(G)), grafin en çok ne kadar parçalanabileceğini ölçen bir metriktir. 
+              Bu değer, az sayıda node çıkarıldığında oluşabilecek maksimum parça sayısını gösterir.
+              <div className="mt-2 space-y-1">
+                <div><strong>Düşük değer (0):</strong> Graf parçalanmaya karşı dayanıklı, node kaybı fazla parça oluşturmuyor</div>
+                <div><strong>Orta değer (1-2):</strong> Az sayıda node kaybında birkaç parça oluşabilir, orta düzey kırılganlık</div>
+                <div><strong>Yüksek değer (3+):</strong> Az sayıda node kaybında çok fazla parça oluşabilir, yüksek kırılganlık riski</div>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Rupture Number Panel */}
+        <Card className="p-4">
+          <h3 className="text-sm font-semibold mb-4">Rupture Number (r(G))</h3>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="text-4xl font-bold">
+                {projectGraph.metrics.ruptureNumber !== undefined && 
+                 projectGraph.metrics.ruptureNumber >= 0 
+                  ? projectGraph.metrics.ruptureNumber.toFixed(2)
+                  : 'N/A'}
+              </div>
+              <Badge 
+                variant="outline" 
+                className={`${ruptureInfo.color} border-current`}
+              >
+                {ruptureInfo.label}
+              </Badge>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {ruptureInfo.description}
+            </div>
+            <div className="text-xs text-muted-foreground pt-2 border-t">
+              Rupture Number (r(G)), grafin en çok ne kadar parçalanabileceğini ölçen bir metriktir.
+              Scattering'den farklı olarak, en büyük parçanın boyutunu da hesaba katar.
+              <div className="mt-2 space-y-1">
+                <div><strong>Düşük değer (0):</strong> Graf parçalanmaya karşı dayanıklı, en büyük parça küçük kalıyor</div>
+                <div><strong>Orta değer (1-2):</strong> Az sayıda node kaybında birkaç parça oluşabilir, orta düzey kırılganlık</div>
+                <div><strong>Yüksek değer (3+):</strong> Az sayıda node kaybında çok fazla parça ve büyük bir parça oluşabilir, yüksek kırılganlık</div>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Integrity Number Panel */}
+        <Card className="p-4">
+          <h3 className="text-sm font-semibold mb-4">Integrity Number (I(G))</h3>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="text-4xl font-bold">
+                {projectGraph.metrics.integrityNumber !== undefined && 
+                 projectGraph.metrics.integrityNumber >= 0 
+                  ? projectGraph.metrics.integrityNumber.toFixed(2)
+                  : 'N/A'}
+              </div>
+              <Badge 
+                variant="outline" 
+                className={`${integrityInfo.color} border-current`}
+              >
+                {integrityInfo.label}
+              </Badge>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {integrityInfo.description}
+            </div>
+            <div className="text-xs text-muted-foreground pt-2 border-t">
+              Integrity Number (I(G)), grafı bozmak için silinen node sayısı ile kalan en büyük parçanın boyutunu toplayarak minimum değeri bulur.
+              Bu metrik, grafin yapısal bütünlüğünü ölçer.
+              <div className="mt-2 space-y-1">
+                <div><strong>Düşük değer (≤2):</strong> Graf yapısal olarak sağlam, az node kaybıyla küçük parçalara bölünebilir</div>
+                <div><strong>Orta değer (3-5):</strong> Graf orta düzeyde bütünlüğe sahip, bazı node kayıplarında büyük parçalar oluşabilir</div>
+                <div><strong>Yüksek değer (6+):</strong> Graf yapısal olarak zayıf, node kayıplarında büyük parçalar oluşabilir</div>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Toughness Number Panel */}
+        <Card className="p-4">
+          <h3 className="text-sm font-semibold mb-4">Toughness Number (τ(G))</h3>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="text-4xl font-bold">
+                {projectGraph.metrics.toughnessNumber !== undefined && 
+                 projectGraph.metrics.toughnessNumber >= 0 && 
+                 isFinite(projectGraph.metrics.toughnessNumber)
+                  ? projectGraph.metrics.toughnessNumber.toFixed(2)
+                  : projectGraph.metrics.toughnessNumber !== undefined && 
+                    (!isFinite(projectGraph.metrics.toughnessNumber) || 
+                     projectGraph.metrics.toughnessNumber === Number.POSITIVE_INFINITY)
+                  ? '∞'
+                  : 'N/A'}
+              </div>
+              <Badge 
+                variant="outline" 
+                className={`${toughnessInfo.color} border-current`}
+              >
+                {toughnessInfo.label}
+              </Badge>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {toughnessInfo.description}
+            </div>
+            <div className="text-xs text-muted-foreground pt-2 border-t">
+              Toughness Number (τ(G)), grafı parçalamak için gereken "bir parça başına düşen düğüm maliyeti"ni ölçer.
+              Bu metrik, grafin parçalanmaya karşı dayanıklılığını gösterir.
+              <div className="mt-2 space-y-1">
+                <div><strong>Düşük değer (≤0.5):</strong> Graf çok kırılgan, az node kaybında çok fazla parça oluşur</div>
+                <div><strong>Orta değer (0.5-2.0):</strong> Graf orta düzeyde dayanıklı, bazı node kayıplarında parçalanabilir</div>
+                <div><strong>Yüksek değer (2.0+):</strong> Graf dayanıklı, parçalanması için çok sayıda node kaybı gerekir</div>
+                <div><strong>∞ (Sonsuz):</strong> Graf parçalanamaz veya parçalanması çok zor</div>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Domination Number Panel */}
+        <Card className="p-4">
+          <h3 className="text-sm font-semibold mb-4">Domination Number (γ(G))</h3>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="text-4xl font-bold">
+                {projectGraph.metrics.dominationNumber !== undefined && 
+                 projectGraph.metrics.dominationNumber >= 0 
+                  ? projectGraph.metrics.dominationNumber
+                  : 'N/A'}
+              </div>
+              <Badge 
+                variant="outline" 
+                className={`${dominationInfo.color} border-current`}
+              >
+                {dominationInfo.label}
+              </Badge>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {dominationInfo.description}
+            </div>
+            <div className="text-xs text-muted-foreground pt-2 border-t">
+              Domination Number (γ(G)), grafı kontrol etmek için en az kaç node seçmem gerektiğini ölçer.
+              Bu metrik, grafin kontrol edilebilirliğini gösterir. Diğer metriklerden farklı olarak node silmez, node seçer.
+              <div className="mt-2 space-y-1">
+                <div><strong>Düşük değer (1-2):</strong> Çok az node ile tüm graf kontrol edilebilir, merkezi yapı güçlü</div>
+                <div><strong>Orta değer (3-5):</strong> Birkaç node ile tüm graf kontrol edilebilir</div>
+                <div><strong>Yüksek değer (6+):</strong> Çok sayıda node gerekir, merkezi yapı zayıf</div>
+                <div><strong>Node sayısına eşit:</strong> Her node ayrı kontrol edilmeli, hiç bağlantı yok veya çok zayıf yapı</div>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* 2-Vertex Cover Number Panel */}
+        <Card className="p-4">
+          <h3 className="text-sm font-semibold mb-4">2-Vertex Cover Number (β₂(G))</h3>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="text-4xl font-bold">
+                {projectGraph.metrics.twoVertexCoverNumber !== undefined && 
+                 projectGraph.metrics.twoVertexCoverNumber >= 0 
+                  ? projectGraph.metrics.twoVertexCoverNumber
+                  : 'N/A'}
+              </div>
+              <Badge 
+                variant="outline" 
+                className={`${twoVertexCoverInfo.color} border-current`}
+              >
+                {twoVertexCoverInfo.label}
+              </Badge>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {twoVertexCoverInfo.description}
+            </div>
+            
+            {/* Seçilen Node'ların Listesi */}
+            {projectGraph.metrics.twoVertexCoverNodes && 
+             projectGraph.metrics.twoVertexCoverNodes.length > 0 && (
+              <div className="pt-2 border-t">
+                <div className="text-xs font-semibold text-muted-foreground mb-2">
+                  Seçilen Node'lar ({projectGraph.metrics.twoVertexCoverNodes.length}):
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {projectGraph.metrics.twoVertexCoverNodes.map((node, idx) => (
+                    <Badge key={idx} variant="secondary" className="text-xs">
+                      {node}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            <div className="text-xs text-muted-foreground pt-2 border-t">
+              2-Vertex Cover Number (β₂(G)), hem Vertex Cover hem de 2-Domination şartlarını sağlayan minimum node kümesinin boyutunu ölçer.
+              Bu metrik, grafin hem bağlantısal kontrolünü hem de yedekliliğini gösterir.
+              <div className="mt-2 space-y-1">
+                <div><strong>Vertex Cover şartı:</strong> Her edge'in en az bir ucu seçili olmalı</div>
+                <div><strong>2-Domination şartı:</strong> Seçilmeyen her node, seçili en az 2 node'a bağlı olmalı</div>
+                <div><strong>Düşük değer (1-2):</strong> Çok az node ile hem kontrol hem yedeklilik sağlanıyor, merkezi yapı güçlü</div>
+                <div><strong>Orta değer (3-5):</strong> Birkaç node ile hem kontrol hem yedeklilik sağlanıyor</div>
+                <div><strong>Yüksek değer (6+):</strong> Çok sayıda node gerekir, merkezi yapı zayıf</div>
+                <div><strong>Node sayısına eşit:</strong> Her node ayrı kontrol edilmeli, hiç bağlantı yok veya çok zayıf yapı</div>
+              </div>
+            </div>
+          </div>
+          </Card>
+
+        {/* Degree Distribution Panel */}
+        <Card className="p-4">
+          <h3 className="text-sm font-semibold mb-4">Degree Distribution</h3>
+          <div className="space-y-3">
+            {projectGraph.metrics.degreeDistribution && 
+             Object.keys(projectGraph.metrics.degreeDistribution).length > 0 ? (
+              <>
+                <div className="space-y-2">
+                  {Object.entries(projectGraph.metrics.degreeDistribution)
+                    .sort(([a], [b]) => Number(a) - Number(b))
+                    .map(([degree, count]) => {
+                      const percentage = (count / projectGraph.metrics.totalNodes) * 100;
+                      return (
+                        <div key={degree} className="text-sm">
+                          <span className="font-medium">Degree {degree}:</span> {count} node ({percentage.toFixed(1)}%)
+                        </div>
+                      );
+                    })}
+                </div>
+                <div className="text-xs text-muted-foreground pt-2 border-t">
+                  Degree Distribution, grafın her degree değerine sahip kaç node olduğunu gösterir.
+                  Bu dağılım, grafin yapısı hakkında önemli bilgiler verir.
+                  <div className="mt-2 space-y-1">
+                    <div><strong>Yüksek degree'li node'lar:</strong> Merkezi, kritik node'lar (God class, controller bottleneck)</div>
+                    <div><strong>Düşük degree'li node'lar:</strong> İzole veya bağımsız modüller</div>
+                    <div><strong>Homojen dağılım:</strong> Tüm node'lar benzer bağlantı sayısına sahip, dengeli yapı</div>
+                    <div><strong>Heterojen dağılım:</strong> Bazı node'lar çok bağlantılı, bazıları az, merkezi yapı</div>
+                    <div><strong>Degree 0:</strong> Hiç bağlantısı olmayan izole node'lar</div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="text-sm text-muted-foreground">
+                Degree distribution data not available.
+              </div>
+            )}
+          </div>
+        </Card>
+
+        {/* Class Table */}
+        <Card className="p-4">
+          <h3 className="text-sm font-semibold mb-3">Class Details</h3>
+          <div className="border rounded-md max-h-80 overflow-auto text-xs">
+            <table className="w-full">
+              <thead className="bg-muted/40">
+                <tr>
+                  <th className="text-left px-3 py-2">Class</th>
+                  <th className="text-right px-3 py-2">Methods</th>
+                  <th className="text-right px-3 py-2">Dependencies</th>
+                </tr>
+              </thead>
+              <tbody>
+                {topClasses.map(cls => {
+                  const metrics = cls.metrics || {};
+                  const totalMethods = metrics.totalMethods ?? 0;
+                  const totalDependencies = metrics.totalDependencies ?? 0;
+                  return (
+                    <tr key={cls.id} className="border-t hover:bg-muted/20 cursor-pointer">
+                      <td className="px-3 py-2 font-mono break-all">{cls.id}</td>
+                      <td className="px-3 py-2 text-right">{totalMethods}</td>
+                      <td className="px-3 py-2 text-right">{totalDependencies}</td>
+                    </tr>
+                  );
+                })}
+                {topClasses.length === 0 && (
+                  <tr>
+                    <td colSpan={3} className="px-3 py-3 text-center text-muted-foreground">
+                      No classes found in project graph.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </div>
+    );
+  };
+
   const renderCodeQualityView = () => {
     // Türkçe açıklama: code-quality aslında metrics + code smell kombinasyonu, bu yüzden özet kart + detay tablo gösteriyoruz
     const data = getParsedData('code-quality');
@@ -1106,9 +2191,12 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
       case 'clone-detection':
         return renderCloneDetectionView();
       case 'code-graph':
-        return renderCodeGraphView();
+        // code-graph analizi için de project graph görselleştirmesini göster
+        return renderProjectGraphView();
       case 'code-quality':
         return renderCodeQualityView();
+      case 'project-graph':
+        return renderProjectGraphView();
       default: {
         const data = getParsedData(activeAnalysis);
         if (!data) {
@@ -1173,6 +2261,18 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
             disabled={analyzing}
           >
             Run Code Graph Analysis
+          </Button>
+          <Button
+            variant="outline"
+            onClick={async () => {
+              setActiveAnalysis('project-graph');
+              if (!projectGraph && !projectGraphError) {
+                await loadProjectGraph();
+              }
+            }}
+            disabled={analyzing || projectGraphLoading}
+          >
+            View Project Code Graph
           </Button>
           <Button 
             variant="outline" 
