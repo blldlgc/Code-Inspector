@@ -21,7 +21,7 @@ export const ttsApi = {
     fetch('http://127.0.0.1:7242/ingest/bc7ab8a0-d63f-4d50-839b-5c6b20d92200',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ttsApi.ts:19',message:'ttsApi.speak called',data:{textLength:request.text.length,language:request.language,speed:request.speed},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
     // #endregion
     try {
-      authService.checkTokenAndLogout();
+      // Token kontrolü interceptor'lar tarafından yapılıyor, burada gerek yok
       const requestBody = {
         text: request.text,
         language: request.language || 'en-US',

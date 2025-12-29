@@ -1,12 +1,21 @@
-import axios, { AxiosResponse } from 'axios';
-import { authService } from './auth';
+import axios, { AxiosResponse, AxiosInstance } from 'axios';
 
 const BACKEND_BASE_URL: string = (import.meta as any).env?.VITE_BACKEND_URL || 'http://localhost:8080';
 
 const API_KEY: string | undefined = import.meta.env.VITE_APP_GEMINI_API_KEY;
 
+// Gemini API endpoint - güncel format (2024/2025)
+// Güncel dokümantasyon: https://ai.google.dev/api/rest
+// Model adını environment variable'dan al, yoksa default kullan
+const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash';
+// Güncel modeller: 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-pro'
+// API versiyonu: v1 kullanılıyor (v1beta eski)
+const GEMINI_API_VERSION = import.meta.env.VITE_GEMINI_API_VERSION || 'v1';
 const GEMINI_API_ENDPOINT: string =
-    'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+    `https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models/${GEMINI_MODEL}:generateContent`;
+
+// Gemini API için ayrı axios instance (interceptor'lardan muaf)
+const geminiAxios: AxiosInstance = axios.create();
 
 interface GeminiApiResponse {
     candidates?: {
@@ -15,7 +24,11 @@ interface GeminiApiResponse {
                 text: string;
             }[];
         };
+        finishReason?: string; // 'STOP', 'MAX_TOKENS', 'SAFETY', etc.
     }[];
+    promptFeedback?: {
+        blockReason?: string;
+    };
 }
 
 interface GeminiApiRequest {
@@ -31,9 +44,17 @@ interface GeminiApiRequest {
 }
 
 
-export const generateContent = async (prompt: string, temperature: number = 0.5, maxOutputTokens: number = 8192): Promise<string> => {
+export const generateContent = async (prompt: string, temperature: number = 0.5, maxOutputTokens: number = 32768): Promise<string> => {
     if (!API_KEY) {
-        throw new Error('API anahtarı tanımlanmamış. .env dosyasını kontrol edin.');
+        const errorMsg = 'API anahtarı tanımlanmamış. .env dosyasını kontrol edin.';
+        console.error(errorMsg);
+        // Log'u localStorage'a kaydet
+        try {
+            const logs = JSON.parse(localStorage.getItem('app_logs') || '[]');
+            logs.push({ timestamp: new Date().toISOString(), level: 'error', message: errorMsg, source: 'generateContent' });
+            localStorage.setItem('app_logs', JSON.stringify(logs.slice(-100))); // Son 100 log
+        } catch (e) {}
+        throw new Error(errorMsg);
     }
 
     const requestData: GeminiApiRequest = {
@@ -47,13 +68,28 @@ export const generateContent = async (prompt: string, temperature: number = 0.5,
     };
 
     try {
-        const response: AxiosResponse<GeminiApiResponse> = await axios.post(
+        // Gemini API için ayrı axios instance kullan (interceptor'lardan muaf)
+        console.log('Gemini API çağrısı:', { 
+            endpoint: GEMINI_API_ENDPOINT, 
+            model: GEMINI_MODEL,
+            version: GEMINI_API_VERSION,
+            hasApiKey: !!API_KEY
+        });
+        
+        // Gemini API REST endpoint formatı
+        // Dokümantasyon: https://ai.google.dev/api/rest
+        const response: AxiosResponse<GeminiApiResponse> = await geminiAxios.post(
             GEMINI_API_ENDPOINT,
             requestData,
             {
                 params: {
                     key: API_KEY,
                 },
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                // Timeout ayarla
+                timeout: 60000, // 60 saniye
             }
         );
 
@@ -62,13 +98,119 @@ export const generateContent = async (prompt: string, temperature: number = 0.5,
             response.data.candidates &&
             response.data.candidates.length > 0
         ) {
-            return response.data.candidates[0].content.parts[0].text;
+            const candidate = response.data.candidates[0];
+            const text = candidate.content.parts[0].text;
+            const finishReason = candidate.finishReason;
+            
+            // Eğer yanıt token limiti nedeniyle kesilmişse uyarı ver
+            if (finishReason === 'MAX_TOKENS') {
+                console.warn('⚠️ Gemini API yanıtı token limiti nedeniyle kesilmiş olabilir. maxOutputTokens değerini artırmayı düşünün.');
+                // Log'u localStorage'a kaydet
+                try {
+                    const logs = JSON.parse(localStorage.getItem('app_logs') || '[]');
+                    logs.push({ 
+                        timestamp: new Date().toISOString(), 
+                        level: 'warn', 
+                        message: 'Gemini API yanıtı MAX_TOKENS nedeniyle kesilmiş olabilir', 
+                        source: 'generateContent',
+                        finishReason,
+                        textLength: text.length
+                    });
+                    localStorage.setItem('app_logs', JSON.stringify(logs.slice(-100)));
+                } catch (e) {}
+            }
+            
+            // Eğer güvenlik nedeniyle bloklanmışsa
+            if (finishReason === 'SAFETY') {
+                throw new Error('Gemini API yanıtı güvenlik nedeniyle bloklandı. Prompt\'u gözden geçirin.');
+            }
+            
+            // Prompt feedback kontrolü
+            if (response.data.promptFeedback?.blockReason) {
+                throw new Error(`Gemini API prompt'u blokladı: ${response.data.promptFeedback.blockReason}`);
+            }
+            
+            return text;
         } else {
             throw new Error('Gemini API yanıtında içerik bulunamadı.');
         }
     } catch (error: any) {
-        console.error('Gemini API isteği hatası:', error);
-        throw new Error('Gemini API isteği sırasında bir hata oluştu.');
+        // Detaylı hata bilgisi
+        const errorDetails = {
+            message: error.message,
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            data: error.response?.data,
+            url: error.config?.url,
+            endpoint: GEMINI_API_ENDPOINT,
+        };
+        
+        const errorMsg = `Gemini API isteği hatası: ${error.response?.status || 'N/A'} - ${error.message || 'Bilinmeyen hata'}`;
+        console.error(errorMsg, errorDetails);
+        
+        // Log'u localStorage'a kaydet
+        try {
+            const logs = JSON.parse(localStorage.getItem('app_logs') || '[]');
+            logs.push({ 
+                timestamp: new Date().toISOString(), 
+                level: 'error', 
+                message: errorMsg, 
+                source: 'generateContent',
+                error: errorDetails
+            });
+            localStorage.setItem('app_logs', JSON.stringify(logs.slice(-100))); // Son 100 log
+        } catch (e) {
+            console.error('Log kaydetme hatası:', e);
+        }
+        
+        // Daha açıklayıcı hata mesajı ve çözüm önerileri
+        if (error.response?.status === 404) {
+            const suggestions = [
+                `Model adını kontrol edin. Şu an kullanılan: ${GEMINI_MODEL}`,
+                'Deneyebileceğiniz modeller:',
+                '  - gemini-1.5-flash (önerilen)',
+                '  - gemini-1.5-pro',
+                '  - gemini-pro',
+                '  - gemini-2.5-flash',
+                '  - gemini-2.5-pro',
+                `API versiyonunu kontrol edin. Şu an kullanılan: ${GEMINI_API_VERSION}`,
+                '  - v1 (önerilen)',
+                '  - v1beta (eski)',
+                'Güncel dokümantasyon: https://ai.google.dev/api/rest',
+                `Endpoint: ${GEMINI_API_ENDPOINT}`,
+                '',
+                'Çözüm: .env dosyasına şunu ekleyin:',
+                `  VITE_GEMINI_MODEL=gemini-1.5-flash`,
+                `  VITE_GEMINI_API_VERSION=v1`
+            ];
+            throw new Error(
+                `Gemini API endpoint bulunamadı (404).\n` +
+                `Endpoint: ${GEMINI_API_ENDPOINT}\n` +
+                `\nÖneriler:\n${suggestions.join('\n')}`
+            );
+        } else if (error.response?.status === 403) {
+            throw new Error(
+                'Gemini API erişim hatası (403).\n' +
+                'Olası nedenler:\n' +
+                '- API anahtarı geçersiz veya süresi dolmuş\n' +
+                '- API anahtarı kısıtlamaları (IP, referer vb.)\n' +
+                '- Faturalandırma etkin değil\n' +
+                'Çözüm: Google AI Studio\'dan yeni bir API anahtarı oluşturun: https://aistudio.google.com/app/apikey'
+            );
+        } else if (error.response?.status === 400) {
+            const errorData = error.response?.data || {};
+            throw new Error(
+                `Gemini API istek hatası (400).\n` +
+                `Hata detayı: ${JSON.stringify(errorData, null, 2)}`
+            );
+        } else {
+            throw new Error(
+                `Gemini API isteği sırasında bir hata oluştu.\n` +
+                `Durum: ${error.response?.status || 'N/A'}\n` +
+                `Mesaj: ${error.message || 'Bilinmeyen hata'}\n` +
+                `Daha fazla bilgi için: https://ai.google.dev/api/rest`
+            );
+        }
     }
 };
 
@@ -150,18 +292,17 @@ export interface CodeGraphResponse {
 
 export const projectsApi = {
   list: async () => {
-    // Token kontrolü yap
-    authService.checkTokenAndLogout();
+    // Token kontrolü interceptor'lar tarafından yapılıyor, burada gerek yok
     const res = await axios.get(`${BACKEND_BASE_URL}/api/projects`);
     return res.data as { id: number; name: string; slug: string; description?: string; vcsUrl?: string }[];
   },
   get: async (slug: string) => {
-    authService.checkTokenAndLogout();
+    // Token kontrolü interceptor'lar tarafından yapılıyor, burada gerek yok
     const res = await axios.get(`${BACKEND_BASE_URL}/api/projects/${slug}`);
     return res.data;
   },
   create: async (payload: { name: string; slug: string; description?: string; vcsUrl?: string; branchName?: string; }) => {
-    authService.checkTokenAndLogout();
+    // Token kontrolü interceptor'lar tarafından yapılıyor, burada gerek yok
     const res = await axios.post(`${BACKEND_BASE_URL}/api/projects`, payload);
     return res.data;
   },

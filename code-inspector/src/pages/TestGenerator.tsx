@@ -38,7 +38,7 @@ export default function TestGenerator() {
 
     // Sıcaklık ve maksimum token değerleri için state'ler
     const [temperature, setTemperature] = useState(0.5);
-    const [maxOutputTokens, setMaxOutputTokens] = useState(8192);
+    const [maxOutputTokens, setMaxOutputTokens] = useState(32768); // Artırıldı: uzun test kodları için
 
     // Sayfa yüklendiğinde state'ten gelen kodu al
     useEffect(() => {
