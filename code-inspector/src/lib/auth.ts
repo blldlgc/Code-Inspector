@@ -25,6 +25,7 @@ export interface RegisterRequest {
 }
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const BACKEND_BASE_URL: string = (import.meta as any).env?.VITE_BACKEND_URL || 'http://localhost:8080';
 
 // Axios default base URL'i ayarla
 axios.defaults.baseURL = API_URL;
@@ -173,7 +174,23 @@ export const authService = {
         
         // Token süresi kontrolü yap (sadece token varsa)
         if (token && this.isTokenExpired()) {
-          console.log('Token süresi geçmiş, otomatik çıkış yapılıyor...');
+          const errorMsg = 'Token süresi geçmiş, otomatik çıkış yapılıyor...';
+          console.log(errorMsg);
+          // Log'u localStorage'a kaydet
+          try {
+            const logs = JSON.parse(localStorage.getItem('app_logs') || '[]');
+            logs.push({ 
+              timestamp: new Date().toISOString(), 
+              level: 'warn', 
+              message: errorMsg, 
+              source: 'auth.interceptor.request',
+              url: config.url,
+              method: config.method
+            });
+            localStorage.setItem('app_logs', JSON.stringify(logs.slice(-100))); // Son 100 log
+          } catch (e) {
+            console.error('Log kaydetme hatası:', e);
+          }
           this.logout();
           if (window.location.pathname !== '/login') {
             window.location.href = '/login';
@@ -200,6 +217,13 @@ export const authService = {
           // mutlak URL ise pathname'i al
           if (/^https?:\/\//i.test(rawUrl)) {
             path = new URL(rawUrl).pathname;
+            // External API'ler (Gemini gibi) için token kontrolü yapma
+            if (rawUrl.includes('generativelanguage.googleapis.com') || 
+                rawUrl.includes('googleapis.com') ||
+                !rawUrl.includes(BACKEND_BASE_URL)) {
+              // External API çağrısı, token kontrolü yapma
+              return config;
+            }
           }
         } catch (_) {
           // URL parse edilemezse olduğu gibi bırak
@@ -222,9 +246,50 @@ export const authService = {
       (response) => response,
       async (error) => {
         if (error.response?.status === 401) {
-          console.log('401 Unauthorized - Token geçersiz, çıkış yapılıyor...');
+          const errorMsg = '401 Unauthorized - Token geçersiz, çıkış yapılıyor...';
+          console.log(errorMsg);
+          // Log'u localStorage'a kaydet
+          try {
+            const logs = JSON.parse(localStorage.getItem('app_logs') || '[]');
+            logs.push({ 
+              timestamp: new Date().toISOString(), 
+              level: 'error', 
+              message: errorMsg, 
+              source: 'auth.interceptor.response',
+              status: 401,
+              url: error.config?.url
+            });
+            localStorage.setItem('app_logs', JSON.stringify(logs.slice(-100))); // Son 100 log
+          } catch (e) {
+            console.error('Log kaydetme hatası:', e);
+          }
           this.logout();
           window.location.href = '/login';
+        } else if (error.response?.status === 403) {
+          // 403 hatası - sadece token gerçekten geçersizse logout yap
+          const token = this.getToken();
+          if (token && this.isTokenExpired()) {
+            const errorMsg = '403 Forbidden - Token süresi geçmiş, çıkış yapılıyor...';
+            console.log(errorMsg);
+            // Log'u localStorage'a kaydet
+            try {
+              const logs = JSON.parse(localStorage.getItem('app_logs') || '[]');
+              logs.push({ 
+                timestamp: new Date().toISOString(), 
+                level: 'error', 
+                message: errorMsg, 
+                source: 'auth.interceptor.response',
+                status: 403,
+                url: error.config?.url
+              });
+              localStorage.setItem('app_logs', JSON.stringify(logs.slice(-100))); // Son 100 log
+            } catch (e) {
+              console.error('Log kaydetme hatası:', e);
+            }
+            this.logout();
+            window.location.href = '/login';
+          }
+          // Token geçerliyse ama yetki yoksa, sadece hatayı fırlat (logout yapma)
         }
         return Promise.reject(error);
       }
