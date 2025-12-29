@@ -276,6 +276,12 @@ export interface CodeGraphMetrics {
   twoVertexCoverNumber?: number; // β₂(G) - Graph 2-vertex cover number
   twoVertexCoverNodes?: string[]; // Seçilen node'lar (2-vertex cover)
   degreeDistribution?: { [key: number]: number }; // degree -> node count
+  // Calculation method bilgileri (EXACT / HEURISTIC)
+  scatteringCalculationMethod?: string; // EXACT / HEURISTIC
+  ruptureCalculationMethod?: string; // EXACT / HEURISTIC
+  integrityCalculationMethod?: string; // EXACT / HEURISTIC
+  toughnessCalculationMethod?: string; // EXACT / HEURISTIC
+  connectivityCalculationMethod?: string; // EXACT / HEURISTIC
 }
 
 export interface CodeGraphResponse {

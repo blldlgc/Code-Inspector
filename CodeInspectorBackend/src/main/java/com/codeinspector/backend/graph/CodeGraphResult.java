@@ -117,6 +117,13 @@ public class CodeGraphResult {
         private int twoVertexCoverNumber = -1; // -1 = hesaplanmadı
         private List<String> twoVertexCoverNodes = new ArrayList<>(); // Seçilen node'lar
         private Map<Integer, Integer> degreeDistribution = new HashMap<>(); // degree -> node count
+        
+        // Calculation method bilgileri (EXACT / HEURISTIC)
+        private String scatteringCalculationMethod; // EXACT / HEURISTIC
+        private String ruptureCalculationMethod; // EXACT / HEURISTIC
+        private String integrityCalculationMethod; // EXACT / HEURISTIC
+        private String toughnessCalculationMethod; // EXACT / HEURISTIC
+        private String connectivityCalculationMethod; // EXACT / HEURISTIC
 
         public int getTotalNodes() {
             return totalNodes;
@@ -220,6 +227,46 @@ public class CodeGraphResult {
 
         public void setDegreeDistribution(Map<Integer, Integer> degreeDistribution) {
             this.degreeDistribution = degreeDistribution;
+        }
+
+        public String getScatteringCalculationMethod() {
+            return scatteringCalculationMethod;
+        }
+
+        public void setScatteringCalculationMethod(String scatteringCalculationMethod) {
+            this.scatteringCalculationMethod = scatteringCalculationMethod;
+        }
+
+        public String getRuptureCalculationMethod() {
+            return ruptureCalculationMethod;
+        }
+
+        public void setRuptureCalculationMethod(String ruptureCalculationMethod) {
+            this.ruptureCalculationMethod = ruptureCalculationMethod;
+        }
+
+        public String getIntegrityCalculationMethod() {
+            return integrityCalculationMethod;
+        }
+
+        public void setIntegrityCalculationMethod(String integrityCalculationMethod) {
+            this.integrityCalculationMethod = integrityCalculationMethod;
+        }
+
+        public String getToughnessCalculationMethod() {
+            return toughnessCalculationMethod;
+        }
+
+        public void setToughnessCalculationMethod(String toughnessCalculationMethod) {
+            this.toughnessCalculationMethod = toughnessCalculationMethod;
+        }
+
+        public String getConnectivityCalculationMethod() {
+            return connectivityCalculationMethod;
+        }
+
+        public void setConnectivityCalculationMethod(String connectivityCalculationMethod) {
+            this.connectivityCalculationMethod = connectivityCalculationMethod;
         }
     }
 
