@@ -9,6 +9,7 @@ services:
       - "5173:5173"
     environment:
       - VITE_BACKEND_URL=http://localhost:8080
+      - VITE_APP_GEMINI_API_KEY=${VITE_APP_GEMINI_API_KEY}  # .env dosyasından oku
       - CHOKIDAR_USEPOLLING=true  # Hot reload için dosya değişikliklerini izle
       - WATCHPACK_POLLING=true    # Webpack için dosya değişikliklerini izle
     volumes:

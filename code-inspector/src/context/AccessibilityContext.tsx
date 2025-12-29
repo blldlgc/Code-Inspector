@@ -1,5 +1,6 @@
 import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 import { accessibilityApi } from '@/lib/accessibilityApi';
+import { authService } from '@/lib/auth';
 
 export type FontSize = 'small' | 'medium' | 'large' | 'xlarge';
 export type FontFamily = 'default' | 'sans-serif' | 'serif' | 'monospace';
@@ -40,11 +41,27 @@ export const AccessibilityProvider = ({ children }: { children: ReactNode }) => 
     const loadSettings = async () => {
       try {
         setIsLoading(true);
+        
+        // Token kontrolü - token yoksa veya geçersizse varsayılan ayarları kullan
+        const token = authService.getToken();
+        if (!token || authService.isTokenExpired()) {
+          console.log('Token yok veya geçersiz - varsayılan erişilebilirlik ayarları kullanılıyor');
+          applySettings(defaultSettings);
+          setIsLoading(false);
+          return;
+        }
+        
         const loadedSettings = await accessibilityApi.getSettings();
         setSettings(loadedSettings);
         applySettings(loadedSettings);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Erişilebilirlik ayarları yüklenirken hata:', error);
+        
+        // Token yoksa veya yetkilendirme hatası durumunda varsayılan ayarları kullan
+        if (!authService.getToken() || error.response?.status === 403 || error.response?.status === 401 || error.message?.includes('Token')) {
+          console.log('Yetkilendirme hatası veya token yok - varsayılan ayarlar kullanılıyor');
+        }
+        
         // Hata durumunda varsayılan ayarları kullan
         applySettings(defaultSettings);
       } finally {
@@ -107,15 +124,25 @@ export const AccessibilityProvider = ({ children }: { children: ReactNode }) => 
     setSettings(updatedSettings);
     applySettings(updatedSettings);
 
+    // Token kontrolü - token yoksa veya geçersizse sadece local state'i güncelle
+    const token = authService.getToken();
+    if (!token || authService.isTokenExpired()) {
+      console.log('Token yok veya geçersiz - ayarlar sadece local olarak kaydedildi');
+      return;
+    }
+
     // Backend'e kaydet - sadece değişen alanları gönder
     try {
       await accessibilityApi.updateSettings(newSettings);
     } catch (error: any) {
       console.error('Erişilebilirlik ayarları kaydedilirken hata:', error);
       console.error('Error response data:', error.response?.data);
-      // Hata durumunda eski ayarlara geri dön
-      setSettings(settings);
-      applySettings(settings);
+      
+      // Token hatası değilse eski ayarlara geri dön
+      if (!error.message?.includes('Token')) {
+        setSettings(settings);
+        applySettings(settings);
+      }
     }
   };
 

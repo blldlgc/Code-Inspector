@@ -9,6 +9,7 @@ import { AccessibilityProvider } from '@/context/AccessibilityContext';
 import { AppRouter } from './routes/AppRouter';
 import { authService } from '@/lib/auth';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
+import '@/lib/logger'; // Logger utility'yi yükle
 
 // Auth interceptor'ı başlat
 authService.setupAxiosInterceptors();
