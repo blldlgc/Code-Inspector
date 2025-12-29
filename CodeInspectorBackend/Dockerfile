@@ -4,7 +4,12 @@ WORKDIR /app
 COPY pom.xml .
 COPY src ./src
 # JUnit bağımlılıklarını indir ve kopyala
-RUN mvn clean package dependency:copy-dependencies -DskipTests -DincludeArtifactIds=junit,hamcrest-core
+# Retry mekanizması ile Maven dependency resolution - ağ hatalarını handle et
+RUN for i in 1 2 3; do \
+        mvn dependency:resolve dependency:copy-dependencies -DincludeArtifactIds=junit,hamcrest-core -DoutputDirectory=target/dependency -U && break || \
+        (echo "Maven dependency resolution attempt $i failed, retrying..." && sleep 5); \
+    done && \
+    mvn clean package -DskipTests
 
 # Run stage
 FROM eclipse-temurin:21-jdk-jammy
