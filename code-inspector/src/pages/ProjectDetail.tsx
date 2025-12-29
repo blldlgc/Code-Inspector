@@ -470,60 +470,124 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
 
   const renderCoverageView = () => {
     // Türkçe açıklama: Coverage analiz sonucu için progress bar ve tablo görünümü
-    // Şu an backend cevabı tutarsız olduğu için coverage sekmesinde her zaman mock veri gösteriyoruz.
-    const data = {
-      projectCoverage: 82.5,
-      totalLines: 1500,
-      coveredLines: 1238,
-      files: [
-        {
-          filePath: 'testProjectJava/src/main/java/com/testproject/service/UserService.java',
-          coveragePercentage: 78.2,
-          coveredLines: 310,
-          totalLines: 397,
-        },
-        {
-          filePath: 'testProjectJava/src/main/java/com/testproject/service/PaymentService.java',
-          coveragePercentage: 71.4,
-          coveredLines: 228,
-          totalLines: 320,
-        },
-        {
-          filePath: 'testProjectJava/src/main/java/com/testproject/service/DataService.java',
-          coveragePercentage: 69.8,
-          coveredLines: 89,
-          totalLines: 127,
-        },
-        {
-          filePath: 'testProjectJava/src/main/java/com/testproject/util/Validator.java',
-          coveragePercentage: 84.1,
-          coveredLines: 88,
-          totalLines: 104,
-        },
-        {
-          filePath: 'testProjectJava/src/main/java/com/testproject/util/Calculator.java',
-          coveragePercentage: 76.3,
-          coveredLines: 182,
-          totalLines: 239,
-        },
-      ],
-    };
+    // Backend'den gelen gerçek veriyi kullanıyoruz
+    const data = getParsedData('coverage');
+    
+    // Eğer veri yoksa veya geçersizse
+    if (!data) {
+      return (
+        <div className="text-center p-4">
+          <p className="text-sm text-muted-foreground">
+            Coverage analizi henüz yapılmadı. Lütfen "Run Coverage Analysis" butonuna tıklayın.
+          </p>
+        </div>
+      );
+    }
 
-    const projectCoverage = Number(data.projectCoverage);
-    const files = data.files;
+    // Hata durumu kontrolü
+    if (data.error) {
+      return (
+        <div className="space-y-4">
+          <div className="p-4 border border-red-200 dark:border-red-800 rounded-md bg-red-50 dark:bg-red-950">
+            <p className="text-sm font-medium text-red-800 dark:text-red-200">Hata</p>
+            <p className="text-sm text-red-600 dark:text-red-400 mt-1">{data.message || data.error}</p>
+            {data.totalFiles && (
+              <p className="text-xs text-red-500 dark:text-red-500 mt-2">
+                Toplam dosya sayısı: {data.totalFiles}
+              </p>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Backend'den gelen veri yapısını frontend formatına dönüştür
+    const projectCoverage = Number(
+      data.projectCoveragePercentage ?? data.overallCoverage ?? 0
+    );
+    const totalLines = Number(data.totalLines ?? 0);
+    const totalCoveredLines = Number(data.totalCoveredLines ?? 0);
+    const files = Array.isArray(data.files) ? data.files : [];
+    const analyzedPairs = Number(data.analyzedPairs ?? 0);
+    const failedAnalyses = Number(data.failedAnalyses ?? 0);
+    const totalTestFiles = Number(data.totalTestFiles ?? 0);
+
+    // Dosya verilerini frontend formatına dönüştür
+    // Hata durumlarını ve başarılı analizleri ayır
+    const transformedFiles = files.map((file: any) => {
+      const hasError = file.error || file.errorType;
+      const filePath = file.sourceFile || file.filePath || '';
+      
+      return {
+        filePath: filePath,
+        testFile: file.testFile || '',
+        coveragePercentage: hasError ? 0 : Number(file.coveragePercentage ?? 0),
+        coveredLines: hasError ? 0 : Number(file.coveredLines ?? 0),
+        totalLines: hasError ? 0 : Number(file.totalLines ?? 0),
+        hasError: hasError,
+        error: file.error || file.errorType || null,
+        errorMessage: file.error || null,
+        errorType: file.errorType || null,
+        rootCauseType: file.rootCauseType || null,
+      };
+    }).filter((file: any) => file.filePath); // Boş filePath'leri filtrele
+
+    // Başarılı ve başarısız dosyaları ayır
+    const successfulFiles = transformedFiles.filter((f: any) => !f.hasError);
+    const failedFiles = transformedFiles.filter((f: any) => f.hasError);
 
     return (
       <div className="space-y-4">
+        {/* Proje geneli coverage özeti */}
         <div className="flex items-center justify-between gap-4">
           <div>
             <div className="text-sm text-muted-foreground">Project Coverage</div>
             <div className="text-2xl font-semibold">{projectCoverage.toFixed(1)}%</div>
+            {totalLines > 0 && (
+              <div className="text-xs text-muted-foreground mt-1">
+                {totalCoveredLines} / {totalLines} lines covered
+              </div>
+            )}
           </div>
           <div className="flex-1 max-w-md">
             <Progress value={projectCoverage} />
           </div>
         </div>
 
+        {/* Analiz istatistikleri */}
+        {(analyzedPairs > 0 || failedAnalyses > 0 || totalTestFiles > 0) && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {totalTestFiles > 0 && (
+              <Card className="p-3">
+                <div className="text-xs text-muted-foreground">Total Test Files</div>
+                <div className="text-lg font-semibold">{totalTestFiles}</div>
+              </Card>
+            )}
+            {analyzedPairs > 0 && (
+              <Card className="p-3">
+                <div className="text-xs text-muted-foreground">Analyzed Pairs</div>
+                <div className="text-lg font-semibold">{analyzedPairs}</div>
+              </Card>
+            )}
+            {failedAnalyses > 0 && (
+              <Card className="p-3 border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-950">
+                <div className="text-xs text-muted-foreground">Failed Analyses</div>
+                <div className="text-lg font-semibold text-yellow-600 dark:text-yellow-400">{failedAnalyses}</div>
+              </Card>
+            )}
+          </div>
+        )}
+
+        {/* Hata uyarısı */}
+        {failedAnalyses > 0 && (
+          <div className="p-3 border border-yellow-200 dark:border-yellow-800 rounded-md bg-yellow-50 dark:bg-yellow-950">
+            <p className="text-sm text-yellow-800 dark:text-yellow-200">
+              ⚠️ {failedAnalyses} analiz başarısız oldu. Bazı dosyalar için coverage bilgisi mevcut değil.
+            </p>
+          </div>
+        )}
+
+        {/* Dosya bazlı coverage tablosu */}
         <div className="border rounded-md max-h-80 overflow-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/40">
@@ -531,24 +595,90 @@ function AnalysisTab({ projectSlug, versionId }: { projectSlug: string, versionI
                 <th className="text-left px-3 py-2">File</th>
                 <th className="text-right px-3 py-2">Coverage</th>
                 <th className="text-right px-3 py-2">Covered / Total Lines</th>
+                <th className="text-left px-3 py-2">Status</th>
               </tr>
             </thead>
             <tbody>
-              {files.map((file: any, idx: number) => (
-                <tr key={idx} className="border-t">
+              {/* Başarılı analizler */}
+              {successfulFiles.map((file: any, idx: number) => (
+                <tr key={`success-${idx}`} className="border-t">
                   <td className="px-3 py-2 font-mono text-xs break-all">{file.filePath}</td>
                   <td className="px-3 py-2 text-right">
-                    {Number(file.coveragePercentage ?? 0).toFixed(1)}%
+                    {file.coveragePercentage.toFixed(1)}%
                   </td>
                   <td className="px-3 py-2 text-right">
-                    {file.coveredLines ?? 0} / {file.totalLines ?? 0}
+                    {file.coveredLines} / {file.totalLines}
+                  </td>
+                  <td className="px-3 py-2">
+                    <Badge variant="outline" className="bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800">
+                      Success
+                    </Badge>
                   </td>
                 </tr>
               ))}
-              {files.length === 0 && (
+              
+              {/* Başarısız analizler */}
+              {failedFiles.map((file: any, idx: number) => (
+                <tr key={`failed-${idx}`} className="border-t bg-red-50/30 dark:bg-red-950/20">
+                  <td className="px-3 py-2 font-mono text-xs break-all">
+                    <div className="space-y-1">
+                      <div>{file.filePath}</div>
+                      {file.testFile && (
+                        <div className="text-xs text-muted-foreground">
+                          Test: {file.testFile}
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-3 py-2 text-right text-muted-foreground">
+                    N/A
+                  </td>
+                  <td className="px-3 py-2 text-right text-muted-foreground">
+                    N/A
+                  </td>
+                  <td className="px-3 py-2">
+                    <div className="space-y-1">
+                      <Badge variant="outline" className="bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800">
+                        Failed
+                      </Badge>
+                      {file.errorMessage && (
+                        <div className="text-xs text-red-600 dark:text-red-400 mt-1 max-w-xs">
+                          <details className="cursor-pointer group">
+                            <summary className="hover:underline font-medium">Hata Detayları</summary>
+                            <div className="mt-2 p-2 bg-red-100 dark:bg-red-900/50 rounded border border-red-200 dark:border-red-800 text-xs space-y-1">
+                              <div>
+                                <span className="font-medium">Mesaj:</span>
+                                <div className="break-words mt-0.5 text-red-700 dark:text-red-300">
+                                  {file.errorMessage}
+                                </div>
+                              </div>
+                              {file.errorType && (
+                                <div>
+                                  <span className="font-medium">Hata Tipi:</span>{' '}
+                                  <span className="text-red-700 dark:text-red-300">{file.errorType}</span>
+                                </div>
+                              )}
+                              {file.rootCauseType && file.rootCauseType !== file.errorType && (
+                                <div>
+                                  <span className="font-medium">Kök Neden:</span>{' '}
+                                  <span className="text-red-700 dark:text-red-300">{file.rootCauseType}</span>
+                                </div>
+                              )}
+                            </div>
+                          </details>
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              
+              {transformedFiles.length === 0 && (
                 <tr>
-                  <td colSpan={3} className="px-3 py-4 text-center text-muted-foreground">
-                    No file-level coverage data available.
+                  <td colSpan={4} className="px-3 py-4 text-center text-muted-foreground">
+                    {totalTestFiles === 0 
+                      ? "Test dosyası bulunamadı. Coverage analizi için test dosyaları (*Test.java veya *Tests.java) gereklidir."
+                      : "Dosya bazlı coverage verisi mevcut değil."}
                   </td>
                 </tr>
               )}

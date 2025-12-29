@@ -141,11 +141,39 @@ public class ProjectCoverageService {
                 logger.debug("File contents read - Test: {} chars, Source: {} chars",
                         testCode.length(), sourceCode.length());
 
-                // Coverage analizi yap
+                // Tüm source dosyalarını bağımlılık olarak topla (test dosyaları hariç)
+                // Map: dosya yolu (relative path) -> içerik
+                Map<String, String> dependencyFiles = new HashMap<>();
+                for (JavaFileInfo javaFile : javaFiles) {
+                    String filePath = javaFile.relativePath();
+                    String lowerPath = filePath.toLowerCase();
+                    
+                    // Test dosyası değilse ve analiz edilen source dosyası değilse bağımlılık olarak ekle
+                    if (!lowerPath.contains("/test/") && 
+                        !filePath.equals(sourceFileName) &&
+                        !filePath.equals(testFileName)) {
+                        try {
+                            String depContent = projectAnalysisService.readJavaFile(project.getSlug(), filePath);
+                            if (depContent != null && !depContent.trim().isEmpty()) {
+                                // Dosya yolunu (relative path) kullan - package yapısını korumak için
+                                dependencyFiles.put(filePath, depContent);
+                                logger.debug("Dependency file added: {}", filePath);
+                            }
+                        } catch (Exception e) {
+                            logger.warn("Could not read dependency file: {}", filePath, e);
+                            // Bağımlılık dosyası okunamazsa devam et, kritik değil
+                        }
+                    }
+                }
+                
+                logger.info("Collected {} dependency files for coverage analysis", dependencyFiles.size());
+
+                // Coverage analizi yap - bağımlılıklarla birlikte
                 InMemoryCoverageAnalyzer coverageAnalyzer = new InMemoryCoverageAnalyzer();
                 CoverageResult coverageResult;
                 try {
-                    coverageResult = coverageAnalyzer.analyzeCoverage(sourceCode, testCode);
+                    coverageResult = coverageAnalyzer.analyzeCoverageWithDependencies(
+                            sourceCode, testCode, dependencyFiles);
                 } catch (RuntimeException e) {
                     logger.error("InMemoryCoverageAnalyzer error for test: {}, source: {}",
                             testFileName, sourceFileName, e);
